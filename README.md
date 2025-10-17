@@ -30,4 +30,4 @@ This project consists of a backend and frontend setup. The backend is a Node.js-
   - **`index.html`**: Main HTML file.
   - **`package-lock.json` and `package.json`**: Manage frontend dependencies.
 
-In a pull request, review changes in `src/` subdirectories (e.g., `controllers`, `routes`) for the backend, and `src/` for the frontend. Check `package.json` for dependency updates and `.env` for configuration changes. Ensure consistency between frontend and backend if they interact.
+
