@@ -3,7 +3,17 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import SplashScreen from './components/extras/Splashscreen';
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
+import Aboutus from './pages/Aboutus';
+import Blog from './pages/Blog';
+import Chatbot from './pages/Chatbot';
+import Contactus from './pages/Contactus';
 import Home from './pages/Home';
+import Signin from './pages/Auth/Signin';
+import Signup from './pages/Auth/Signup';
+import RoleModal from './pages/RoleModal';
+import DocUpload from './pages/Auth/DocUpload';
+//import Layout from './Layout'; // Import Layout.jsx
+import './App.css';
 
 // NotFound component for 404 pages
 const NotFound = () => (
@@ -52,7 +62,17 @@ const App = () => {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
-              
+              <Route path="/about-us" element={<Aboutus />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/chatbot" element={<Chatbot />} />
+              <Route path="/contact-us" element={<Contactus />} />
+              <Route path="/signin" element={<Signin />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/role" element={<RoleModal />} />
+              <Route path="/upload-documents" element={<DocUpload />} />
+
+              {/* Role-Specific Routes (handled by Layout.jsx) */}
+            
 
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

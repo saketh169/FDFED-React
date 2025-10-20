@@ -11,7 +11,7 @@ const Home = () => {
       { icon: 'fas fa-chart-line', title: 'Personalized Plans', text: 'Tailored nutrition and fitness plans to meet your unique health goals.' },
       { icon: 'fas fa-user-friends', title: 'Expert Consultations', text: 'Connect with certified dietitians for one-on-one video and chat consultations.' },
       { icon: 'fas fa-mobile-alt', title: 'Progress Tracking', text: 'Seamlessly log your meals and track your health metrics on the go.' },
-      { icon: 'fas fa-dumbbell', title: 'Fitness Integration', text: 'Access workout plans and integrate with your favorite fitness apps.' },
+      { icon: 'fas fa-robot', title: 'Chatbot Feature', text: 'Get instant answers to your nutrition questions with our AI-powered chatbot.' },
       { icon: 'fas fa-heartbeat', title: 'Health Insights', text: 'Get detailed insights into your health with our advanced analytics.' },
       { icon: 'fas fa-calendar-alt', title: 'Appointment Scheduling', text: 'Easily book and manage consultations with dietitians.' },
     ];
@@ -65,12 +65,10 @@ const Home = () => {
       {
         title: 'Top 5 Nutrition Tips for 2025',
         excerpt: 'Discover the latest nutrition trends and tips to kickstart your health journey this year.',
-        //image: 'https://encrypted-tbn0.gstatic.com/images?q=tbni:ANd9GcQmvgyREyl41sSGtvoxshlDclj45JWHvhQwXw&s',
       },
       {
         title: 'How Dietitians Are Using AI',
         excerpt: 'Explore how artificial intelligence is revolutionizing dietitian practices worldwide.',
-        //image: 'https://encrypted-tbn0.gstatic.com/images?q=tbni:ANd9GcQPHHg-4L35iDXUS78HK_UXaB4yreoadS_pzQ&s',
       },
       {
         title: 'Healthy Recipes for Busy Days',
@@ -216,8 +214,7 @@ const Home = () => {
           }
           .animate-delay-[300ms] { animation-delay: 300ms; }
           .animate-delay-[400ms] { animation-delay: 400ms; }
-          .animate-delay-[500m
-          s] { animation-delay: 500ms; }
+          .animate-delay-[500ms] { animation-delay: 500ms; }
           .animate-delay-[600ms] { animation-delay: 600ms; }
           #services {
             scroll-margin-top: 90px;
