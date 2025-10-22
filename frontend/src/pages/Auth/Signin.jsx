@@ -6,27 +6,24 @@ const Signin = () => {
   const navigate = useNavigate();
   const [role, setRole] = useState('');
   const [message, setMessage] = useState('');
-  const [errors, setErrors] = useState({}); // State to track validation errors
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    const roleFromUrl = searchParams.get('role') || 'user'; // Default to 'user' if no role
-    console.log('Role from URL:', roleFromUrl);
+    const roleFromUrl = searchParams.get('role') || 'user';
     setRole(roleFromUrl);
   }, [searchParams]);
 
-  // Validation function to check form inputs
   const validateForm = (form) => {
     const errors = {};
     const inputs = form.querySelectorAll('input');
+
     inputs.forEach((input) => {
       const id = input.id;
       if (!input.checkValidity()) {
         if (input.validity.valueMissing) {
           errors[id] = `${input.labels[0]?.textContent || 'Field'} is required.`;
-        } else if (input.validity.typeMismatch) {
-          if (input.type === 'email') {
-            errors[id] = 'Please enter a valid email (5-50 characters).';
-          }
+        } else if (input.validity.typeMismatch && input.type === 'email') {
+          errors[id] = 'Please enter a valid email address.';
         } else if (input.validity.tooShort) {
           errors[id] = `${input.labels[0]?.textContent || 'Field'} must be at least ${input.minLength} characters.`;
         } else if (input.validity.tooLong) {
@@ -34,6 +31,7 @@ const Signin = () => {
         }
       }
     });
+
     return errors;
   };
 
@@ -42,12 +40,13 @@ const Signin = () => {
     const form = e.target;
     form.classList.add('was-validated');
 
-    // Validate form inputs
-    const validationErrors = validateForm(form, role);
+    const validationErrors = validateForm(form);
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
-      return; // Stop submission if there are validation errors
+      setMessage('Please fix the validation errors.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
 
     const roleRoutes = {
@@ -59,17 +58,17 @@ const Signin = () => {
     };
 
     if (!roleRoutes[role]) {
-      setMessage('Error: Invalid role. Please try again.');
-      console.error('Invalid role:', role);
+      setMessage('Error: Invalid role.');
       return;
     }
 
     setMessage('Sign-in successful! Redirecting...');
-    console.log('Form submitted, role:', role);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     setTimeout(() => {
       setMessage('');
       navigate(roleRoutes[role]);
-    }, 1000);
+    }, 1500);
   };
 
   const renderForm = () => {
@@ -77,17 +76,32 @@ const Signin = () => {
       'w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6a994e] transition-all duration-300';
     const commonButtonClasses =
       'w-full bg-[#1E6F5C] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-colors duration-300 shadow-md hover:shadow-lg';
-    const commonLinkClasses = 'text-[#1E6F5C] hover:text-[#155345] font-semibold transition-colors duration-300';
+    const commonLinkClasses = 'text-[#1E6F5C] hover:text-[#155345] font-medium transition-colors duration-300';
     const errorClasses = 'text-red-500 text-xs mt-1';
 
+    const RememberMe = () => (
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]"
+          id={`rememberMe${role.charAt(0).toUpperCase() + role.slice(1)}`}
+        />
+        <label
+          className="ml-2 block text-sm text-gray-900"
+          htmlFor={`rememberMe${role.charAt(0).toUpperCase() + role.slice(1)}`}
+        >
+          Remember Me
+        </label>
+      </div>
+    );
+
     switch (role) {
+      // USER
       case 'user':
         return (
-          <form id="userLoginForm" onSubmit={handleFormSubmit} className="needs-validation space-y-4" noValidate>
+          <form id="userLoginForm" onSubmit={handleFormSubmit} className="space-y-4" noValidate>
             <div className="relative">
-              <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
+              <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="userEmail"
                 type="email"
@@ -99,10 +113,9 @@ const Signin = () => {
               />
               {errors.userEmail && <div className={errorClasses}>{errors.userEmail}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="userPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
+              <label htmlFor="userPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="userPassword"
                 type="password"
@@ -114,36 +127,29 @@ const Signin = () => {
               />
               {errors.userPassword && <div className={errorClasses}>{errors.userPassword}</div>}
             </div>
+
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]"
-                  id="rememberMeUser"
-                />
-                <label className="ml-2 block text-sm text-gray-900" htmlFor="rememberMeUser">
-                  Remember Me
-                </label>
-              </div>
+              <RememberMe />
               <Link to="/forgot-password" className="text-sm font-medium text-[#1E6F5C] hover:text-[#155345]">
                 Forgot Password?
               </Link>
             </div>
-            <button type="submit" className={commonButtonClasses}>
-              Log In
-            </button>
+
+            <button type="submit" className={commonButtonClasses}>Log In</button>
+
             <p className="text-center text-sm mt-4">
-              Don't have an account? <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
+              Don't have an account?{' '}
+              <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
             </p>
           </form>
         );
+
+      // DIETITIAN
       case 'dietitian':
         return (
-          <form id="dietitianLoginForm" onSubmit={handleFormSubmit} className="needs-validation space-y-4" noValidate>
+          <form id="dietitianLoginForm" onSubmit={handleFormSubmit} className="space-y-4" noValidate>
             <div className="relative">
-              <label htmlFor="dietitianEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
+              <label htmlFor="dietitianEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="dietitianEmail"
                 type="email"
@@ -155,10 +161,9 @@ const Signin = () => {
               />
               {errors.dietitianEmail && <div className={errorClasses}>{errors.dietitianEmail}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="dietitianPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
+              <label htmlFor="dietitianPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="dietitianPassword"
                 type="password"
@@ -170,51 +175,43 @@ const Signin = () => {
               />
               {errors.dietitianPassword && <div className={errorClasses}>{errors.dietitianPassword}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="dietitianLicenseNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                License Number
-              </label>
+              <label htmlFor="dietitianLicenseNumber" className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
               <input
                 id="dietitianLicenseNumber"
                 type="text"
                 className={`${commonInputClasses} ${errors.dietitianLicenseNumber ? 'border-red-500' : ''}`}
-                placeholder="Enter license number"
+                placeholder="e.g., DLN123456"
                 required
-                minLength="5"
-                maxLength="20"
+                minLength="9"
+                maxLength="9"
               />
               {errors.dietitianLicenseNumber && <div className={errorClasses}>{errors.dietitianLicenseNumber}</div>}
             </div>
+
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]"
-                  id="rememberMeDietitian"
-                />
-                <label className="ml-2 block text-sm text-gray-900" htmlFor="rememberMeDietitian">
-                  Remember Me
-                </label>
-              </div>
+              <RememberMe />
               <Link to="/forgot-password" className="text-sm font-medium text-[#1E6F5C] hover:text-[#155345]">
                 Forgot Password?
               </Link>
             </div>
-            <button type="submit" className={commonButtonClasses}>
-              Log In
-            </button>
+
+            <button type="submit" className={commonButtonClasses}>Log In</button>
+
             <p className="text-center text-sm mt-4">
-              Don't have an account? <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
+              Don't have an account?{' '}
+              <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
             </p>
           </form>
         );
+
+      // ORGANIZATION
       case 'organization':
         return (
-          <form id="organizationLoginForm" onSubmit={handleFormSubmit} className="needs-validation space-y-4" noValidate>
+          <form id="organizationLoginForm" onSubmit={handleFormSubmit} className="space-y-4" noValidate>
             <div className="relative">
-              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 mb-1">
-                Certifying Organization Name
-              </label>
+              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
               <input
                 id="organizationName"
                 type="text"
@@ -226,10 +223,9 @@ const Signin = () => {
               />
               {errors.organizationName && <div className={errorClasses}>{errors.organizationName}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="organizationEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
+              <label htmlFor="organizationEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="organizationEmail"
                 type="email"
@@ -241,10 +237,9 @@ const Signin = () => {
               />
               {errors.organizationEmail && <div className={errorClasses}>{errors.organizationEmail}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700 mb-1">
-                Certifying Organization ID
-              </label>
+              <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700 mb-1">Organization ID</label>
               <input
                 id="organizationId"
                 type="text"
@@ -256,10 +251,9 @@ const Signin = () => {
               />
               {errors.organizationId && <div className={errorClasses}>{errors.organizationId}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="organizationPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
+              <label htmlFor="organizationPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="organizationPassword"
                 type="password"
@@ -271,36 +265,29 @@ const Signin = () => {
               />
               {errors.organizationPassword && <div className={errorClasses}>{errors.organizationPassword}</div>}
             </div>
+
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]"
-                  id="rememberMeOrganization"
-                />
-                <label className="ml-2 block text-sm text-gray-900" htmlFor="rememberMeOrganization">
-                  Remember Me
-                </label>
-              </div>
+              <RememberMe />
               <Link to="/forgot-password" className="text-sm font-medium text-[#1E6F5C] hover:text-[#155345]">
                 Forgot Password?
               </Link>
             </div>
-            <button type="submit" className={commonButtonClasses}>
-              Log In
-            </button>
+
+            <button type="submit" className={commonButtonClasses}>Log In</button>
+
             <p className="text-center text-sm mt-4">
-              Don't have an account? <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
+              Don't have an account?{' '}
+              <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
             </p>
           </form>
         );
+
+      // CORPORATE PARTNER
       case 'corporatepartner':
         return (
-          <form id="corporatepartnerLoginForm" onSubmit={handleFormSubmit} className="needs-validation space-y-4" noValidate>
+          <form id="corporatepartnerLoginForm" onSubmit={handleFormSubmit} className="space-y-4" noValidate>
             <div className="relative">
-              <label htmlFor="corporatepartnerEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
+              <label htmlFor="corporatepartnerEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="corporatepartnerEmail"
                 type="email"
@@ -312,10 +299,9 @@ const Signin = () => {
               />
               {errors.corporatepartnerEmail && <div className={errorClasses}>{errors.corporatepartnerEmail}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="corporatepartnerPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
+              <label htmlFor="corporatepartnerPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="corporatepartnerPassword"
                 type="password"
@@ -327,36 +313,29 @@ const Signin = () => {
               />
               {errors.corporatepartnerPassword && <div className={errorClasses}>{errors.corporatepartnerPassword}</div>}
             </div>
+
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]"
-                  id="rememberMeCorporatePartner"
-                />
-                <label className="ml-2 block text-sm text-gray-900" htmlFor="rememberMeCorporatePartner">
-                  Remember Me
-                </label>
-              </div>
+              <RememberMe />
               <Link to="/forgot-password" className="text-sm font-medium text-[#1E6F5C] hover:text-[#155345]">
                 Forgot Password?
               </Link>
             </div>
-            <button type="submit" className={commonButtonClasses}>
-              Log In
-            </button>
+
+            <button type="submit" className={commonButtonClasses}>Log In</button>
+
             <p className="text-center text-sm mt-4">
-              Don't have an account? <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
+              Don't have an account?{' '}
+              <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
             </p>
           </form>
         );
+
+      // ADMIN
       case 'admin':
         return (
-          <form id="adminLoginForm" onSubmit={handleFormSubmit} className="needs-validation space-y-4" noValidate>
+          <form id="adminLoginForm" onSubmit={handleFormSubmit} className="space-y-4" noValidate>
             <div className="relative">
-              <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
+              <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="adminEmail"
                 type="email"
@@ -368,10 +347,9 @@ const Signin = () => {
               />
               {errors.adminEmail && <div className={errorClasses}>{errors.adminEmail}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="adminPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
+              <label htmlFor="adminPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="adminPassword"
                 type="password"
@@ -383,10 +361,9 @@ const Signin = () => {
               />
               {errors.adminPassword && <div className={errorClasses}>{errors.adminPassword}</div>}
             </div>
+
             <div className="relative">
-              <label htmlFor="adminKey" className="block text-sm font-medium text-gray-700 mb-1">
-                Admin Key
-              </label>
+              <label htmlFor="adminKey" className="block text-sm font-medium text-gray-700 mb-1">Admin Key</label>
               <input
                 id="adminKey"
                 type="password"
@@ -398,29 +375,23 @@ const Signin = () => {
               />
               {errors.adminKey && <div className={errorClasses}>{errors.adminKey}</div>}
             </div>
+
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]"
-                  id="rememberMeAdmin"
-                />
-                <label className="ml-2 block text-sm text-gray-900" htmlFor="rememberMeAdmin">
-                  Remember Me
-                </label>
-              </div>
+              <RememberMe />
               <Link to="/forgot-password" className="text-sm font-medium text-[#1E6F5C] hover:text-[#155345]">
                 Forgot Password?
               </Link>
             </div>
-            <button type="submit" className={commonButtonClasses}>
-              Log In
-            </button>
+
+            <button type="submit" className={commonButtonClasses}>Log In</button>
+
             <p className="text-center text-sm mt-4">
-              Don't have an account? <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
+              Don't have an account?{' '}
+              <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
             </p>
           </form>
         );
+
       default:
         return (
           <div className="text-center p-8">
@@ -438,13 +409,24 @@ const Signin = () => {
 
   return (
     <section className="flex items-center justify-center bg-gray-100 p-4 min-h-[600px]">
-      <div className="w-full max-w-lg p-8 mx-auto my-auto rounded-3xl shadow-2xl bg-white">
+      <div className="w-full max-w-lg p-8 mx-auto rounded-3xl shadow-2xl bg-white animate-fade-in">
         <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-6">LOG IN</h2>
+
+        {/* Global Alert */}
         {message && (
-          <div className="p-3 mb-4 text-center text-sm text-green-700 bg-green-100 rounded-lg" role="alert">
+          <div
+            aria-live="polite"
+            className={`p-3 mb-5 text-center text-base font-medium rounded-lg shadow-sm animate-slide-in w-full ${
+              message.includes('successful') || message.includes('Redirecting')
+                ? 'text-green-800 bg-green-100 border border-green-300'
+                : 'text-red-800 bg-red-100 border border-red-300'
+            }`}
+            role="alert"
+          >
             {message}
           </div>
         )}
+
         {renderForm()}
       </div>
     </section>
