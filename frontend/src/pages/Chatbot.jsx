@@ -1,5 +1,9 @@
 import React from 'react';
+<<<<<<< HEAD
+
+=======
 import '/index.css';
+>>>>>>> origin/main
 
 const ChatbotPage = () => {
     return (

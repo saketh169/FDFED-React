@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
+
+=======
 import '/index.css';
+>>>>>>> origin/main
 
 const Home = () => {
   const navigate = useNavigate();

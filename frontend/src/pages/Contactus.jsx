@@ -1,6 +1,10 @@
 import React from 'react'
 import { useState } from 'react'
+<<<<<<< HEAD
+
+=======
 import '/index.css'
+>>>>>>> origin/main
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
