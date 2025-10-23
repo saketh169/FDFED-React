@@ -10,9 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+<<<<<<< HEAD
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-middleware": "^3.4.2",
+=======
+>>>>>>> origin/main
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2"
   }

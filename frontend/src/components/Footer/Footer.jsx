@@ -48,7 +48,11 @@ const Footer = () => {
             </li>
             <li className="mb-3 flex items-center">
               <i className="fas fa-map-marker-alt mr-3 text-[#28B463]"></i>
+<<<<<<< HEAD
               <span className="text-white/80">IIIT SriCity , Chittor , 517346</span>
+=======
+              <span className="text-white/80">45 Wellness Avenue, Greenfield, CA 93927</span>
+>>>>>>> origin/main
             </li>
           </ul>
         </div>
@@ -136,11 +140,19 @@ const Footer = () => {
         </div>
         <p className="text-white text-opacity-70 text-sm m-0">
           &copy; {new Date().getFullYear()} NutriConnect. All Rights Reserved.
+<<<<<<< HEAD
           <a href="/terms-of-use" className="text-white/80 no-underline hover:text-[#FFD700] mx-2" aria-label="Terms of Use">
             Terms of Use
           </a>
           |
           <a href="/privacy-policy" className="text-white/80 no-underline hover:text-[#FFD700] mx-2" aria-label="Privacy Policy">
+=======
+          <a href="/terms" className="text-white/80 no-underline hover:text-[#FFD700] mx-2" aria-label="Terms of Use">
+            Terms of Use
+          </a>
+          |
+          <a href="/privacy" className="text-white/80 no-underline hover:text-[#FFD700] mx-2" aria-label="Privacy Policy">
+>>>>>>> origin/main
             Privacy Policy
           </a>
         </p>
