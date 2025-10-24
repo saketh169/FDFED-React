@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import axios from 'axios'; // axios imported
 
 const Signup = () => {
   const [searchParams] = useSearchParams();
@@ -7,6 +8,20 @@ const Signup = () => {
   const [role, setRole] = useState('');
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false); // New loading state
+
+  // --- Color constants for UI consistency ---
+  const primaryGreen = '#1E6F5C'; 
+  const lightGreen = '#6a994e';
+
+  // --- Role-based redirection routes ---
+  const roleRoutes = {
+    user: '/user/home',
+    admin: '/admin/home',
+    organization: `/upload-documents?role=organization`,
+    corporatepartner: `/upload-documents?role=corporatepartner`,
+    dietitian: `/upload-documents?role=dietitian`,
+  };
 
   useEffect(() => {
     const roleFromUrl = searchParams.get('role');
@@ -15,6 +30,7 @@ const Signup = () => {
     }
   }, [searchParams]);
 
+  // --- FORM VALIDATION LOGIC (UNCHANGED) ---
   const validateForm = (form) => {
     const errors = {};
     const inputs = form.querySelectorAll('input, textarea');
@@ -110,8 +126,33 @@ const Signup = () => {
 
     return errors;
   };
+  // --- END VALIDATION LOGIC ---
 
-  const handleFormSubmit = (e) => {
+  // --- NEW: Function to serialize form data ---
+  const serializeForm = (form) => {
+    const formData = {};
+    const prefix = role;
+    
+    form.querySelectorAll('input, textarea').forEach(input => {
+      // Use the ID, but strip the role prefix to get clean keys (name, email, etc.)
+      let key = input.id.replace(prefix, '').toLowerCase(); 
+      
+      if (input.type === 'radio' && input.checked) {
+        key = input.name.replace(prefix, '').toLowerCase(); 
+        formData[key] = input.value;
+      } else if (input.type !== 'radio' && input.value) {
+        formData[key] = input.value;
+      }
+    });
+
+    // The role is included implicitly via the API route, but helpful for server-side logging
+    formData.role = role; 
+    
+    return formData;
+  };
+
+  // --- MODIFIED: Submission Handler using axios ---
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
     form.classList.add('was-validated');
@@ -124,28 +165,53 @@ const Signup = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-
-    const roleRoutes = {
-      user: '/user/home',
-      admin: '/admin/home',
-      organization: `/upload-documents?role=organization`,
-      corporatepartner: `/upload-documents?role=corporatepartner`,
-      dietitian: `/upload-documents?role=dietitian`,
-    };
-
-    if (!roleRoutes[role]) {
-      setMessage('Error: Invalid role.');
+    
+    if (!role) {
+      setMessage('Error: Role not selected for signup.');
       return;
     }
 
-    setMessage('Sign-up successful! Redirecting...');
+    const formData = serializeForm(form);
+    const apiRoute = `/api/signup/${role}`; // Dynamically sets route: /api/signup/user, /api/signup/dietitian, etc.
+
+    setIsLoading(true);
+    setMessage(`Registering you as a ${role}...`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    setTimeout(() => {
-      setMessage('');
-      navigate(roleRoutes[role]);
-    }, 1500);
+    try {
+      // Use axios.post to send data
+      const response = await axios.post(apiRoute, formData);
+      const data = response.data;
+
+      // Assuming your backend sends the JWT token in the response data (e.g., data.token)
+      if (data.token) {
+        // Handle token storage (e.g., local storage, or relying on HTTP-only cookie)
+        localStorage.setItem('authToken', data.token);
+      }
+
+      setMessage(`Sign-up successful! Welcome! Redirecting to ${roleRoutes[role]}...`);
+
+      // Redirect after a short delay
+      setTimeout(() => {
+        setMessage('');
+        navigate(roleRoutes[role]);
+      }, 1500);
+
+    } catch (error) {
+      console.error('Sign-up Error:', error.response ? error.response.data : error.message);
+      
+      const errorMessage = error.response?.data?.message 
+        || error.message 
+        || `Signup failed for ${role}. Please try again.`;
+
+      setMessage(`Error: ${errorMessage}`);
+      setErrors(error.response?.data?.errors || {}); // Set backend-specific field errors if available
+
+    } finally {
+      setIsLoading(false);
+    }
   };
+
 
   const handleLoginClick = () => {
     navigate(`/signin?role=${role}`, { state: { scrollToTop: true } });
@@ -153,10 +219,23 @@ const Signup = () => {
 
   const renderForm = () => {
     const commonInputClasses =
-      'w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6a994e] transition-all duration-300';
+      `w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[${lightGreen}] transition-all duration-300`;
     const commonButtonClasses =
-      'w-full bg-[#1E6F5C] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-colors duration-300 shadow-md hover:shadow-lg';
+      `w-full bg-[${primaryGreen}] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-colors duration-300 shadow-md hover:shadow-lg disabled:opacity-50`;
     const errorClasses = 'text-red-500 text-xs mt-1';
+    
+    // Enhanced Submit Button with Loading State
+    const SubmitButton = () => (
+      <button type="submit" className={commonButtonClasses} disabled={isLoading}>
+        {isLoading ? (
+          <>
+            <i className="fas fa-spinner fa-spin mr-2"></i> Registering...
+          </>
+        ) : (
+          'Get Started'
+        )}
+      </button>
+    );
 
     const LoginLink = () => (
       <div className="lg:col-span-2 text-center mt-6">
@@ -165,7 +244,7 @@ const Signup = () => {
           <button
             type="button"
             onClick={handleLoginClick}
-            className="text-[#1E6F5C] font-medium hover:underline focus:outline-none"
+            className={`text-[${primaryGreen}] font-medium hover:underline focus:outline-none`}
           >
             Login
           </button>
@@ -219,7 +298,7 @@ const Signup = () => {
                 <div className="flex items-center space-x-4">
                   {['male', 'female', 'other'].map((val) => (
                     <div key={val} className="flex items-center">
-                      <input className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]" type="radio" name="userGender" value={val} required={val === 'male'} />
+                      <input className={`h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]`} type="radio" name="userGender" value={val} required={val === 'male'} />
                       <label className="ml-2 block text-sm text-gray-900 capitalize">{val}</label>
                     </div>
                   ))}
@@ -234,7 +313,7 @@ const Signup = () => {
               </div>
 
               <div className="lg:col-span-2">
-                <button type="submit" className={commonButtonClasses}>Get Started</button>
+                <SubmitButton />
               </div>
 
               <LoginLink />
@@ -293,7 +372,7 @@ const Signup = () => {
                 <div className="flex items-center space-x-4">
                   {['male', 'female', 'other'].map((val) => (
                     <div key={val} className="flex items-center">
-                      <input className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]" type="radio" name="adminGender" value={val} required={val === 'male'} />
+                      <input className={`h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]`} type="radio" name="adminGender" value={val} required={val === 'male'} />
                       <label className="ml-2 block text-sm text-gray-900 capitalize">{val}</label>
                     </div>
                   ))}
@@ -310,7 +389,7 @@ const Signup = () => {
               </div>
 
               <div className="lg:col-span-2">
-                <button type="submit" className={commonButtonClasses}>Get Started</button>
+                <SubmitButton />
               </div>
 
               <LoginLink />
@@ -365,7 +444,7 @@ const Signup = () => {
               </div>
 
               <div className="lg:col-span-2">
-                <button type="submit" className={commonButtonClasses}>Get Started</button>
+                <SubmitButton />
               </div>
 
               <LoginLink />
@@ -422,7 +501,7 @@ const Signup = () => {
               </div>
 
               <div className="lg:col-span-2">
-                <button type="submit" className={commonButtonClasses}>Get Started</button>
+                <SubmitButton />
               </div>
 
               <LoginLink />
@@ -479,7 +558,7 @@ const Signup = () => {
               </div>
 
               <div className="lg:col-span-2">
-                <button type="submit" className={commonButtonClasses}>Get Started</button>
+                <SubmitButton />
               </div>
 
               <LoginLink />
@@ -510,7 +589,7 @@ const Signup = () => {
     <section className="flex items-center justify-center bg-gray-100 p-2 sm:p-3 min-h-[650px]">
       <div className="w-full max-w-7xl p-4 sm:p-5 mx-auto rounded-3xl shadow-2xl bg-white flex flex-col items-center justify-center animate-fade-in">
         <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-4">
-          GET STARTED
+          SIGN UP AS A {role.toUpperCase() || 'NEW MEMBER'}
         </h2>
 
         {/* Global Alert */}

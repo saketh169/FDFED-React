@@ -34,9 +34,7 @@ const OrganizationHome = () => {
 
   // Define Tailwind colors to match the HTML reference theme:
   const primaryGreen = '#38b44a'; 
-  const darkGreen = '#2e9c3e'; 
-  const mutedGreen = '#5a8f5a'; 
-
+  
   return (
     <main className="flex-1 animate-fade-in ">
 
@@ -44,13 +42,13 @@ const OrganizationHome = () => {
       {/* 1. INTRO / WELCOME SECTION (ENHANCED) */}
       {/* ======================================================= */}
       {/* Added bg-green-50 for a subtle background color */}
-      <section id="welcome-intro" className="py-25 px-4 sm:px-6 md:px-8 bg-green-50 min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-25 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block (md:w-1/2) */}
           <div className="md:w-1/2 text-center md:text-left">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-[#1A4A40] mb-4">
-              Welcome, <div className="text-[#27AE60]">Organization Team !</div>
+              Welcome, <div className="text-[#27AE60]">Organization Team!</div>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
               **Ensuring Integrity and Trust Across NutriConnect.**
@@ -63,13 +61,13 @@ const OrganizationHome = () => {
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button
                 onClick={() => navigate('/organization_dash')}
-                className={`bg-[${primaryGreen}] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[${darkGreen}] transition-all duration-300`}
+                className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
               >
                 Go to Dashboard
               </button>
               <button
                 onClick={() => navigate('/contact')}
-                className={`bg-[${mutedGreen}] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#4d7e4d] transition-all duration-300`}
+                className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
               >
                 Contact Support
               </button>
@@ -81,7 +79,7 @@ const OrganizationHome = () => {
             <img
               src="https://img.freepik.com/free-vector/online-job-interview_23-2148613123.jpg?t=st=1741697893~exp=1741701493~hmac=abbb653dca5846944d59ee4da6a8d379bc1a2aa997daf62026c4e050037ec3a4&w=1380"
               alt="Organization Team"
-              className="img-fluid rounded-xl w-[550px] transition-transform duration-300 hover:scale-[1.02] border-4 border-gray-200"
+              className="img-fluid rounded-xl w-[550px] h-[380px] transition-transform duration-300 hover:scale-[1.02]"
             />
           </div>
         </div>
