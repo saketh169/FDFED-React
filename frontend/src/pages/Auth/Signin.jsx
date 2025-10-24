@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Signin = () => {
   const [searchParams] = useSearchParams();
@@ -7,6 +8,20 @@ const Signin = () => {
   const [role, setRole] = useState('');
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false); // New state for loading
+
+  // --- Color constants for UI consistency ---
+  const primaryGreen = '#1E6F5C'; 
+  const lightGreen = '#6a994e';
+
+  // --- Role-based redirection routes ---
+  const roleRoutes = {
+    user: '/user/home',
+    admin: '/admin/home',
+    organization: '/organization/home',
+    corporatepartner: '/corporatepartner/home',
+    dietitian: '/dietitian/home',
+  };
 
   useEffect(() => {
     const roleFromUrl = searchParams.get('role') || 'user';
@@ -17,6 +32,7 @@ const Signin = () => {
     const errors = {};
     const inputs = form.querySelectorAll('input');
 
+    // General HTML5 validation fallback
     inputs.forEach((input) => {
       const id = input.id;
       if (!input.checkValidity()) {
@@ -31,11 +47,58 @@ const Signin = () => {
         }
       }
     });
+    
+    // Additional role-specific validation (License number/ID checks)
+    const formData = new FormData(form);
+    
+    if (role === 'dietitian') {
+      const license = formData.get('dietitianLicenseNumber');
+      if (license && !/^DLN[0-9]{6}$/.test(license)) {
+        errors['dietitianLicenseNumber'] = 'License Number format is incorrect (e.g., DLN123456).';
+      }
+    }
+    if (role === 'organization') {
+      const orgId = formData.get('organizationId');
+      if (!orgId || orgId.length < 5) {
+        errors['organizationId'] = 'Organization ID is required and must be at least 5 characters.';
+      }
+    }
+    if (role === 'admin') {
+      const adminKey = formData.get('adminKey');
+      if (!adminKey || adminKey.length < 5) {
+        errors['adminKey'] = 'Admin Key is required and must be at least 5 characters.';
+      }
+    }
 
     return errors;
   };
 
-  const handleFormSubmit = (e) => {
+  // --- Function to serialize form data ---
+  const serializeForm = (form) => {
+    const formData = {};
+    const prefix = role;
+
+    form.querySelectorAll('input').forEach(input => {
+      let key = input.id.replace(prefix, '').toLowerCase(); 
+      // Handle special case for 'adminKey' where we want to preserve the key
+      if (input.id === 'adminKey') key = 'adminKey';
+
+      if (input.value) {
+        formData[key] = input.value;
+      }
+    });
+
+    formData.role = role; 
+    
+    // Check if 'Remember Me' is checked
+    const rememberMeInput = form.querySelector(`#rememberMe${role.charAt(0).toUpperCase() + role.slice(1)}`);
+    formData.rememberMe = rememberMeInput?.checked || false;
+
+    return formData;
+  };
+
+
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
     form.classList.add('was-validated');
@@ -48,42 +111,74 @@ const Signin = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+    
+    const formData = serializeForm(form);
+    const apiRoute = `/api/signin/${role}`; // e.g., /api/signin/user
 
-    const roleRoutes = {
-      user: '/user/home',
-      admin: '/admin/home',
-      organization: '/organization/home',
-      corporatepartner: '/corporatepartner/home',
-      dietitian: '/dietitian/home',
-    };
-
-    if (!roleRoutes[role]) {
-      setMessage('Error: Invalid role.');
-      return;
-    }
-
-    setMessage('Sign-in successful! Redirecting...');
+    setIsLoading(true);
+    setMessage('Verifying credentials...');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    setTimeout(() => {
-      setMessage('');
-      navigate(roleRoutes[role]);
-    }, 1500);
+    try {
+        // Use axios.post for the API call
+        const response = await axios.post(apiRoute, formData);
+        const data = response.data;
+
+        // CRITICAL: Handle token storage
+        if (data.token) {
+            localStorage.setItem('authToken', data.token);
+            // If you use refresh tokens (recommended for 'Remember Me'), the backend would set an HTTP-only cookie here.
+        }
+
+        setMessage(`Sign-in successful! Redirecting to ${roleRoutes[role]}...`);
+
+        // Redirect after a short delay
+        setTimeout(() => {
+            setMessage('');
+            navigate(roleRoutes[role]);
+        }, 1000);
+
+    } catch (error) {
+        console.error('Sign-in Error:', error.response ? error.response.data : error.message);
+        
+        const errorMessage = error.response?.data?.message 
+            || 'Login failed. Please check your credentials.';
+
+        setMessage(`Error: ${errorMessage}`);
+        // Reset errors if the response provided specific field errors (e.g., wrong password)
+        setErrors(error.response?.data?.errors || {}); 
+        
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const renderForm = () => {
     const commonInputClasses =
-      'w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6a994e] transition-all duration-300';
+      `w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[${lightGreen}] transition-all duration-300`;
     const commonButtonClasses =
-      'w-full bg-[#1E6F5C] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-colors duration-300 shadow-md hover:shadow-lg';
+      `w-full bg-[${primaryGreen}] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-colors duration-300 shadow-md hover:shadow-lg disabled:opacity-50`;
     const commonLinkClasses = 'text-[#1E6F5C] hover:text-[#155345] font-medium transition-colors duration-300';
     const errorClasses = 'text-red-500 text-xs mt-1';
+    
+    // Submit Button with Loading State
+    const SubmitButton = () => (
+      <button type="submit" className={commonButtonClasses} disabled={isLoading}>
+        {isLoading ? (
+          <>
+            <i className="fas fa-spinner fa-spin mr-2"></i> Logging In...
+          </>
+        ) : (
+          'Log In'
+        )}
+      </button>
+    );
 
     const RememberMe = () => (
       <div className="flex items-center">
         <input
           type="checkbox"
-          className="h-4 w-4 text-[#1E6F5C] border-gray-300 rounded focus:ring-[#1E6F5C]"
+          className={`h-4 w-4 text-[${primaryGreen}] border-gray-300 rounded focus:ring-[${primaryGreen}]`}
           id={`rememberMe${role.charAt(0).toUpperCase() + role.slice(1)}`}
         />
         <label
@@ -104,6 +199,7 @@ const Signin = () => {
               <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="userEmail"
+                name="email"
                 type="email"
                 className={`${commonInputClasses} ${errors.userEmail ? 'border-red-500' : ''}`}
                 placeholder="Enter your email"
@@ -118,6 +214,7 @@ const Signin = () => {
               <label htmlFor="userPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="userPassword"
+                name="password"
                 type="password"
                 className={`${commonInputClasses} ${errors.userPassword ? 'border-red-500' : ''}`}
                 placeholder="Enter your password"
@@ -135,7 +232,7 @@ const Signin = () => {
               </Link>
             </div>
 
-            <button type="submit" className={commonButtonClasses}>Log In</button>
+            <SubmitButton />
 
             <p className="text-center text-sm mt-4">
               Don't have an account?{' '}
@@ -152,6 +249,7 @@ const Signin = () => {
               <label htmlFor="dietitianEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="dietitianEmail"
+                name="email"
                 type="email"
                 className={`${commonInputClasses} ${errors.dietitianEmail ? 'border-red-500' : ''}`}
                 placeholder="Enter your email"
@@ -166,6 +264,7 @@ const Signin = () => {
               <label htmlFor="dietitianPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="dietitianPassword"
+                name="password"
                 type="password"
                 className={`${commonInputClasses} ${errors.dietitianPassword ? 'border-red-500' : ''}`}
                 placeholder="Enter your password"
@@ -180,6 +279,7 @@ const Signin = () => {
               <label htmlFor="dietitianLicenseNumber" className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
               <input
                 id="dietitianLicenseNumber"
+                name="licenseNumber"
                 type="text"
                 className={`${commonInputClasses} ${errors.dietitianLicenseNumber ? 'border-red-500' : ''}`}
                 placeholder="e.g., DLN123456"
@@ -197,7 +297,7 @@ const Signin = () => {
               </Link>
             </div>
 
-            <button type="submit" className={commonButtonClasses}>Log In</button>
+            <SubmitButton />
 
             <p className="text-center text-sm mt-4">
               Don't have an account?{' '}
@@ -214,6 +314,7 @@ const Signin = () => {
               <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
               <input
                 id="organizationName"
+                name="name"
                 type="text"
                 className={`${commonInputClasses} ${errors.organizationName ? 'border-red-500' : ''}`}
                 placeholder="Enter organization name"
@@ -228,6 +329,7 @@ const Signin = () => {
               <label htmlFor="organizationEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="organizationEmail"
+                name="email"
                 type="email"
                 className={`${commonInputClasses} ${errors.organizationEmail ? 'border-red-500' : ''}`}
                 placeholder="Enter your email"
@@ -242,9 +344,10 @@ const Signin = () => {
               <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700 mb-1">Organization ID</label>
               <input
                 id="organizationId"
+                name="id"
                 type="text"
                 className={`${commonInputClasses} ${errors.organizationId ? 'border-red-500' : ''}`}
-                placeholder="Enter organization ID"
+                placeholder="Enter organization ID (e.g., ORG1234)"
                 required
                 minLength="5"
                 maxLength="20"
@@ -256,6 +359,7 @@ const Signin = () => {
               <label htmlFor="organizationPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="organizationPassword"
+                name="password"
                 type="password"
                 className={`${commonInputClasses} ${errors.organizationPassword ? 'border-red-500' : ''}`}
                 placeholder="Enter your password"
@@ -273,7 +377,7 @@ const Signin = () => {
               </Link>
             </div>
 
-            <button type="submit" className={commonButtonClasses}>Log In</button>
+            <SubmitButton />
 
             <p className="text-center text-sm mt-4">
               Don't have an account?{' '}
@@ -290,6 +394,7 @@ const Signin = () => {
               <label htmlFor="corporatepartnerEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="corporatepartnerEmail"
+                name="email"
                 type="email"
                 className={`${commonInputClasses} ${errors.corporatepartnerEmail ? 'border-red-500' : ''}`}
                 placeholder="Enter your email"
@@ -304,6 +409,7 @@ const Signin = () => {
               <label htmlFor="corporatepartnerPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="corporatepartnerPassword"
+                name="password"
                 type="password"
                 className={`${commonInputClasses} ${errors.corporatepartnerPassword ? 'border-red-500' : ''}`}
                 placeholder="Enter your password"
@@ -321,7 +427,7 @@ const Signin = () => {
               </Link>
             </div>
 
-            <button type="submit" className={commonButtonClasses}>Log In</button>
+            <SubmitButton />
 
             <p className="text-center text-sm mt-4">
               Don't have an account?{' '}
@@ -338,6 +444,7 @@ const Signin = () => {
               <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="adminEmail"
+                name="email"
                 type="email"
                 className={`${commonInputClasses} ${errors.adminEmail ? 'border-red-500' : ''}`}
                 placeholder="Enter your email"
@@ -352,6 +459,7 @@ const Signin = () => {
               <label htmlFor="adminPassword" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="adminPassword"
+                name="password"
                 type="password"
                 className={`${commonInputClasses} ${errors.adminPassword ? 'border-red-500' : ''}`}
                 placeholder="Enter your password"
@@ -366,6 +474,7 @@ const Signin = () => {
               <label htmlFor="adminKey" className="block text-sm font-medium text-gray-700 mb-1">Admin Key</label>
               <input
                 id="adminKey"
+                name="adminKey"
                 type="password"
                 className={`${commonInputClasses} ${errors.adminKey ? 'border-red-500' : ''}`}
                 placeholder="Enter Admin Key"
@@ -383,7 +492,7 @@ const Signin = () => {
               </Link>
             </div>
 
-            <button type="submit" className={commonButtonClasses}>Log In</button>
+            <SubmitButton />
 
             <p className="text-center text-sm mt-4">
               Don't have an account?{' '}
@@ -410,7 +519,7 @@ const Signin = () => {
   return (
     <section className="flex items-center justify-center bg-gray-100 p-4 min-h-[600px]">
       <div className="w-full max-w-lg p-8 mx-auto rounded-3xl shadow-2xl bg-white animate-fade-in">
-        <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-6">LOG IN</h2>
+        <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-6">LOG IN AS {role.toUpperCase()}</h2>
 
         {/* Global Alert */}
         {message && (

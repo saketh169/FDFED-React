@@ -35,8 +35,6 @@ const AdminHome = () => {
 
   // Define Tailwind colors to match the HTML reference theme:
   const primaryGreen = '#28a745'; 
-  const darkGreen = '#218838'; 
-  const mutedGreen = '#5a8f5a'; 
 
   return (
     <main className="flex-1 animate-fade-in ">
@@ -50,7 +48,7 @@ const AdminHome = () => {
           {/* Content Block (md:w-1/2) */}
           <div className="md:w-1/2 text-center md:text-left">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-[#1A4A40] mb-4">
-              Welcome,  <div className="text-[#27AE60]"> Admin Team !</div>
+              Welcome,  <div className="text-[#27AE60]"> Admin Team!</div>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
               **The Central Command for NutriConnect Operations.**
@@ -63,15 +61,15 @@ const AdminHome = () => {
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button
                 onClick={() => navigate('/admin_dash')}
-                className={`bg-[${primaryGreen}] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[${darkGreen}] transition-all duration-300`}
+                className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
               >
                 Go to Dashboard
               </button>
               <button
                 onClick={() => navigate('/admin_dash?view=queries')}
-                className={`bg-[${mutedGreen}] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#4d7e4d] transition-all duration-300`}
+                className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
               >
-                View Support Queries
+                View  Queries
               </button>
             </div>
           </div>
@@ -81,7 +79,7 @@ const AdminHome = () => {
             <img
               src="https://img.freepik.com/free-vector/couple-professionals-analyzing-graphs_74855-4393.jpg?t=st=1741698166~exp=1741701766~hmac=7b63d82c02a0361ce7dfd83a0b0b2e4f36a0091dafa3b549232d82b8470142c0&w=1480"
               alt="Admin Team"
-              className="img-fluid rounded-xl w-[550px] transition-transform duration-300 hover:scale-[1.02]"
+              className="img-fluid rounded-xl w-[550px] h-[380px] transition-transform duration-300 hover:scale-[1.02]"
             />
           </div>
         </div>

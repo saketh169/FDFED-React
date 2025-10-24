@@ -59,15 +59,15 @@ const UserHome = () => {
     <main className="flex-1 animate-fade-in ">
       
       {/* ======================================================= */}
-      {/* 1. INTRO / WELCOME SECTION (GREETING CORRECTED) */}
+      {/* 1. INTRO / WELCOME SECTION (MODIFIED BUTTON COLORS) */}
       {/* ======================================================= */}
-      <section id="welcome-intro" className="bg-green-50 py-25 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 items-center">
+      <section id="welcome-intro" className="bg-green-50 py-23 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+        <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block */}
           <div className="md:w-1/2 text-center md:text-left">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-[#1A4A40] mb-4">
-              Welcome,  <span className="text-[#27AE60]">User!</span>, 
+              Welcome,  <span className="text-[#27AE60]">User!</span>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
               **Take Control of Your Wellness Journey.**
@@ -76,17 +76,17 @@ const UserHome = () => {
               We provide personalized nutrition plans, direct access to certified dietitians via video and chat, and powerful tracking tools to help you reach your specific health and fitness goals faster.
             </p>
             
-            {/* Action Buttons */}
+            {/* Action Buttons (UPDATED COLORS HERE) */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
                 <button
                 onClick={() => navigate('/user_dash')}
-                className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
+                className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
                 >
                 Go to Dashboard
                 </button>
                 <button
                 onClick={() => navigate('/dietitian-profiles')}
-                className="bg-[#1A4A40] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#27AE60] transition-all duration-300"
+                className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
                 >
                 Find a Dietitian
                 </button>
@@ -98,7 +98,7 @@ const UserHome = () => {
             <img 
               src="/images/user_welcome.jpg" 
               alt="User Health Journey" 
-              className="img-fluid rounded-xl w-[550px]   border-4 border-gray-100" 
+              className="img-fluid rounded-xl w-[550px]   transition-transform duration-300 hover:scale-[1.02]" 
             />
           </div>
         </div>

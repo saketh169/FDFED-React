@@ -57,7 +57,7 @@ const CorporateHome = () => {
           {/* Content Block (md:w-1/2) */}
           <div className="md:w-1/2 text-center md:text-left">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-[#1A4A40] mb-4">
-             Welcome, <div className="text-[#27AE60]">Corporate Partner !</div>
+             Welcome, <div className="text-[#27AE60]">Corporate Partner!</div>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
               **Drive Scalable Wellness Solutions and Maximize ROI.**
@@ -72,13 +72,13 @@ const CorporateHome = () => {
                 onClick={() => navigate('/partner_dash')}
                 className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
               >
-                Go to Partnership Dashboard
+                Go to Dashboard
               </button>
               <button
                 onClick={() => navigate('/partner_onboarding')}
-                className="bg-[#1A4A40] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#27AE60] transition-all duration-300"
+                className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
               >
-                Start Bulk Onboarding
+                 Onboarding
               </button>
             </div>
           </div>
@@ -86,9 +86,9 @@ const CorporateHome = () => {
           {/* Image Block (md:w-1/2 - Enhanced size) */}
           <div className="md:w-1/2 flex justify-center">
             <img 
-              src=""
+              src="https://media.istockphoto.com/id/2199019700/vector/onboarding-new-employee-vector-illustration.jpg?s=612x612&w=0&k=20&c=nPaCxm4t2Fkw6sTR_I00L_7iT2gj6ldpSoZHeGhY7SQ="
               alt="Corporate Partnership"
-              className="img-fluid rounded-xl w-[550px] transition-transform duration-300 hover:scale-[1.02]"
+              className="img-fluid rounded-xl w-[550px] h-[380px] transition-transform duration-300 hover:scale-[1.02]"
             />
           </div>
         </div>

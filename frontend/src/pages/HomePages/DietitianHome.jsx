@@ -72,7 +72,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 1. WELCOME SECTION (ENHANCED) */}
       {/* ======================================================= */}
-      <section id="welcome-intro" className="bg-green-50 py-25  px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-25 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block */}
@@ -97,7 +97,7 @@ const DietitianHome = () => {
               </button>
               <button
                 onClick={() => navigate('/dietitian-consultations')}
-                className="bg-[#1A4A40] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#27AE60] transition-all duration-300"
+                className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
               >
                 View My Clients
               </button>
@@ -109,7 +109,7 @@ const DietitianHome = () => {
             <img 
               src="/images/dietitian_welcome.jpg" 
               alt="Dietitian Consultation" 
-              className="img-fluid rounded-xl w-[550px]  border-4 border-gray-100" 
+              className="img-fluid rounded-xl w-[550px]  transition-transform duration-300 hover:scale-[1.02]" 
             />
           </div>
         </div>
