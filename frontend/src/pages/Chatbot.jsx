@@ -1,13 +1,10 @@
 import React from 'react';
-
+import ChatBotPage from './ChatBot/ChatBotPage';
 
 const ChatbotPage = () => {
     return (
-        <main className="flex-1 py-20 px-4 md:px-8 text-center bg-gray-50">
-            <h1 className="text-4xl font-bold text-[#1E6F5C] mb-4">Welcome to the Chatbot!</h1>
-            <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-                Ask our AI assistant any questions you have about health and nutrition.
-            </p>
+        <main className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-gradient-to-b from-gray-50 to-green-50 flex items-center justify-center overflow-hidden z-50">
+            <ChatBotPage />
         </main>
     );
 };
