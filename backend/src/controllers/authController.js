@@ -2,11 +2,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { UserAuth, User, Admin, Dietitian, Organization, CorporatePartner } = require('../models/userModel');
 
-// It's CRITICAL to use a strong secret stored in a .env file
 require('dotenv').config(); 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-development';
+// NOTE: ADMIN_SIGNIN_KEY is still loaded, but only for the purpose of the signinController's initial check (if needed).
+// If your security requires a hardcoded ENV key for ALL admins, keep this. 
+const ADMIN_SIGNIN_KEY = process.env.ADMIN_SIGNIN_KEY || 'Nutri@2025'; 
 
-// Map the Mongoose Profile Model
 const PROFILE_MODELS = {
     user: User,
     admin: Admin,
@@ -15,28 +16,43 @@ const PROFILE_MODELS = {
     corporatepartner: CorporatePartner,
 };
 
-// Map the name field to retrieve for the response message
 const NAME_FIELDS = {
     user: 'name',
     admin: 'name',
     dietitian: 'name',
-    organization: 'organizationName',
-    corporatepartner: 'corporatepartnerName',
+    organization: 'name',
+    corporatepartner: 'name',
 };
 
-exports.signupController = async (req, res) => {
-    // The role is extracted from the URL parameter set by the router
-    const role = req.params.role; 
-    const { email, password, ...profileData } = req.body;
+// Helper function to check for GLOBAL conflicts across ALL profile collections
+const checkGlobalConflict = async (field, value, errorMessage) => {
+    const models = [User, Admin, Dietitian, Organization, CorporatePartner];
     
-    // 1. Validate role against our supported models
+    for (const Model of models) {
+        const query = {};
+        query[field] = value;
+        const existing = await Model.findOne(query).lean(); 
+        if (existing) {
+            return { message: errorMessage };
+        }
+    }
+    return null; // No conflict found
+};
+
+// ----------------------------------------------------------------------
+// SIGNUP CONTROLLER 
+// ----------------------------------------------------------------------
+
+exports.signupController = async (req, res) => {
+    const role = req.params.role; 
+    // Removed adminKey from destructuring:
+    const { email, password, ...profileData } = req.body; 
+    
     const ProfileModel = PROFILE_MODELS[role];
     if (!ProfileModel) {
-        // This should theoretically not happen if the router is configured correctly
         return res.status(400).json({ message: 'Invalid signup role specified.' });
     }
     
-    // Simple data checks
     if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required.' });
     }
@@ -45,38 +61,53 @@ exports.signupController = async (req, res) => {
     }
 
     try {
-        // 2. Check for existing user by email in the central Auth collection
-        const existingUser = await UserAuth.findOne({ email });
-        if (existingUser) {
-            return res.status(409).json({ message: 'Email already exists. Please login or use a different email.' });
+        const { name, phone } = profileData;
+
+        // --- 1. CHECK SEQUENCE: Name ---
+        if (name) {
+            const nameConflict = await checkGlobalConflict('name', name, 
+                `The Name "${name}" is already registered.`);
+            if (nameConflict) return res.status(409).json(nameConflict);
         }
 
-        // 3. Hash Password (Crucial for security)
+        // --- 2. CHECK SEQUENCE: Email ---
+        const existingUser = await UserAuth.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json({ message: 'Email address is already registered.' });
+        }
+
+        // --- 3. CHECK SEQUENCE: Phone Number ---
+        if (phone) {
+            const phoneConflict = await checkGlobalConflict('phone', phone, 
+                `The Phone Number "${phone}" is already registered.`);
+            if (phoneConflict) return res.status(409).json(phoneConflict);
+        }
+        
+        // --- 4. HASH PASSWORD AND SAVE ---
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // 4. Create Role-Specific Profile (Separate Collection)
+        // 4a. Create Role-Specific Profile. 
         const profile = new ProfileModel(profileData);
-        await profile.save();
+        // This save enforces Name and License uniqueness (role-specific).
+        await profile.save(); 
 
-        // 5. Create Central Authentication Record (UserAuth Collection)
+        // 4b. Create Central Authentication Record 
         const authUser = new UserAuth({
             email,
             passwordHash: hashedPassword,
             role,
-            roleId: profile._id // Link the auth record to the specific profile document
+            roleId: profile._id
         });
         await authUser.save();
 
-        // 6. Generate JWT (Access Token)
+        // --- 5. GENERATE JWT AND RESPOND ---
         const token = jwt.sign(
             { userId: authUser._id, role: authUser.role, roleId: authUser.roleId },
             JWT_SECRET,
-            { expiresIn: '1h' } 
+            { expiresIn: '1h' }
         );
 
-        // 7. Respond with Success
-        const userNameField = NAME_FIELDS[role] || 'name';
-        const registeredName = profile[userNameField] || 'New User';
+        const registeredName = profile.name || 'New Member';
         
         return res.status(201).json({ 
             message: 'Registration successful! Proceed to the next step.',
@@ -87,6 +118,8 @@ exports.signupController = async (req, res) => {
     } catch (error) {
         console.error(`Error during ${role} signup:`, error);
         
+        // --- 6. ERROR HANDLING ---
+        
         if (error.name === 'ValidationError') {
             const errors = {};
             for (const field in error.errors) {
@@ -94,18 +127,33 @@ exports.signupController = async (req, res) => {
             }
             return res.status(400).json({ message: 'Validation failed.', errors });
         }
+        
+        // Handle MongoDB Unique Index Errors (Code 11000) 
         if (error.code === 11000) {
-            return res.status(409).json({ message: 'License number or email already registered.' });
+            let uniqueField = 'A role-specific unique field';
+            const match = error.message.match(/index: (.*) dup key/);
+            const indexName = match ? match[1] : '';
+            
+            // Removed 'adminKey' from index check logic:
+            if (indexName.includes('licenseNumber')) uniqueField = 'License Number';
+            else if (indexName.includes('name')) uniqueField = 'Name';
+            else if (indexName.includes('email')) uniqueField = 'Email';
+
+            return res.status(409).json({ message: `${uniqueField} is already registered.` });
         }
 
         res.status(500).json({ message: 'Internal Server Error during registration.' });
     }
 };
 
+// ----------------------------------------------------------------------
+// SIGNIN CONTROLLER 
+// ----------------------------------------------------------------------
+
 exports.signinController = async (req, res) => {
-    // The role is extracted from the URL parameter set by the router
-    const role = req.params.role;
-    const { email, password, licenseNumber, adminKey, id, rememberMe } = req.body;
+    const role = req.params.role; 
+    // Removed adminKey from destructuring:
+    const { email, password, licenseNumber, id, rememberMe } = req.body; 
 
     if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required.' });
@@ -124,7 +172,7 @@ exports.signinController = async (req, res) => {
             return res.status(401).json({ message: 'Invalid password.' });
         }
 
-        // 3. Handle Role-Specific Credentials (e.g., license number verification)
+        // 3. Handle Role-Specific Credentials (Verification of License/AdminKey)
         const ProfileModel = PROFILE_MODELS[role];
         if (ProfileModel) {
             const profile = await ProfileModel.findById(authUser.roleId);
@@ -133,26 +181,37 @@ exports.signinController = async (req, res) => {
                 return res.status(404).json({ message: 'User profile not found.' });
             }
 
-            // Dietitian check
-            if (role === 'dietitian' && profile.licenseNumber !== licenseNumber) {
-                return res.status(401).json({ message: 'Invalid license number.' });
-            }
-            // Admin check
-            if (role === 'admin' && profile.adminKey !== adminKey) {
-                return res.status(401).json({ message: 'Invalid Admin Key.' });
-            }
-            // Organization/Corporate Partner ID check (using 'id' from frontend form which should match profile name/id field)
-            // Note: This assumes 'id' in the frontend maps to 'name' or a specific ID in the profile schema. 
-            // For this example, we'll check against the name if 'id' is provided.
-            if ((role === 'organization' || role === 'corporatepartner') && profile.name !== req.body.name) {
-                // Assuming 'name' field holds the organizational identifier
-                 return res.status(401).json({ message: 'Invalid Organization Name or ID.' });
+            // Role-specific validation for signin
+            switch (role) {
+                case 'dietitian':
+                    if (!licenseNumber || profile.licenseNumber !== licenseNumber) {
+                        return res.status(401).json({ message: 'Invalid license number.' });
+                    }
+                    break;
+                case 'admin':
+                    // **MODIFIED:** Removed adminKey check entirely, relying on email/password only
+                    // If secure ENV key verification is needed, you'd check ADMIN_SIGNIN_KEY here:
+                    /*
+                    if (!req.body.adminKey || ADMIN_SIGNIN_KEY !== req.body.adminKey) { 
+                        return res.status(401).json({ message: 'Invalid Admin Key.' });
+                    }
+                    */
+                    break;
+                case 'organization':
+                    if (!id || profile.licenseNumber !== id) {
+                        return res.status(401).json({ message: 'Invalid Organization ID/License Number.' });
+                    }
+                    break;
+                case 'corporatepartner':
+                    if (!id || profile.licenseNumber !== id) {
+                        return res.status(401).json({ message: 'Invalid Corporate Partner ID/License Number.' });
+                    }
+                    break;
             }
         }
 
         // 4. Generate JWT
-        // Set expiry based on 'rememberMe' flag for a persistent session
-        const expiresIn = rememberMe ? '7d' : '1h'; // 7 days vs 1 hour
+        const expiresIn = rememberMe ? '7d' : '1h'; 
         
         const token = jwt.sign(
             { userId: authUser._id, role: authUser.role, roleId: authUser.roleId },
