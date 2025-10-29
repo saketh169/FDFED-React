@@ -591,7 +591,7 @@ const Signup = () => {
           <div
             aria-live="polite"
             className={`p-3 mb-5 text-center text-base font-medium rounded-lg shadow-sm animate-slide-in w-full ${
-              message.includes('successful') || message.includes('Redirecting') ||  message.includes('Redirecting')
+              message.includes('successful') || message.includes('Redirecting') ||  message.includes('Registering')
                 ? 'text-green-800 bg-green-100 border border-green-300'
                 : 'text-red-800 bg-red-100 border border-red-300'
             }`}
