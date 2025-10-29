@@ -40,7 +40,7 @@ function ChatBotPage() {
   // Fetch top FAQs from backend
   const fetchTopFAQs = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/chatbot/top-faqs');
+      const response = await axios.get('/api/chatbot/top-faqs');
       if (response.data.success && response.data.faqs) {
         setFaqQuestions(response.data.faqs);
       }
@@ -128,7 +128,7 @@ function ChatBotPage() {
 
       // Call backend API - same pattern as signin/signup
       const userId = localStorage.getItem('userId') || null;
-      const response = await axios.post('http://localhost:5000/api/chatbot/message', {
+      const response = await axios.post('/api/chatbot/message', {
         message: messageText,
         sessionId: sessionId,
         userId: userId
