@@ -105,7 +105,7 @@ const CorporateHome = () => {
                 key={index}
                 className={`absolute inset-0 transition-opacity duration-700 ${currentAd === index ? 'opacity-100' : 'opacity-0'}`}
               >
-                <div className="w-full h-full bg-gradient-to-br from-[#1A4A40] to-[#27AE60] flex flex-col items-center justify-center text-white p-4">
+                <div className="w-full h-full bg-linear-to-br from-[#1A4A40] to-[#27AE60] flex flex-col items-center justify-center text-white p-4">
                   <span className="text-xl md:text-2xl font-semibold mb-2">{ad.title}</span>
                   <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-center max-w-3xl">{ad.text}</span>
                   <button 

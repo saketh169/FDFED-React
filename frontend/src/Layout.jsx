@@ -1,10 +1,10 @@
 import { Outlet } from 'react-router-dom';
 import { Routes, Route } from 'react-router-dom';
-import UserLayout from './Layouts/UserLayout';
-import AdminLayout from './Layouts/AdminLayout';
-import OrganizationLayout from './Layouts/OrganizationLayout';
-import CorporateLayout from './Layouts/CorporateLayout';
-import DietitianLayout from './Layouts/DietitianLayout';
+import UserLayout from './Routes/UserRoutes.jsx';
+import AdminLayout from './Routes/AdminRoutes.jsx';
+import OrganizationLayout from './Routes/OrganizationRoutes.jsx';
+import CorporateLayout from './Routes/CorporateRoutes.jsx';
+import DietitianLayout from './Routes/DietitianRoutes.jsx';
 
 export default function Layout() {
   return (

@@ -2,7 +2,7 @@ import React from 'react';
 
 function NutritionCard({ data }) {
   return (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-[#27AE60] p-4 rounded-r-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-linear-to-r from-green-50 to-emerald-50 border-l-4 border-[#27AE60] p-4 rounded-r-lg shadow-md hover:shadow-lg transition-shadow duration-300">
       <h4 className="font-bold text-[#1A4A40] text-base mb-2 flex items-center">
         <span className="mr-2">🍽️</span>
         {data.foodName}
