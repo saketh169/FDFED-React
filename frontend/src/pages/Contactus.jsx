@@ -1,26 +1,66 @@
-import React from 'react'
-import { useState } from 'react'
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as Yup from 'yup';
 
+// --- Validation Schema using Yup ---
+const contactSchema = Yup.object().shape({
+  name: Yup.string()
+    .required('Full Name is required.')
+    .min(3, 'Name must be at least 3 characters.'),
+  email: Yup.string()
+    .email('Invalid email address.')
+    .required('Email Address is required.'),
+  role: Yup.string()
+    .required('Please select your role.'),
+  query: Yup.string()
+    .required('A message is required.')
+    .min(10, 'Message must be at least 10 characters.'),
+});
 
 const ContactPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: '',
-    query: ''
-  })
-  const [submittedData, setSubmittedData] = useState(null)
+  const [submittedData, setSubmittedData] = useState(null);
 
-  const handleChange = e => {
-    const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
-  }
+  // --- React Hook Form Setup ---
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: yupResolver(contactSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      role: '',
+      query: '',
+    },
+  });
 
-  const handleSubmit = e => {
-    e.preventDefault()
-    setSubmittedData(formData)
-    setFormData({ name: '', email: '', role: '', query: '' })
-  }
+  // --- Submission Handler ---
+  const onSubmit = (data) => {
+    // Simulate API call for submission
+    // In a real application, you would make an axios.post here
+    
+    // Set submitted data for display
+    setSubmittedData(data);
+    
+    // Reset the form after submission
+    reset();
+    
+    // Optionally scroll to the submitted message
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Helper for input classes with error styling
+  const getInputClasses = (fieldName) => 
+    `w-full p-3 rounded-lg border transition-all ${
+      errors[fieldName]
+        ? 'border-red-500 focus:ring-red-500'
+        : 'border-gray-300 focus:ring-2 focus:ring-[#28B463] focus:border-transparent'
+    }`;
+    
+  const errorClasses = 'text-red-500 text-sm mt-1';
 
   return (
     <main className='flex-1 py-5 px-4 md:px-8 bg-gray-50'>
@@ -38,36 +78,41 @@ const ContactPage = () => {
           <h2 className='text-2xl font-bold text-[#2C3E50] mb-6 text-center'>
             Send Us a Message
           </h2>
-          <form onSubmit={handleSubmit} className='space-y-4'>
+          {/* RHF handleSubmit wrapper */}
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
             <div>
               <input
                 type='text'
                 name='name'
                 placeholder='Full Name'
-                value={formData.name}
-                onChange={handleChange}
-                className='w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#28B463] focus:border-transparent transition-all'
-                required
+                // RHF registration
+                {...register('name')} 
+                className={getInputClasses('name')}
               />
+              {errors.name && <p className={errorClasses}>{errors.name.message}</p>}
             </div>
+            
             <div>
               <input
                 type='email'
                 name='email'
                 placeholder='Email Address'
-                value={formData.email}
-                onChange={handleChange}
-                className='w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#28B463] focus:border-transparent transition-all'
-                required
+                // RHF registration
+                {...register('email')}
+                className={getInputClasses('email')}
               />
+              {errors.email && <p className={errorClasses}>{errors.email.message}</p>}
             </div>
+            
             <div>
               <select
                 name='role'
-                value={formData.role}
-                onChange={handleChange}
-                className='w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#28B463] focus:border-transparent transition-all text-gray-500'
-                required
+                // RHF registration
+                {...register('role')}
+                // Adjust text color dynamically based on RHF error
+                className={`${getInputClasses('role')} ${
+                  errors.role ? 'text-gray-900' : 'text-gray-500'
+                }`}
               >
                 <option value='' disabled>
                   Select Your Role
@@ -79,23 +124,27 @@ const ContactPage = () => {
                 </option>
                 <option value='Corporate Partner'>Corporate Partner</option>
               </select>
+              {errors.role && <p className={errorClasses}>{errors.role.message}</p>}
             </div>
+            
             <div>
               <textarea
                 name='query'
                 placeholder='Your Message'
                 rows='5'
-                value={formData.query}
-                onChange={handleChange}
-                className='w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#28B463] focus:border-transparent transition-all'
-                required
+                // RHF registration
+                {...register('query')}
+                className={getInputClasses('query')}
               ></textarea>
+              {errors.query && <p className={errorClasses}>{errors.query.message}</p>}
             </div>
+            
             <button
               type='submit'
-              className='w-full bg-[#28B463] text-white py-3 rounded-full font-semibold hover:bg-[#1E6F5C] transition-all duration-300'
+              disabled={isSubmitting}
+              className='w-full bg-[#28B463] text-white py-3 rounded-full font-semibold hover:bg-[#1E6F5C] transition-all duration-300 disabled:opacity-50'
             >
-              Send Message
+              {isSubmitting ? 'Sending...' : 'Send Message'}
             </button>
           </form>
         </div>
@@ -169,7 +218,7 @@ const ContactPage = () => {
       {submittedData && (
         <div className='max-w-6xl mx-auto mt-12 bg-white p-8 rounded-2xl shadow-lg border-t-4 border-[#28B463]'>
           <h2 className='text-2xl font-bold text-[#2C3E50] mb-6 text-center'>
-            Your Message Has Been Sent!
+            Your Message Has Been Sent! 🎉
           </h2>
           <div className='space-y-4 text-left text-gray-700'>
             <p className='border-b border-gray-200 pb-2'>
@@ -189,6 +238,7 @@ const ContactPage = () => {
               {submittedData.query}
             </p>
           </div>
+          <p className='mt-6 text-center text-gray-600'>We appreciate you reaching out and will respond soon!</p>
         </div>
       )}
 
@@ -201,14 +251,14 @@ const ContactPage = () => {
           src='https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3878.674466059435!2d80.0240734745556!3d13.55555050180794!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a4d773f1e0f8721%3A0xadb0842ffc2719e4!2sIndian%20Institute%20of%20Information%20Technology%2C%20Sri%20City%2C%20Chittoor!5e0!3m2!1sen!2sin!4v1760941438387!5m2!1sen!2sin'
           width='100%'
           height='450'
-          allowfullscreen=''
+          allowFullScreen=''
           loading='lazy'
-          referrerpolicy='no-referrer-when-downgrade'
+          referrerPolicy='no-referrer-when-downgrade'
           className='rounded-b-2xl'
         ></iframe>
       </div>
     </main>
-  )
-}
+  );
+};
 
-export default ContactPage
+export default ContactPage;

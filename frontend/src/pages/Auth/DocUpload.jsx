@@ -1,8 +1,118 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as Yup from 'yup';
 
-// SelectField Component
-const SelectField = ({ id, label, options, value, onChange, required, error, colSpan }) => (
+// --- Color constants ---
+const primaryGreen = '#1E6F5C';
+const lightGreen = '#6a994e';
+
+// --- Helper Functions for RHF/Yup Validation ---
+
+/**
+ * Creates a Yup schema mixin for file validation (size, type).
+ * Can be made required/optional based on config.
+ */
+const fileValidation = (fieldConfig) => {
+  const { label, accept, maxSize, required } = fieldConfig;
+  let schema = Yup.mixed();
+
+  if (required) {
+    schema = schema.required(`Please upload your ${label.toLowerCase()}.`);
+  } else {
+    // Allows optional fields to be null/undefined/empty
+    schema = schema.nullable().notRequired();
+  }
+
+  // --- Core Validation Tests ---
+  schema = schema
+    .test(
+      'is-file-object',
+      `Please upload your ${label.toLowerCase()}.`,
+      (value) => {
+        // If not required and no value, pass. Otherwise, if value exists, it must be a File object or null/undefined
+        if (!required && !value) return true;
+        return value instanceof File || value === null || value === undefined;
+      }
+    )
+    .test(
+      'file-size',
+      `${label} file size exceeds ${(maxSize / (1024 * 1024)).toFixed(0)} MB.`,
+      (value) => {
+        if (!value) return true; // Checked by previous tests
+        return value.size <= maxSize;
+      }
+    )
+    .test(
+      'file-type',
+      `Invalid file type. Allowed: ${accept.replace(/\./g, ' ')}.`,
+      (value) => {
+        if (!value) return true;
+        const ext = '.' + value.name.split('.').pop()?.toLowerCase();
+        const allowed = accept.split(',').map((a) => a.trim().toLowerCase());
+        return allowed.includes(ext);
+      }
+    );
+
+  return schema;
+};
+
+/**
+ * Builds the Yup validation schema dynamically based on the role and form configuration.
+ */
+const buildDocUploadValidationSchema = (role, formConfig) => {
+  const config = formConfig[role] || [];
+  let schemaFields = {};
+
+  config.forEach((field) => {
+    if (field.type === 'select') {
+      let selectSchema = Yup.string();
+
+      if (field.required) {
+        selectSchema = selectSchema.required(`Please select your ${field.label.toLowerCase()}.`);
+      } else {
+        selectSchema = selectSchema.nullable().notRequired();
+      }
+
+      schemaFields[field.id] = selectSchema;
+    } else if (field.type === 'file') {
+      if (field.dependsOn) {
+        // Handle conditionally required file fields
+        const fileSchema = fileValidation({ ...field, required: false }).when(
+          field.dependsOn,
+          {
+            is: (val) => val && val !== '', // If the select field has a value
+            then: () => fileValidation(field), // Make it required
+            otherwise: () => fileValidation({ ...field, required: false }), // Keep it optional
+          }
+        );
+        schemaFields[field.id] = fileSchema;
+      } else {
+        // Handle always required/optional independent file fields
+        schemaFields[field.id] = fileValidation(field);
+      }
+    }
+  });
+
+  return Yup.object().shape(schemaFields);
+};
+
+// --- Initial Form Values Based on Role ---
+const getInitialValues = (role, formConfig) => {
+  const config = formConfig[role] || [];
+  return config.reduce(
+    (acc, field) => ({
+      ...acc,
+      [field.id]: field.type === 'file' ? null : '', // null for file objects, empty string for selects
+    }),
+    {}
+  );
+};
+
+
+// SelectField Component (Modified for RHF register and Tailwind fix)
+const SelectField = ({ id, label, options, required, error, colSpan, register }) => (
   <div className={`relative animate-slide-in ${colSpan ? 'lg:col-span-2' : ''}`}>
     <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
       {label}
@@ -11,12 +121,12 @@ const SelectField = ({ id, label, options, value, onChange, required, error, col
     <div className="relative">
       <select
         id={id}
-        value={value}
-        onChange={onChange}
-        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6a994e] transition-all duration-300 appearance-none bg-white shadow-sm hover:shadow-md"
+        // FIX: Ensuring Tailwind dynamic color references use bracket notation
+        className={`w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[${lightGreen}] transition-all duration-300 appearance-none bg-white shadow-sm hover:shadow-md ${error ? 'border-red-500' : ''}`}
         required={required}
         aria-invalid={!!error}
         aria-describedby={`${id}-error`}
+        {...register(id)} // RHF registration
       >
         {options.map((option) => (
           <option
@@ -36,12 +146,12 @@ const SelectField = ({ id, label, options, value, onChange, required, error, col
       </span>
     </div>
     {error && (
-      <p id={`${id}-error`} className="text-red-500 text-sm mt-2">{error}</p>
+      <p id={`${id}-error`} className="text-red-500 text-sm mt-2">{error.message}</p>
     )}
   </div>
 );
 
-// FileUploadField Component (with instant size/type error)
+// FileUploadField Component
 const FileUploadField = ({
   id,
   label,
@@ -49,18 +159,19 @@ const FileUploadField = ({
   maxSize,
   required,
   disabled,
-  error, // from main validation (required)
-  onChange,
-  file,
+  error,
   colSpan,
+  // RHF Controller props
+  field: { onChange, value }, // value is the File object or null
 }) => {
   const fileInputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [localError, setLocalError] = useState(''); // size or type error
 
+  const file = value;
+
   const clearLocalError = () => {
     setLocalError('');
-    onChange('error', ''); // clear any previous global error
   };
 
   const validateFile = (f) => {
@@ -88,10 +199,12 @@ const FileUploadField = ({
     const f = e.target.files[0];
     clearLocalError();
     if (f && !validateFile(f)) {
-      onChange(id, null);
+      onChange(null); // Set RHF value to null on local error
+      // FIX: Clear the file input element value when a local error occurs
+      if (fileInputRef.current) fileInputRef.current.value = ''; 
       return;
     }
-    onChange(id, f);
+    onChange(f || null); // Pass File object or null to RHF
   };
 
   const handleDrop = (e) => {
@@ -101,10 +214,12 @@ const FileUploadField = ({
     const f = e.dataTransfer.files[0];
     clearLocalError();
     if (f && !validateFile(f)) {
-      onChange(id, null);
+      onChange(null);
+      // FIX: Clear the file input element value when a local error occurs
+      if (fileInputRef.current) fileInputRef.current.value = ''; 
       return;
     }
-    onChange(id, f);
+    onChange(f || null);
   };
 
   const handleDragOver = (e) => {
@@ -118,9 +233,9 @@ const FileUploadField = ({
   };
 
   const handleRemove = () => {
-    onChange(id, null);
+    onChange(null); // Clear RHF value
     clearLocalError();
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = ''; // Reset file input element
   };
 
   const getFileIcon = (fileName) => {
@@ -208,14 +323,14 @@ const FileUploadField = ({
       </div>
       {(localError || error) && (
         <p id={`${id}-error`} className="text-red-500 text-sm mt-2">
-          {localError || error}
+          {localError || (error ? error.message : '')}
         </p>
       )}
     </div>
   );
 };
 
-// RoleSelector Component
+// RoleSelector Component (Unchanged)
 const RoleSelector = ({ validRoles, navigate }) => (
   <div className="text-center p-4 sm:p-5 animate-slide-in">
     <h3 className="text-xl text-gray-700 font-semibold mb-4">Please select a role to upload documents.</h3>
@@ -233,8 +348,8 @@ const RoleSelector = ({ validRoles, navigate }) => (
   </div>
 );
 
-// FormFields Component
-const FormFields = ({ role, formConfig, formData, errors, handleInputChange }) => (
+// FormFields Component (Unchanged logic)
+const FormFields = ({ role, formConfig, errors, control, register, watch }) => (
   <div className="grid gap-4 lg:grid-cols-2 w-full max-w-7xl mx-auto">
     {formConfig[role].map((field) => (
       field.type === 'select' ? (
@@ -243,38 +358,44 @@ const FormFields = ({ role, formConfig, formData, errors, handleInputChange }) =
           id={field.id}
           label={field.label}
           options={field.options}
-          value={formData[field.id] || ''}
-          onChange={(e) => handleInputChange(field.id, e.target.value)}
           required={field.required}
           error={errors[field.id]}
           colSpan={field.colSpan}
+          register={register} // Pass RHF register
         />
       ) : (
-        <FileUploadField
+        <Controller // Wrap FileUploadField in Controller
           key={field.id}
-          id={field.id}
-          label={field.label}
-          accept={field.accept}
-          maxSize={field.maxSize}
-          required={field.required}
-          disabled={field.dependsOn ? !formData[field.dependsOn] : field.disabled}
-          error={errors[field.id]}
-          onChange={(id, value) => handleInputChange(id, value)}
-          file={formData[field.id]}
-          colSpan={field.colSpan}
+          name={field.id}
+          control={control}
+          render={({ field }) => (
+            <FileUploadField
+              id={field.id}
+              label={field.label}
+              accept={field.accept}
+              maxSize={field.maxSize}
+              required={field.required}
+              // Dependency logic using RHF watch
+              disabled={field.dependsOn ? !watch(field.dependsOn) : field.disabled}
+              error={errors[field.id]}
+              colSpan={field.colSpan}
+              field={field} // Pass the RHF field object
+            />
+          )}
         />
       )
     ))}
   </div>
 );
 
-// FormActions Component (always enabled)
+// FormActions Component (Unchanged)
 const FormActions = ({ isLoading }) => (
   <div>
     <button
       type="submit"
       disabled={isLoading}
-      className="w-full bg-[#1E6F5C] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-all duration-300 shadow-md hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+      // FIX: Ensuring Tailwind dynamic color references use bracket notation
+      className={`w-full bg-[${primaryGreen}] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-all duration-300 shadow-md hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center`}
     >
       {isLoading ? (
         <>
@@ -291,7 +412,7 @@ const FormActions = ({ isLoading }) => (
   </div>
 );
 
-// FormContainer Component
+// FormContainer Component (Unchanged)
 const FormContainer = ({ role, children, navigate }) => (
   <section className="flex items-center justify-center bg-gray-100 p-2 sm:p-3 min-h-screen">
     <div className="w-full max-w-7xl p-4 sm:p-5 mx-auto rounded-3xl shadow-2xl bg-white relative animate-fade-in">
@@ -310,13 +431,11 @@ const FormContainer = ({ role, children, navigate }) => (
   </section>
 );
 
-// Main DocUpload Component
+// Main DocUpload Component (Unchanged logic)
 const DocUpload = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [role, setRole] = useState('');
-  const [formData, setFormData] = useState({});
-  const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -371,75 +490,35 @@ const DocUpload = () => {
     []
   );
 
+  // **RHF Setup**
+  const validationSchema = useMemo(() => buildDocUploadValidationSchema(role, formConfig), [role, formConfig]);
+  
+  const { 
+    handleSubmit, 
+    control, 
+    register, 
+    watch, 
+    reset, 
+    formState: { errors } 
+  } = useForm({
+    resolver: yupResolver(validationSchema),
+    defaultValues: getInitialValues(role, formConfig),
+    mode: 'onBlur',
+  });
+
+
   useEffect(() => {
     const roleFromUrl = searchParams.get('role');
     if (validRoles.includes(roleFromUrl)) {
       setRole(roleFromUrl);
-      const initialData = formConfig[roleFromUrl].reduce(
-        (acc, field) => ({
-          ...acc,
-          [field.id]: field.type === 'file' ? null : '',
-        }),
-        {}
-      );
-      setFormData(initialData);
-      setErrors({});
+      reset(getInitialValues(roleFromUrl, formConfig)); // Reset form values and RHF state
       setMessage('');
     } else {
       setRole('');
-      setFormData({});
-      setErrors({});
+      reset({});
       setMessage('Invalid role. Please select a valid role.');
     }
-  }, [searchParams, formConfig, validRoles]);
-
-  const handleInputChange = (id, value) => {
-    setFormData((prev) => ({ ...prev, [id]: value }));
-    setErrors((prev) => ({ ...prev, [id]: '' }));
-
-    const field = formConfig[role]?.find((f) => f.id === id);
-    if (field?.type === 'select' && value) {
-      const dependentField = formConfig[role]?.find((f) => f.dependsOn === id);
-      if (dependentField) {
-        setFormData((prev) => ({ ...prev, [dependentField.id]: prev[dependentField.id] || null }));
-        setErrors((prev) => ({ ...prev, [dependentField.id]: '' }));
-      }
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    formConfig[role]?.forEach((field) => {
-      const value = formData[field.id];
-
-      // Required fields
-      if (field.required && !value) {
-        const msg = field.type === 'select'
-          ? `Please select your ${field.label.toLowerCase()}.`
-          : `Please upload your ${field.label.toLowerCase()}.`;
-        newErrors[field.id] = msg;
-      }
-
-      // File type validation — only if file is uploaded
-      if (field.type === 'file' && value instanceof File) {
-        const file = value;
-        const allowed = field.accept.split(',').map(ext => ext.trim().toLowerCase());
-        const ext = '.' + file.name.split('.').pop().toLowerCase();
-        if (!allowed.includes(ext)) {
-          newErrors[field.id] = `Invalid file type. Allowed: ${field.accept.replace(/\./g, '')}.`;
-        }
-      }
-
-      // Dependent required fields
-      if (field.dependsOn && formData[field.dependsOn] && field.required && !value) {
-        newErrors[field.id] = `Please upload your ${field.label.toLowerCase()}.`;
-      }
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  }, [searchParams, formConfig, validRoles, reset]);
 
   const roleRoutes = {
     dietitian: '/dietitian/home',
@@ -447,30 +526,27 @@ const DocUpload = () => {
     corporatepartner: '/corporatepartner/home',
   };
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setErrors({});
+  // RHF-powered submit handler
+  const handleFormSubmit = async (data) => {
     setMessage('');
-
+    
     if (!roleRoutes[role]) {
       setMessage('Invalid role selected.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    if (!validateForm()) {
-      setMessage('Submission failed – please fill required fields.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
     setIsLoading(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
       const formDataToSend = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value instanceof File) formDataToSend.append(key, value);
-        else if (value) formDataToSend.append(key, value);
+      Object.entries(data).forEach(([key, value]) => {
+        // Only append non-null/non-empty values
+        if (value !== null && value !== '') {
+          // File objects (including null ones from initial state) are handled by Yup and will be File instances if uploaded
+          formDataToSend.append(key, value);
+        }
       });
 
       // SIMULATE API CALL
@@ -508,7 +584,7 @@ const DocUpload = () => {
       {!role || !formConfig[role] ? (
         <RoleSelector validRoles={validRoles} navigate={navigate} />
       ) : (
-        <form id={`${role}UploadForm`} onSubmit={handleFormSubmit} className="needs-validation" noValidate>
+        <form id={`${role}UploadForm`} onSubmit={handleSubmit(handleFormSubmit)} className="needs-validation" noValidate>
           {/* Global message */}
           {message && (
             <div
@@ -527,9 +603,10 @@ const DocUpload = () => {
           <FormFields
             role={role}
             formConfig={formConfig}
-            formData={formData}
             errors={errors}
-            handleInputChange={handleInputChange}
+            control={control}
+            register={register}
+            watch={watch}
           />
           <div className="mt-6">
             <FormActions isLoading={isLoading} />

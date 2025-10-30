@@ -168,9 +168,9 @@ function ChatBotPage() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-gradient-to-b from-green-50 to-green-100 rounded-2xl shadow-2xl flex flex-col h-[90vh] border border-green-200 overflow-hidden">
+    <div className="w-full max-w-5xl mx-auto bg-linear-to-b from-green-50 to-green-100 rounded-2xl shadow-2xl flex flex-col h-[90vh] border border-green-200 overflow-hidden">
       {/* Header - Fixed */}
-      <div className="bg-white rounded-t-2xl px-6 py-4 shadow-md border-b-4 border-[#27AE60] flex-shrink-0">
+      <div className="bg-white rounded-t-2xl px-6 py-4 shadow-md border-b-4 border-[#27AE60] shrink-0">
         <div className="flex justify-between items-center">
           <ChatBotHeader />
           {/* Feature 1: Clear Chat Button */}
@@ -188,7 +188,7 @@ function ChatBotPage() {
       {/* Messages Area - Scrollable */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 p-6 overflow-y-auto bg-gradient-to-b from-white to-green-50" 
+        className="flex-1 p-6 overflow-y-auto bg-linear-to-b from-white to-green-50" 
         style={{ scrollBehavior: 'smooth' }}
       >
         <MessageList messages={messages} onRetry={handleRetry} />
@@ -208,7 +208,7 @@ function ChatBotPage() {
         
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 px-4 py-3 rounded-lg mb-2 max-w-xs md:max-w-md shadow-md">
+            <div className="bg-linear-to-r from-gray-100 to-gray-200 text-gray-700 px-4 py-3 rounded-lg mb-2 max-w-xs md:max-w-md shadow-md">
               <div className="flex items-center space-x-2">
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-[#27AE60] rounded-full animate-bounce"></div>
@@ -225,7 +225,7 @@ function ChatBotPage() {
 
       {/* Frequently Asked Questions Section - Fixed at Bottom */}
       {/* TODO: Fetch from backend API endpoint - Top 4 from Database */}
-      <div className="bg-gradient-to-r from-slate-50 to-green-50 px-6 py-3 border-t-2 border-gray-200 flex-shrink-0">
+      <div className="bg-linear-to-r from-slate-50 to-green-50 px-6 py-3 border-t-2 border-gray-200 shrink-0">
         <h2 className="text-sm font-bold text-[#1A4A40] mb-2 flex items-center">
           <span className="mr-2">💬</span>
           Quick Questions
@@ -244,7 +244,7 @@ function ChatBotPage() {
       </div>
 
       {/* Input Area - Fixed at Bottom */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         <InputArea onSendMessage={handleSendMessage} />
       </div>
     </div>
