@@ -81,7 +81,7 @@ const DietitianHome = () => {
               Welcome, <span className="text-[#27AE60]">Dietitian!</span>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
-              **Expand Your Reach and Streamline Your Practice.**
+               "Expand Your Reach and Streamline Your Practice."
             </p>
             <p className="text-lg text-gray-600 max-w-2xl mb-8">
               NutriConnect provides you with a comprehensive platform to manage your client portfolio, schedule appointments easily, and deliver personalized nutrition plans with advanced tools.
@@ -126,7 +126,7 @@ const DietitianHome = () => {
                 key={index}
                 className={`absolute inset-0 transition-opacity duration-700 ${currentAd === index ? 'opacity-100' : 'opacity-0'}`}
               >
-                <div className="w-full h-full bg-lin-to-br from-[#1A4A40] to-[#27AE60] flex flex-col items-center justify-center text-white p-4">
+                <div className="w-full h-full bg-linear-to-br from-[#27AE60] to-[#1A4A40]  flex flex-col items-center justify-center text-white p-4">
                   <span className="text-xl md:text-2xl font-semibold mb-2">{ad.title}</span>
                   <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-center max-w-3xl">{ad.text}</span>
                   <button 

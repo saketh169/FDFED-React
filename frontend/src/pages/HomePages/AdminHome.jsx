@@ -51,7 +51,7 @@ const AdminHome = () => {
               Welcome,  <div className="text-[#27AE60]"> Admin Team!</div>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
-              **The Central Command for NutriConnect Operations.**
+               "The Central Command for NutriConnect Operations."
             </p>
             <p className="text-lg text-gray-700 max-w-2xl mb-8">
               Your role is to maintain the security, integrity, and operational efficiency of the entire platform. Utilize the dashboard tools for deep analytics, user governance, and real-time activity monitoring.

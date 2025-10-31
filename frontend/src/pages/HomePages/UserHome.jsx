@@ -70,7 +70,7 @@ const UserHome = () => {
               Welcome,  <span className="text-[#27AE60]">User!</span>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
-              **Take Control of Your Wellness Journey.**
+              "Take Control of Your Wellness Journey."
             </p>
             <p className="text-lg text-gray-600 max-w-2xl mb-8">
               We provide personalized nutrition plans, direct access to certified dietitians via video and chat, and powerful tracking tools to help you reach your specific health and fitness goals faster.
