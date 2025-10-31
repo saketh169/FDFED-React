@@ -2,24 +2,75 @@ import React from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import NavHeader from '../Navbar/NavHeader';
 
-// Font Awesome CDN (can be moved to index.html if preferred)
-const FontAwesomeLink = () => (
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-    crossOrigin="anonymous"
-    referrerPolicy="no-referrer"
-  />
+// Utility function to get the base role path (e.g., '/user', '/dietitian', or '/')
+const getBasePath = (currentPath) => {
+    if (currentPath.startsWith('/admin')) return '/admin';
+    if (currentPath.startsWith('/organization')) return '/organization';
+    if (currentPath.startsWith('/corporatepartner')) return '/corporatepartner';
+    if (currentPath.startsWith('/dietitian')) return '/dietitian';
+    if (currentPath.startsWith('/user')) return '/user';
+    return ''; // Base path for non-logged-in users
+};
+
+// Font Awesome: inject into document.head to avoid rendering <link> in body (SSR note below)
+const FontAwesomeLink = () => {
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return; // SSR-safe
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+    link.integrity = 'sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==';
+    link.crossOrigin = 'anonymous';
+    link.referrerPolicy = 'no-referrer';
+
+    document.head.appendChild(link);
+    return () => {
+      if (link && link.parentNode) link.parentNode.removeChild(link);
+    };
+  }, []);
+  return null;
+};
+
+// Floating Contact Button component (positioned top-right just below header)
+// **MODIFIED to accept contactPath**
+const FloatingContactButton = ({ handleScrollToTop, contactPath }) => (
+  <Link
+    // **USING dynamic contactPath**
+    to={contactPath} 
+    onClick={handleScrollToTop}
+    // positioned 100px below top of viewport; brighter green background, slightly darker on hover
+    className="fixed hidden md:flex items-center right-4 top-[100px] bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-50 group cursor-pointer"
+    aria-label="Contact Us"
+    title="Contact Us"
+  >
+    <i className="fas fa-headset text-2xl"></i>
+    <span className="ml-3 text-lg font-semibold whitespace-nowrap hidden lg:inline-block">Contact Us</span>
+  </Link>
 );
 
 const Header = () => {
   const location = useLocation();
   const currentPath = location.pathname;
-
   const handleScrollToTop = () => window.scrollTo(0, 0);
 
-  // --- NEW: Multi-Role Profile Path Logic ---
+  // Check if the user is in ANY role-specific area
+  const isLoggedInArea = 
+    currentPath.startsWith('/user') || 
+    currentPath.startsWith('/dietitian') ||
+    currentPath.startsWith('/admin') ||
+    currentPath.startsWith('/organization') ||
+    currentPath.startsWith('/corporatepartner');
+
+  // **NEW LOGIC: Determine the correct Contact Us path**
+  const getContactPath = () => {
+    const basePath = getBasePath(currentPath);
+    // If a role-specific base path exists, append '/contact-us' to it.
+    // Otherwise, use the general '/contact-us' path.
+    return basePath ? `${basePath}/contact-us` : '/contact-us';
+  };
+  // **END getContactPath**
+
+  // --- Multi-Role Profile Path Logic ---
   const getProfilePath = () => {
     if (currentPath.startsWith('/admin')) {
       return '/admin/profile';
@@ -42,14 +93,8 @@ const Header = () => {
 
   // --- Action Buttons Renderer ---
   const renderActionButtons = (isMobile = false) => {
-    // Check if the user is in ANY role-specific area (admin, org, corp, dietitian, user)
-    const isLoggedInArea = 
-      currentPath.startsWith('/user') || 
-      currentPath.startsWith('/dietitian') ||
-      currentPath.startsWith('/admin') ||
-      currentPath.startsWith('/organization') ||
-      currentPath.startsWith('/corporatepartner');
-
+    const contactPath = getContactPath(); // Get the correct contact path
+    
     const contactUsClass = `bg-[#28B463] text-white ${isMobile ? 'w-28' : 'px-5'} py-2 rounded-full font-semibold hover:bg-[#1E6F5C] transition-all duration-300 cursor-pointer text-center`;
     const outlineButtonClass = `bg-transparent border border-[#28B463] text-[#28B463] ${isMobile ? 'w-28' : 'px-5'} py-2 rounded-full font-semibold hover:bg-[#28B463] hover:text-white transition-all duration-300 cursor-pointer text-center`;
 
@@ -72,7 +117,7 @@ const Header = () => {
           </NavLink>
 
           <Link
-            to="/logout"
+            to="/"
             onClick={() => isMobile && handleScrollToTop()}
             className={`${iconButtonBaseClass} bg-[#28B463] text-white hover:bg-[#1E6F5C]`}
             aria-label="Log Out"
@@ -95,7 +140,8 @@ const Header = () => {
           Log In
         </NavLink>
         <Link
-          to="/contact-us"
+          // **UPDATED link to use dynamic contactPath**
+          to={contactPath}
           onClick={handleScrollToTop}
           className={contactUsClass}
         >
@@ -106,10 +152,11 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm py-4 px-4 md:px-8 lg:px-16 sticky top-0 z-50 border-b-2 border-[#28B463]">
-      <FontAwesomeLink />
+    <>
+      <header className="bg-white shadow-sm py-4 px-4 md:px-8 lg:px-16 sticky top-0 z-50 border-b-2 border-[#28B463]">
+        <FontAwesomeLink />
 
-      <div className="max-w-7xl mx-auto -mr-10 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto -mr-10 flex items-center justify-between">
         {/* Logo */}
         <NavLink
           to="/"
@@ -131,7 +178,17 @@ const Header = () => {
           handleScrollToTop={handleScrollToTop}
         />
       </div>
-    </header>
+      </header>
+
+      {/* Show floating Contact Us button for role-specific pages (top-right below header) */}
+      {isLoggedInArea && ( // Using isLoggedInArea is more semantically accurate for this check
+        <FloatingContactButton 
+          handleScrollToTop={handleScrollToTop} 
+          // **PASSING the dynamic contact path to the FloatingContactButton**
+          contactPath={getContactPath()} 
+        />
+      )}
+    </>
   );
 };
 

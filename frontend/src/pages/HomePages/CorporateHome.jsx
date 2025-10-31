@@ -60,7 +60,7 @@ const CorporateHome = () => {
              Welcome, <div className="text-[#27AE60]">Corporate Partner!</div>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
-              **Drive Scalable Wellness Solutions and Maximize ROI.**
+                "Drive Scalable Wellness Solutions and Maximize ROI."
             </p>
             <p className="text-lg text-gray-700 max-w-2xl mb-8">
               Seamlessly enable large user groups to access premium nutrition services. Utilize our dedicated interface to manage licenses, track wellness ROI, and generate scaled commissions.

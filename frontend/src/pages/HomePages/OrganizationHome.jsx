@@ -51,7 +51,7 @@ const OrganizationHome = () => {
               Welcome, <div className="text-[#27AE60]">Organization Team!</div>
             </h1>
             <p className="text-xl font-medium text-gray-700 max-w-2xl mb-4">
-              **Ensuring Integrity and Trust Across NutriConnect.**
+              "Ensuring Integrity and Trust Across NutriConnect."
             </p>
             <p className="text-lg text-gray-700 max-w-2xl mb-8">
               Your role is crucial: maintaining a trusted and professional network. Review credentials, verify partnerships, and govern content standards to ensure the highest level of integrity across the platform's professional community.
