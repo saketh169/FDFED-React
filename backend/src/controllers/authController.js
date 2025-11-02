@@ -104,7 +104,7 @@ exports.signupController = async (req, res) => {
         const token = jwt.sign(
             { userId: authUser._id, role: authUser.role, roleId: authUser.roleId },
             JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '1d' }
         );
 
         const registeredName = profile.name || 'New Member';
@@ -112,7 +112,8 @@ exports.signupController = async (req, res) => {
         return res.status(201).json({ 
             message: 'Registration successful! Proceed to the next step.',
             name: registeredName,
-            token 
+            token,
+            roleId: profile._id // Include roleId for document upload
         });
 
     } catch (error) {
@@ -217,5 +218,79 @@ exports.signinController = async (req, res) => {
     } catch (error) {
         console.error(`Error during ${role} signin:`, error);
         res.status(500).json({ message: 'Internal Server Error during login.' });
+    }
+};
+
+// ----------------------------------------------------------------------
+// DOCUMENT UPLOAD CONTROLLER
+// ----------------------------------------------------------------------
+
+exports.docUploadController = async (req, res) => {
+    try {
+        const { role } = req.params;
+        const userId = req.user?.roleId || req.body.userId; // From token or request
+
+        if (!role || !userId) {
+            return res.status(400).json({ 
+                message: 'Role and User ID are required.' 
+            });
+        }
+
+        const ProfileModel = PROFILE_MODELS[role];
+        if (!ProfileModel) {
+            return res.status(400).json({ 
+                message: 'Invalid role specified.' 
+            });
+        }
+
+        // Find the user profile
+        const userProfile = await ProfileModel.findById(userId);
+        if (!userProfile) {
+            return res.status(404).json({ 
+                message: 'User profile not found.' 
+            });
+        }
+
+        // Create document object from uploaded files with buffers
+        const documents = {};
+        
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                // Store buffer data directly in MongoDB
+                documents[file.fieldname] = {
+                    filename: file.originalname,
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    data: file.buffer,  // Store actual file buffer
+                    uploadedAt: new Date()
+                };
+            });
+        }
+
+        // Update user profile with documents
+        userProfile.documents = {
+            ...userProfile.documents,
+            ...documents
+        };
+        userProfile.documentUploadStatus = 'pending'; // Can be 'pending', 'verified', 'rejected'
+        userProfile.lastDocumentUpdate = new Date();
+
+        await userProfile.save();
+
+        res.status(200).json({
+            message: 'Documents uploaded successfully!',
+            data: {
+                userId,
+                role,
+                documents: Object.keys(documents),
+                uploadedAt: new Date()
+            }
+        });
+
+    } catch (error) {
+        console.error('Document Upload Error:', error);
+        res.status(500).json({ 
+            message: 'Error uploading documents. Please try again.' 
+        });
     }
 };

@@ -62,7 +62,7 @@ function MessageBubble({ message }) {
               const boldItem = cleanItem.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>');
               return (
                 <li key={i} className="text-sm leading-relaxed flex items-start">
-                  <span className="text-[#27AE60] mr-2 font-bold flex-shrink-0">✓</span>
+                  <span className="text-[#27AE60] mr-2 font-bold shrink-0">✓</span>
                   <span dangerouslySetInnerHTML={{ __html: boldItem }} />
                 </li>
               );

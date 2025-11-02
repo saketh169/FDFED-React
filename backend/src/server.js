@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./utils/db'); 
 const authRoutes = require('./routes/authRoutes');
+const profileRoutes = require('./routes/profileRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 
 // Load environment variables from .env file
@@ -23,6 +24,9 @@ app.use(express.json());
 // --- API Routes ---
 // Auth routes mounted at '/api' for signup and signin
 app.use('/api', authRoutes);
+
+// Profile routes mounted at '/api' for profile image operations
+app.use('/api', profileRoutes);
 
 // Chatbot routes mounted at '/api/chatbot'
 app.use('/api/chatbot', chatbotRoutes);

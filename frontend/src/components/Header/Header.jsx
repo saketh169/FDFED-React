@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NavHeader from '../Navbar/NavHeader';
 
 // Utility function to get the base role path (e.g., '/user', '/dietitian', or '/')
@@ -38,8 +38,8 @@ const FloatingContactButton = ({ handleScrollToTop, contactPath }) => (
     // **USING dynamic contactPath**
     to={contactPath} 
     onClick={handleScrollToTop}
-    // positioned 100px below top of viewport; brighter green background, slightly darker on hover
-    className="fixed hidden md:flex items-center right-4 top-[100px] bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-50 group cursor-pointer"
+    // positioned 180px below top of viewport; brighter green background, slightly darker on hover
+    className="fixed hidden md:flex items-center right-4 top-30 bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-50 group cursor-pointer"
     aria-label="Contact Us"
     title="Contact Us"
   >
@@ -50,7 +50,9 @@ const FloatingContactButton = ({ handleScrollToTop, contactPath }) => (
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
+  const [profileImage, setProfileImage] = React.useState(null);
   const handleScrollToTop = () => window.scrollTo(0, 0);
 
   // Check if the user is in ANY role-specific area
@@ -60,6 +62,48 @@ const Header = () => {
     currentPath.startsWith('/admin') ||
     currentPath.startsWith('/organization') ||
     currentPath.startsWith('/corporatepartner');
+
+  // Determine which GET endpoint to use based on current path
+  const getProfileImageEndpoint = React.useCallback(() => {
+    if (currentPath.startsWith('/admin')) return '/api/getadmin';
+    if (currentPath.startsWith('/organization')) return '/api/getorganization';
+    if (currentPath.startsWith('/corporatepartner')) return '/api/getcorporatepartner';
+    if (currentPath.startsWith('/dietitian')) return '/api/getdietitian';
+    if (currentPath.startsWith('/user')) return '/api/getuser';
+    return null;
+  }, [currentPath]);
+
+  // Fetch profile image from backend using GET route
+  React.useEffect(() => {
+    if (isLoggedInArea) {
+      const fetchProfileImage = async () => {
+        try {
+          const token = localStorage.getItem('authToken');
+          if (!token) return;
+
+          const endpoint = getProfileImageEndpoint();
+          if (!endpoint) return;
+
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          const data = await response.json();
+          if (data.success && data.profileImage) {
+            setProfileImage(data.profileImage);
+            localStorage.setItem('profileImage', data.profileImage);
+          }
+        } catch (error) {
+          console.error('Error fetching profile image:', error);
+        }
+      };
+
+      fetchProfileImage();
+    }
+  }, [isLoggedInArea, getProfileImageEndpoint]);
 
   // **NEW LOGIC: Determine the correct Contact Us path**
   const getContactPath = () => {
@@ -91,6 +135,23 @@ const Header = () => {
   };
   // --- END getProfilePath ---
 
+  // --- Logout Handler ---
+  const handleLogout = () => {
+    console.log('[Header] Logging out user...');
+    
+    // Remove all user data from localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('profileImage');
+    localStorage.removeItem('userId');
+    
+    console.log('[Header] localStorage cleared');
+    console.log('[Header] Redirecting to home...');
+    
+    // Redirect to home
+    navigate('/');
+  };
+  // --- END Logout Handler ---
+
   // --- Action Buttons Renderer ---
   const renderActionButtons = (isMobile = false) => {
     const contactPath = getContactPath(); // Get the correct contact path
@@ -105,33 +166,44 @@ const Header = () => {
 
       // If in any role area, show Profile and Logout buttons
       return (
-        <>
+        
+        <div className="flex space-x-3 items-center -mr-20">
           <NavLink
             to={profileLink}
             onClick={() => isMobile && handleScrollToTop()}
-            className={`${iconButtonBaseClass} border border-[#28B463] text-[#28B463] hover:bg-[#28B463] hover:text-white`}
+            className={`${iconButtonBaseClass} border border-[#28B463] text-[#28B463] hover:bg-[#28B463] hover:text-white overflow-visible`}
             aria-label="Profile"
           >
-            <i className="fas fa-user-circle text-3xl"></i>
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                className="w-10 h-10 rounded-full object-cover"
+                onError={(e) => e.currentTarget.style.display = 'none'}
+              />
+            ) : (
+              <i className="fas fa-user-circle text-3xl"></i>
+            )}
             <span className={tooltipTextClass}>Profile</span>
           </NavLink>
 
-          <Link
-            to="/"
-            onClick={() => isMobile && handleScrollToTop()}
+          <button
+            onClick={handleLogout}
             className={`${iconButtonBaseClass} bg-[#28B463] text-white hover:bg-[#1E6F5C]`}
             aria-label="Log Out"
           >
             <i className="fas fa-sign-out-alt text-3xl"></i>
             <span className={tooltipTextClass}>Log Out</span>
-          </Link>
-        </>
+          </button>
+        </div>
+        
       );
     }
 
     // If not logged in (base path), show Log In and Contact Us buttons
     return (
-      <>
+      
+        <div className="flex space-x-3 items-center -mr-20">
         <NavLink
           to="/role"
           onClick={handleScrollToTop}
@@ -147,7 +219,8 @@ const Header = () => {
         >
           Contact Us
         </Link>
-      </>
+      </div>
+      
     );
   };
 
@@ -156,7 +229,7 @@ const Header = () => {
       <header className="bg-white shadow-sm py-4 px-4 md:px-8 lg:px-16 sticky top-0 z-50 border-b-2 border-[#28B463]">
         <FontAwesomeLink />
 
-        <div className="max-w-7xl mx-auto -mr-10 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto  flex items-center justify-between">
         {/* Logo */}
         <NavLink
           to="/"
@@ -173,8 +246,8 @@ const Header = () => {
         </NavLink>
 
         {/* NavHeader handles navigation and mobile menu */}
-        <NavHeader
-          renderActionButtons={renderActionButtons}
+        <NavHeader  
+          renderActionButtons={renderActionButtons} 
           handleScrollToTop={handleScrollToTop}
         />
       </div>

@@ -3,130 +3,25 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
+import axios from 'axios';
 
-// --- Color constants ---
-const primaryGreen = '#1E6F5C';
-const lightGreen = '#6a994e';
-
-// --- Helper Functions for RHF/Yup Validation ---
-
-/**
- * Creates a Yup schema mixin for file validation (size, type).
- * Can be made required/optional based on config.
- */
-const fileValidation = (fieldConfig) => {
-  const { label, accept, maxSize, required } = fieldConfig;
-  let schema = Yup.mixed();
-
-  if (required) {
-    schema = schema.required(`Please upload your ${label.toLowerCase()}.`);
-  } else {
-    // Allows optional fields to be null/undefined/empty
-    schema = schema.nullable().notRequired();
-  }
-
-  // --- Core Validation Tests ---
-  schema = schema
-    .test(
-      'is-file-object',
-      `Please upload your ${label.toLowerCase()}.`,
-      (value) => {
-        // If not required and no value, pass. Otherwise, if value exists, it must be a File object or null/undefined
-        if (!required && !value) return true;
-        return value instanceof File || value === null || value === undefined;
-      }
-    )
-    .test(
-      'file-size',
-      `${label} file size exceeds ${(maxSize / (1024 * 1024)).toFixed(0)} MB.`,
-      (value) => {
-        if (!value) return true; // Checked by previous tests
-        return value.size <= maxSize;
-      }
-    )
-    .test(
-      'file-type',
-      `Invalid file type. Allowed: ${accept.replace(/\./g, ' ')}.`,
-      (value) => {
-        if (!value) return true;
-        const ext = '.' + value.name.split('.').pop()?.toLowerCase();
-        const allowed = accept.split(',').map((a) => a.trim().toLowerCase());
-        return allowed.includes(ext);
-      }
-    );
-
-  return schema;
-};
-
-/**
- * Builds the Yup validation schema dynamically based on the role and form configuration.
- */
-const buildDocUploadValidationSchema = (role, formConfig) => {
-  const config = formConfig[role] || [];
-  let schemaFields = {};
-
-  config.forEach((field) => {
-    if (field.type === 'select') {
-      let selectSchema = Yup.string();
-
-      if (field.required) {
-        selectSchema = selectSchema.required(`Please select your ${field.label.toLowerCase()}.`);
-      } else {
-        selectSchema = selectSchema.nullable().notRequired();
-      }
-
-      schemaFields[field.id] = selectSchema;
-    } else if (field.type === 'file') {
-      if (field.dependsOn) {
-        // Handle conditionally required file fields
-        const fileSchema = fileValidation({ ...field, required: false }).when(
-          field.dependsOn,
-          {
-            is: (val) => val && val !== '', // If the select field has a value
-            then: () => fileValidation(field), // Make it required
-            otherwise: () => fileValidation({ ...field, required: false }), // Keep it optional
-          }
-        );
-        schemaFields[field.id] = fileSchema;
-      } else {
-        // Handle always required/optional independent file fields
-        schemaFields[field.id] = fileValidation(field);
-      }
-    }
-  });
-
-  return Yup.object().shape(schemaFields);
-};
-
-// --- Initial Form Values Based on Role ---
-const getInitialValues = (role, formConfig) => {
-  const config = formConfig[role] || [];
-  return config.reduce(
-    (acc, field) => ({
-      ...acc,
-      [field.id]: field.type === 'file' ? null : '', // null for file objects, empty string for selects
-    }),
-    {}
-  );
-};
-
-
-// SelectField Component (Modified for RHF register and Tailwind fix)
-const SelectField = ({ id, label, options, required, error, colSpan, register }) => (
+// SelectField Component with React Hook Form integration
+const SelectField = ({ label, options, required, error, field, colSpan }) => (
   <div className={`relative animate-slide-in ${colSpan ? 'lg:col-span-2' : ''}`}>
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
+    <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-2">
       {label}
       {!required && <span className="ml-1 text-xs text-gray-500 font-medium">(Optional)</span>}
     </label>
     <div className="relative">
       <select
-        id={id}
-        // FIX: Ensuring Tailwind dynamic color references use bracket notation
-        className={`w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[${lightGreen}] transition-all duration-300 appearance-none bg-white shadow-sm hover:shadow-md ${error ? 'border-red-500' : ''}`}
+        {...field}
+        id={field.name}
+        className={`w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6a994e] transition-all duration-300 appearance-none bg-white shadow-sm hover:shadow-md ${
+          error ? 'border-red-500' : ''
+        }`}
         required={required}
         aria-invalid={!!error}
-        aria-describedby={`${id}-error`}
-        {...register(id)} // RHF registration
+        aria-describedby={`${field.name}-error`}
       >
         {options.map((option) => (
           <option
@@ -146,29 +41,25 @@ const SelectField = ({ id, label, options, required, error, colSpan, register })
       </span>
     </div>
     {error && (
-      <p id={`${id}-error`} className="text-red-500 text-sm mt-2">{error.message}</p>
+      <p id={`${field.name}-error`} className="text-red-500 text-sm mt-2">{error}</p>
     )}
   </div>
 );
 
-// FileUploadField Component
+// FileUploadField Component with React Hook Form integration
 const FileUploadField = ({
-  id,
   label,
   accept,
   maxSize,
   required,
   disabled,
   error,
+  field,
   colSpan,
-  // RHF Controller props
-  field: { onChange, value }, // value is the File object or null
 }) => {
   const fileInputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [localError, setLocalError] = useState(''); // size or type error
-
-  const file = value;
+  const [localError, setLocalError] = useState('');
 
   const clearLocalError = () => {
     setLocalError('');
@@ -177,14 +68,24 @@ const FileUploadField = ({
   const validateFile = (f) => {
     if (!f) return true;
 
-    // Size check
+    // Skip file type validation for optional files
+    if (!required) {
+      // Only check file size for optional files, but don't validate type
+      if (f.size > maxSize) {
+        const mb = (maxSize / (1024 * 1024)).toFixed(0);
+        setLocalError(`${label} file size exceeds ${mb} MB.`);
+        return false;
+      }
+      return true;
+    }
+
+    // For required files, validate both size and type
     if (f.size > maxSize) {
       const mb = (maxSize / (1024 * 1024)).toFixed(0);
       setLocalError(`${label} file size exceeds ${mb} MB.`);
       return false;
     }
 
-    // Type check
     const ext = '.' + f.name.split('.').pop()?.toLowerCase();
     const allowed = accept.split(',').map(a => a.trim().toLowerCase());
     if (!allowed.includes(ext)) {
@@ -199,12 +100,10 @@ const FileUploadField = ({
     const f = e.target.files[0];
     clearLocalError();
     if (f && !validateFile(f)) {
-      onChange(null); // Set RHF value to null on local error
-      // FIX: Clear the file input element value when a local error occurs
-      if (fileInputRef.current) fileInputRef.current.value = ''; 
+      field.onChange(null);
       return;
     }
-    onChange(f || null); // Pass File object or null to RHF
+    field.onChange(f);
   };
 
   const handleDrop = (e) => {
@@ -214,12 +113,10 @@ const FileUploadField = ({
     const f = e.dataTransfer.files[0];
     clearLocalError();
     if (f && !validateFile(f)) {
-      onChange(null);
-      // FIX: Clear the file input element value when a local error occurs
-      if (fileInputRef.current) fileInputRef.current.value = ''; 
+      field.onChange(null);
       return;
     }
-    onChange(f || null);
+    field.onChange(f);
   };
 
   const handleDragOver = (e) => {
@@ -233,9 +130,9 @@ const FileUploadField = ({
   };
 
   const handleRemove = () => {
-    onChange(null); // Clear RHF value
+    field.onChange(null);
     clearLocalError();
-    if (fileInputRef.current) fileInputRef.current.value = ''; // Reset file input element
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const getFileIcon = (fileName) => {
@@ -258,7 +155,7 @@ const FileUploadField = ({
 
   return (
     <div className={`relative animate-slide-in ${colSpan ? 'lg:col-span-2' : ''}`}>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
+      <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-2">
         {label}
         {!required && <span className="ml-1 text-xs text-gray-500 font-medium">(Optional)</span>}
       </label>
@@ -275,11 +172,11 @@ const FileUploadField = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            {file ? (
+            {field.value ? (
               <>
-                {getFileIcon(file.name)}
-                <span className="text-sm text-gray-700 truncate max-w-xs">{file.name}</span>
-                <span className="text-xs text-gray-500">({(file.size / (1024*1024)).toFixed(2)} MB)</span>
+                {getFileIcon(field.value.name)}
+                <span className="text-sm text-gray-700 truncate max-w-xs">{field.value.name}</span>
+                <span className="text-xs text-gray-500">({(field.value.size / (1024*1024)).toFixed(2)} MB)</span>
               </>
             ) : (
               <span className="text-sm text-gray-500">
@@ -301,7 +198,7 @@ const FileUploadField = ({
           </button>
         </div>
         <input
-          id={id}
+          id={field.name}
           type="file"
           accept={accept}
           onChange={handleFileChange}
@@ -309,9 +206,9 @@ const FileUploadField = ({
           ref={fileInputRef}
           disabled={disabled}
           aria-invalid={!!error || !!localError}
-          aria-describedby={`${id}-error`}
+          aria-describedby={`${field.name}-error`}
         />
-        {file && (
+        {field.value && (
           <button
             type="button"
             onClick={handleRemove}
@@ -322,15 +219,15 @@ const FileUploadField = ({
         )}
       </div>
       {(localError || error) && (
-        <p id={`${id}-error`} className="text-red-500 text-sm mt-2">
-          {localError || (error ? error.message : '')}
+        <p id={`${field.name}-error`} className="text-red-500 text-sm mt-2">
+          {localError || error}
         </p>
       )}
     </div>
   );
 };
 
-// RoleSelector Component (Unchanged)
+// RoleSelector Component
 const RoleSelector = ({ validRoles, navigate }) => (
   <div className="text-center p-4 sm:p-5 animate-slide-in">
     <h3 className="text-xl text-gray-700 font-semibold mb-4">Please select a role to upload documents.</h3>
@@ -345,57 +242,58 @@ const RoleSelector = ({ validRoles, navigate }) => (
         </button>
       ))}
     </div>
+ _formatted
   </div>
 );
 
-// FormFields Component (Unchanged logic)
-const FormFields = ({ role, formConfig, errors, control, register, watch }) => (
+// FormFields Component with React Hook Form integration
+const FormFields = ({ role, formConfig, control, errors, watch }) => (
   <div className="grid gap-4 lg:grid-cols-2 w-full max-w-7xl mx-auto">
     {formConfig[role].map((field) => (
-      field.type === 'select' ? (
-        <SelectField
-          key={field.id}
-          id={field.id}
-          label={field.label}
-          options={field.options}
-          required={field.required}
-          error={errors[field.id]}
-          colSpan={field.colSpan}
-          register={register} // Pass RHF register
-        />
-      ) : (
-        <Controller // Wrap FileUploadField in Controller
-          key={field.id}
-          name={field.id}
-          control={control}
-          render={({ field }) => (
+      <Controller
+        key={field.id}
+        name={field.id}
+        control={control}
+        render={({ field: fieldProps }) => {
+          // For dependent fields, check if the parent field has a value
+          const isDependentDisabled = field.dependsOn 
+            ? !watch(field.dependsOn) 
+            : field.disabled;
+
+          return field.type === 'select' ? (
+            <SelectField
+              label={field.label}
+              options={field.options}
+              required={field.required}
+              error={errors[field.id]?.message}
+              field={fieldProps}
+              colSpan={field.colSpan}
+            />
+          ) : (
             <FileUploadField
-              id={field.id}
               label={field.label}
               accept={field.accept}
               maxSize={field.maxSize}
               required={field.required}
-              // Dependency logic using RHF watch
-              disabled={field.dependsOn ? !watch(field.dependsOn) : field.disabled}
-              error={errors[field.id]}
+              disabled={isDependentDisabled}
+              error={errors[field.id]?.message}
+              field={fieldProps}
               colSpan={field.colSpan}
-              field={field} // Pass the RHF field object
             />
-          )}
-        />
-      )
+          );
+        }}
+      />
     ))}
   </div>
 );
 
-// FormActions Component (Unchanged)
+// FormActions Component (always enabled)
 const FormActions = ({ isLoading }) => (
   <div>
     <button
       type="submit"
       disabled={isLoading}
-      // FIX: Ensuring Tailwind dynamic color references use bracket notation
-      className={`w-full bg-[${primaryGreen}] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-all duration-300 shadow-md hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center`}
+      className="w-full bg-[#1E6F5C] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-all duration-300 shadow-md hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
     >
       {isLoading ? (
         <>
@@ -412,7 +310,7 @@ const FormActions = ({ isLoading }) => (
   </div>
 );
 
-// FormContainer Component (Unchanged)
+// FormContainer Component
 const FormContainer = ({ role, children, navigate }) => (
   <section className="flex items-center justify-center bg-gray-100 p-2 sm:p-3 min-h-screen">
     <div className="w-full max-w-7xl p-4 sm:p-5 mx-auto rounded-3xl shadow-2xl bg-white relative animate-fade-in">
@@ -431,7 +329,7 @@ const FormContainer = ({ role, children, navigate }) => (
   </section>
 );
 
-// Main DocUpload Component (Unchanged logic)
+// Main DocUpload Component
 const DocUpload = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -444,16 +342,16 @@ const DocUpload = () => {
   const formConfig = useMemo(
     () => ({
       dietitian: [
-        { id: 'interestedField', label: 'Interested In', type: 'select', options: [{ value: '', label: 'Select your role', disabled: true }, { value: 'weight_loss_gain', label: 'Weight Loss/Gain' }, { value: 'diabetes_thyroid_management', label: 'Diabetes/Thyroid Management' }, { value: 'cardiac_health', label: 'Cardiac Health' }, { value: 'women_health', label: 'Women Health' }, { value: 'skin_hair_care', label: 'Skin and Hair Care' }, { value: 'gut_digestive_health', label: 'Gut/Digestive Health' }], required: true },
-        { id: 'resume', label: 'Resume (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: true, disabled: true, dependsOn: 'interestedField' },
-        { id: 'degreeType', label: 'Degree Type', type: 'select', options: [{ value: '', label: 'Select your degree', disabled: true }, { value: 'bsc', label: 'B.Sc. in Nutrition/Dietetics' }, { value: 'msc', label: 'M.Sc. in Nutrition/Dietetics' }, { value: 'food_science', label: 'B.Sc./M.Sc. in Food Science' }, { value: 'other', label: 'Other' }], required: true },
-        { id: 'degreeCertificate', label: 'Degree Certificate (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: true, disabled: true, dependsOn: 'degreeType' },
-        { id: 'licenseIssuer', label: 'License Issued By', type: 'select', options: [{ value: '', label: 'Select license issuer', disabled: true }, { value: 'ida', label: 'Indian Dietetic Association (IDA)' }, { value: 'cdr', label: 'Commission on Dietetic Registration (U.S.)' }, { value: 'other', label: 'Other' }], required: true },
-        { id: 'licenseDocument', label: 'License Document (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: true, disabled: true, dependsOn: 'licenseIssuer' },
-        { id: 'idProofType', label: 'Government ID Proof Type', type: 'select', options: [{ value: '', label: 'Select ID proof type', disabled: true }, { value: 'passport', label: 'Passport' }, { value: 'aadhaar', label: 'Aadhaar Card' }, { value: 'driver_license', label: "Driver's License" }, { value: 'other', label: 'Other' }], required: true },
-        { id: 'idProof', label: 'Government ID Proof (PDF/Image, max 2MB)', type: 'file', accept: '.pdf,.jpg,.png', maxSize: 2 * 1024 * 1024, required: true, disabled: true, dependsOn: 'idProofType' },
-        { id: 'specializationDomain', label: 'Specialization Domain', type: 'select', options: [{ value: '', label: 'Select specialization domain', disabled: true }, { value: 'sports_nutrition', label: 'Sports Nutrition' }, { value: 'pediatric_nutrition', label: 'Pediatric Nutrition' }, { value: 'weight_management', label: 'Weight Management' }, { value: 'other', label: 'Other' }], required: false },
-        { id: 'specializationCertifications', label: 'Specialization Certifications (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: false, disabled: true, dependsOn: 'specializationDomain' },
+        { id: 'interestedField', label: 'Interested In', type: 'select', options: [{ value: '', label: 'Choose Interest Field', disabled: true }, { value: 'weight_loss_gain', label: 'Weight Loss/Gain' }, { value: 'diabetes_thyroid_management', label: 'Diabetes/Thyroid Management' }, { value: 'cardiac_health', label: 'Cardiac Health' }, { value: 'women_health', label: 'Women Health' }, { value: 'skin_hair_care', label: 'Skin and Hair Care' }, { value: 'gut_digestive_health', label: 'Gut/Digestive Health' }], required: true },
+        { id: 'resume', label: 'Resume (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: true, disabled: false, dependsOn: 'interestedField' },
+        { id: 'degreeType', label: 'Degree Type', type: 'select', options: [{ value: '', label: 'Choose Degree Type', disabled: true }, { value: 'bsc', label: 'B.Sc. in Nutrition/Dietetics' }, { value: 'msc', label: 'M.Sc. in Nutrition/Dietetics' }, { value: 'food_science', label: 'B.Sc./M.Sc. in Food Science' }, { value: 'other', label: 'Other' }], required: true },
+        { id: 'degreeCertificate', label: 'Degree Certificate (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: true, disabled: false, dependsOn: 'degreeType' },
+        { id: 'licenseIssuer', label: 'License Issued By', type: 'select', options: [{ value: '', label: 'Choose License Issuer', disabled: true }, { value: 'ida', label: 'Indian Dietetic Association (IDA)' }, { value: 'cdr', label: 'Commission on Dietetic Registration (U.S.)' }, { value: 'other', label: 'Other' }], required: true },
+        { id: 'licenseDocument', label: 'License Document (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: true, disabled: false, dependsOn: 'licenseIssuer' },
+        { id: 'idProofType', label: 'Government ID Proof Type', type: 'select', options: [{ value: '', label: 'Choose ID Proof Type', disabled: true }, { value: 'passport', label: 'Passport' }, { value: 'aadhaar', label: 'Aadhaar Card' }, { value: 'driver_license', label: "Driver's License" }, { value: 'other', label: 'Other' }], required: true },
+        { id: 'idProof', label: 'Government ID Proof (PDF/Image, max 2MB)', type: 'file', accept: '.pdf,.jpg,.png', maxSize: 2 * 1024 * 1024, required: true, disabled: false, dependsOn: 'idProofType' },
+        { id: 'specializationDomain', label: 'Specialization Domain', type: 'select', options: [{ value: '', label: 'Choose Specialization Domain', disabled: true }, { value: 'sports_nutrition', label: 'Sports Nutrition' }, { value: 'pediatric_nutrition', label: 'Pediatric Nutrition' }, { value: 'weight_management', label: 'Weight Management' }, { value: 'other', label: 'Other' }], required: false },
+        { id: 'specializationCertifications', label: 'Specialization Certifications (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: false, disabled: false, dependsOn: 'specializationDomain' },
         { id: 'experienceCertificates', label: 'Experience Certificates (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: false, colSpan: 2 },
         { id: 'internshipCertificate', label: 'Internship Completion Certificate (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: false, colSpan: 2 },
         { id: 'researchPapers', label: 'Research Papers/Publications (PDF, max 5MB)', type: 'file', accept: '.pdf', maxSize: 5 * 1024 * 1024, required: false, colSpan: 2 },
@@ -461,64 +359,128 @@ const DocUpload = () => {
       organization: [
         { id: 'orgLogo', label: 'Organization Logo (Image, max 20MB)', type: 'file', accept: '.jpg,.png,.jpeg', maxSize: 20 * 1024 * 1024, required: true },
         { id: 'orgBrochure', label: 'Organization Brochure (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: false },
-        { id: 'legalDocumentType', label: 'Legal Document Type', type: 'select', options: [{ value: '', label: 'Select legal document type', disabled: true }, { value: 'certificateOfIncorporation', label: 'Certificate of Incorporation' }, { value: 'articlesOfAssociation', label: 'Articles of Association' }, { value: 'memorandumOfAssociation', label: 'Memorandum of Association' }], required: true },
-        { id: 'legalDocument', label: 'Legal Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: true, dependsOn: 'legalDocumentType' },
-        { id: 'taxDocumentType', label: 'Tax Document Type', type: 'select', options: [{ value: '', label: 'Select tax document type', disabled: true }, { value: 'gstCertificate', label: 'GST Certificate' }, { value: 'panCard', label: 'PAN Card' }, { value: 'tinCertificate', label: 'TIN Certificate' }], required: true },
-        { id: 'taxDocument', label: 'Tax Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: true, dependsOn: 'taxDocumentType' },
-        { id: 'businessLicenseType', label: 'Business License Type', type: 'select', options: [{ value: '', label: 'Select business license type', disabled: true }, { value: 'generalLicense', label: 'General Business License' }, { value: 'industrySpecificLicense', label: 'Industry-Specific License' }], required: true },
-        { id: 'businessLicense', label: 'Business License (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: true, dependsOn: 'businessLicenseType' },
-        { id: 'authorizedRepIdType', label: 'Identity Proof Type', type: 'select', options: [{ value: '', label: 'Select identity proof type', disabled: true }, { value: 'aadhaarCard', label: 'Aadhaar Card' }, { value: 'passport', label: 'Passport' }, { value: 'driversLicense', label: "Driver's License" }], required: true },
-        { id: 'authorizedRepId', label: 'Identity Proof (PDF/Image, max 20MB)', type: 'file', accept: '.pdf,.jpg,.png', maxSize: 20 * 1024 * 1024, required: true, disabled: true, dependsOn: 'authorizedRepIdType' },
-        { id: 'addressProofType', label: 'Proof of Address Type', type: 'select', options: [{ value: '', label: 'Select proof of address type', disabled: true }, { value: 'utilityBill', label: 'Utility Bill' }, { value: 'leaseAgreement', label: 'Lease Agreement' }, { value: 'propertyTaxReceipt', label: 'Property Tax Receipt' }], required: false },
-        { id: 'addressProof', label: 'Proof of Address (PDF/Image, max 20MB)', type: 'file', accept: '.pdf,.jpg,.png', maxSize: 20 * 1024 * 1024, required: false, disabled: true, dependsOn: 'addressProofType' },
-        { id: 'bankDocumentType', label: 'Bank Document Type', type: 'select', options: [{ value: '', label: 'Select bank document type', disabled: true }, { value: 'cancelledCheque', label: 'Cancelled Cheque' }, { value: 'bankStatement', label: 'Bank Statement' }], required: false },
-        { id: 'bankDocument', label: 'Bank Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: false, disabled: true, dependsOn: 'bankDocumentType' },
+        { id: 'legalDocumentType', label: 'Legal Document Type', type: 'select', options: [{ value: '', label: 'Choose Legal Document Type', disabled: true }, { value: 'certificateOfIncorporation', label: 'Certificate of Incorporation' }, { value: 'articlesOfAssociation', label: 'Articles of Association' }, { value: 'memorandumOfAssociation', label: 'Memorandum of Association' }], required: true },
+        { id: 'legalDocument', label: 'Legal Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: false, dependsOn: 'legalDocumentType' },
+        { id: 'taxDocumentType', label: 'Tax Document Type', type: 'select', options: [{ value: '', label: 'Choose Tax Document Type', disabled: true }, { value: 'gstCertificate', label: 'GST Certificate' }, { value: 'panCard', label: 'PAN Card' }, { value: 'tinCertificate', label: 'TIN Certificate' }], required: true },
+        { id: 'taxDocument', label: 'Tax Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: false, dependsOn: 'taxDocumentType' },
+        { id: 'businessLicenseType', label: 'Business License Type', type: 'select', options: [{ value: '', label: 'Choose Business License Type', disabled: true }, { value: 'generalLicense', label: 'General Business License' }, { value: 'industrySpecificLicense', label: 'Industry-Specific License' }], required: true },
+        { id: 'businessLicense', label: 'Business License (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: false, dependsOn: 'businessLicenseType' },
+        { id: 'authorizedRepIdType', label: 'Identity Proof Type', type: 'select', options: [{ value: '', label: 'Choose Identity Proof Type', disabled: true }, { value: 'aadhaarCard', label: 'Aadhaar Card' }, { value: 'passport', label: 'Passport' }, { value: 'driversLicense', label: "Driver's License" }], required: true },
+        { id: 'authorizedRepId', label: 'Identity Proof (PDF/Image, max 20MB)', type: 'file', accept: '.pdf,.jpg,.png', maxSize: 20 * 1024 * 1024, required: true, disabled: false, dependsOn: 'authorizedRepIdType' },
+        { id: 'addressProofType', label: 'Proof of Address Type', type: 'select', options: [{ value: '', label: 'Choose Address Proof Type', disabled: true }, { value: 'utilityBill', label: 'Utility Bill' }, { value: 'leaseAgreement', label: 'Lease Agreement' }, { value: 'propertyTaxReceipt', label: 'Property Tax Receipt' }], required: false },
+        { id: 'addressProof', label: 'Proof of Address (PDF/Image, max 20MB)', type: 'file', accept: '.pdf,.jpg,.png', maxSize: 20 * 1024 * 1024, required: false, disabled: false, dependsOn: 'addressProofType' },
+        { id: 'bankDocumentType', label: 'Bank Document Type', type: 'select', options: [{ value: '', label: 'Choose Bank Document Type', disabled: true }, { value: 'cancelledCheque', label: 'Cancelled Cheque' }, { value: 'bankStatement', label: 'Bank Statement' }], required: false },
+        { id: 'bankDocument', label: 'Bank Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: false, disabled: false, dependsOn: 'bankDocumentType' },
       ],
       corporatepartner: [
         { id: 'partnershipAgreement', label: 'Partnership Agreement (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true },
         { id: 'companyBrochure', label: 'Company Brochure (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: false },
-        { id: 'businessLicenseType', label: 'Business License Type', type: 'select', options: [{ value: '', label: 'Select business license type', disabled: true }, { value: 'generalLicense', label: 'General Business License' }, { value: 'industrySpecificLicense', label: 'Industry-Specific License' }], required: true },
-        { id: 'businessLicense', label: 'Business License (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: true, dependsOn: 'businessLicenseType' },
-        { id: 'taxDocumentType', label: 'Tax Document Type', type: 'select', options: [{ value: '', label: 'Select tax document type', disabled: true }, { value: 'gstCertificate', label: 'GST Certificate' }, { value: 'panCard', label: 'PAN Card' }, { value: 'tinCertificate', label: 'TIN Certificate' }], required: true },
-        { id: 'taxDocument', label: 'Tax Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: true, dependsOn: 'taxDocumentType' },
-        { id: 'authorizedRepIdType', label: 'Identity Proof Type', type: 'select', options: [{ value: '', label: 'Select identity proof type', disabled: true }, { value: 'aadhaarCard', label: 'Aadhaar Card' }, { value: 'passport', label: 'Passport' }, { value: 'driversLicense', label: "Driver's License" }], required: true },
-        { id: 'authorizedRepId', label: 'Identity Proof (PDF/Image, max 20MB)', type: 'file', accept: '.pdf,.jpg,.png', maxSize: 20 * 1024 * 1024, required: true, disabled: true, dependsOn: 'authorizedRepIdType' },
-        { id: 'bankDocumentType', label: 'Bank Document Type', type: 'select', options: [{ value: '', label: 'Select bank document type', disabled: true }, { value: 'cancelledCheque', label: 'Cancelled Cheque' }, { value: 'bankStatement', label: 'Bank Statement' }], required: false },
-        { id: 'bankDocument', label: 'Bank Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: false, disabled: true, dependsOn: 'bankDocumentType' },
+        { id: 'businessLicenseType', label: 'Business License Type', type: 'select', options: [{ value: '', label: 'Choose Business License Type', disabled: true }, { value: 'generalLicense', label: 'General Business License' }, { value: 'industrySpecificLicense', label: 'Industry-Specific License' }], required: true },
+        { id: 'businessLicense', label: 'Business License (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: false, dependsOn: 'businessLicenseType' },
+        { id: 'taxDocumentType', label: 'Tax Document Type', type: 'select', options: [{ value: '', label: 'Choose Tax Document Type', disabled: true }, { value: 'gstCertificate', label: 'GST Certificate' }, { value: 'panCard', label: 'PAN Card' }, { value: 'tinCertificate', label: 'TIN Certificate' }], required: true },
+        { id: 'taxDocument', label: 'Tax Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: true, disabled: false, dependsOn: 'taxDocumentType' },
+        { id: 'authorizedRepIdType', label: 'Identity Proof Type', type: 'select', options: [{ value: '', label: 'Choose Identity Proof Type', disabled: true }, { value: 'aadhaarCard', label: 'Aadhaar Card' }, { value: 'passport', label: 'Passport' }, { value: 'driversLicense', label: "Driver's License" }], required: true },
+        { id: 'authorizedRepId', label: 'Identity Proof (PDF/Image, max 20MB)', type: 'file', accept: '.pdf,.jpg,.png', maxSize: 20 * 1024 * 1024, required: true, disabled: false, dependsOn: 'authorizedRepIdType' },
+        { id: 'bankDocumentType', label: 'Bank Document Type', type: 'select', options: [{ value: '', label: 'Choose Bank Document Type', disabled: true }, { value: 'cancelledCheque', label: 'Cancelled Cheque' }, { value: 'bankStatement', label: 'Bank Statement' }], required: false },
+        { id: 'bankDocument', label: 'Bank Document (PDF, max 20MB)', type: 'file', accept: '.pdf', maxSize: 20 * 1024 * 1024, required: false, disabled: false, dependsOn: 'bankDocumentType' },
       ],
     }),
     []
   );
 
-  // **RHF Setup**
-  const validationSchema = useMemo(() => buildDocUploadValidationSchema(role, formConfig), [role, formConfig]);
-  
+  // Build Yup validation schema for current role
+  const buildDocUploadValidationSchema = (currentRole) => {
+    if (!currentRole || !formConfig[currentRole]) {
+      return Yup.object().shape({});
+    }
+
+    const shape = {};
+    formConfig[currentRole].forEach((field) => {
+      if (field.type === 'select') {
+        if (field.required) {
+          shape[field.id] = Yup.string().required(`Please select your ${field.label.toLowerCase()}.`);
+        } else {
+          shape[field.id] = Yup.string().nullable();
+        }
+      } else {
+        // File field
+        if (field.required) {
+          shape[field.id] = Yup.mixed()
+            .required(`Please upload your ${field.label.toLowerCase()}.`)
+            .test('is-file', 'Invalid file', (value) => value instanceof File);
+        } else {
+          // Optional file: only validate if a file is uploaded
+          shape[field.id] = Yup.mixed()
+            .nullable()
+            .test('is-file-or-null', 'Invalid file', (value) => {
+              // If no file uploaded, it's valid
+              if (value === null || value === undefined) return true;
+              // If a file is uploaded, it must be a File instance
+              return value instanceof File;
+            });
+        }
+      }
+    });
+
+    return Yup.object().shape(shape);
+  };
+
+  // Initialize form with React Hook Form
+  const validationSchema = buildDocUploadValidationSchema(role);
   const { 
-    handleSubmit, 
     control, 
-    register, 
-    watch, 
-    reset, 
-    formState: { errors } 
+    handleSubmit, 
+    formState: { errors }, 
+    watch,
+    reset 
   } = useForm({
     resolver: yupResolver(validationSchema),
-    defaultValues: getInitialValues(role, formConfig),
     mode: 'onBlur',
+    defaultValues: useMemo(() => {
+      if (!role || !formConfig[role]) return {};
+      return formConfig[role].reduce(
+        (acc, field) => ({
+          ...acc,
+          [field.id]: field.type === 'file' ? null : '',
+        }),
+        {}
+      );
+    }, [role, formConfig]),
   });
-
 
   useEffect(() => {
     const roleFromUrl = searchParams.get('role');
     if (validRoles.includes(roleFromUrl)) {
       setRole(roleFromUrl);
-      reset(getInitialValues(roleFromUrl, formConfig)); // Reset form values and RHF state
+      // Reset form with proper default values
+      const defaultVals = formConfig[roleFromUrl].reduce(
+        (acc, field) => ({
+          ...acc,
+          [field.id]: field.type === 'file' ? null : '',
+        }),
+        {}
+      );
+      reset(defaultVals);
       setMessage('');
     } else {
       setRole('');
-      reset({});
-      setMessage('Invalid role. Please select a valid role.');
+      setMessage(roleFromUrl ? 'Invalid role. Please select a valid role.' : '');
     }
-  }, [searchParams, formConfig, validRoles, reset]);
+  }, [searchParams, validRoles, reset, formConfig]);
+
+  // Reset form when role changes (separate effect to handle role state updates)
+  useEffect(() => {
+    if (role && formConfig[role]) {
+      const defaultVals = formConfig[role].reduce(
+        (acc, field) => ({
+          ...acc,
+          [field.id]: field.type === 'file' ? null : '',
+        }),
+        {}
+      );
+      reset(defaultVals);
+    }
+  }, [role, formConfig, reset]);
 
   const roleRoutes = {
     dietitian: '/dietitian/home',
@@ -526,10 +488,7 @@ const DocUpload = () => {
     corporatepartner: '/corporatepartner/home',
   };
 
-  // RHF-powered submit handler
-  const handleFormSubmit = async (data) => {
-    setMessage('');
-    
+  const onSubmit = async (formData) => {
     if (!roleRoutes[role]) {
       setMessage('Invalid role selected.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -537,42 +496,62 @@ const DocUpload = () => {
     }
 
     setIsLoading(true);
+    setMessage('Uploading your documents...');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
+      // Get user data from token stored during signup
+      const token = localStorage.getItem('authToken');
+      const userIdFromStorage = localStorage.getItem('userId');
+
+      if (!token || !userIdFromStorage) {
+        setMessage('Session expired. Please sign up again.');
+        setTimeout(() => {
+          navigate('/signup?role=' + role);
+        }, 1500);
+        return;
+      }
+
+      // Create FormData to send files
       const formDataToSend = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        // Only append non-null/non-empty values
-        if (value !== null && value !== '') {
-          // File objects (including null ones from initial state) are handled by Yup and will be File instances if uploaded
+      formDataToSend.append('userId', userIdFromStorage);
+      formDataToSend.append('role', role);
+
+      // Append only files (filter out empty optional fields)
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value instanceof File) {
           formDataToSend.append(key, value);
         }
       });
 
-      // SIMULATE API CALL
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (Math.random() > 0.8) {
-            reject(new Error('Network timeout'));
-          } else {
-            resolve();
+      // Send to backend
+      const response = await axios.post(
+        `/api/documents/upload/${role}`,
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
           }
-        }, 2000);
-      });
+        }
+      );
 
-      setMessage('Documents uploaded successfully! Redirecting...');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (response.status === 200) {
+        setMessage('Documents uploaded successfully! Redirecting...');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      setTimeout(() => {
-        navigate(roleRoutes[role]);
-      }, 1500);
+        setTimeout(() => {
+          navigate(roleRoutes[role]);
+        }, 1500);
+      }
     } catch (error) {
-      const reasons = {
-        'Network timeout': 'Connection lost. Please try again.',
-        'File too large': 'One or more files exceed size limit.',
-        'Invalid file type': 'Invalid file format detected.',
-      };
-      setMessage(reasons[error.message] || 'Server error. Please try again later.');
+      console.error('Upload Error:', error);
+      
+      const errorMessage = error.response?.data?.message
+        || error.message
+        || 'Error uploading documents. Please try again.';
+
+      setMessage(`Error: ${errorMessage}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsLoading(false);
@@ -584,7 +563,7 @@ const DocUpload = () => {
       {!role || !formConfig[role] ? (
         <RoleSelector validRoles={validRoles} navigate={navigate} />
       ) : (
-        <form id={`${role}UploadForm`} onSubmit={handleSubmit(handleFormSubmit)} className="needs-validation" noValidate>
+        <form id={`${role}UploadForm`} onSubmit={handleSubmit(onSubmit)} className="needs-validation" noValidate>
           {/* Global message */}
           {message && (
             <div
@@ -592,6 +571,8 @@ const DocUpload = () => {
               className={`p-3 mb-5 text-center text-base font-medium rounded-lg shadow-sm animate-slide-in w-full ${
                 message.includes('successfully') || message.includes('Redirecting')
                   ? 'text-green-800 bg-green-100 border border-green-300'
+                  : message.includes('Uploading')
+                  ? 'text-blue-800 bg-blue-100 border border-blue-300'
                   : 'text-red-800 bg-red-100 border border-red-300'
               }`}
               role="alert"
@@ -603,9 +584,8 @@ const DocUpload = () => {
           <FormFields
             role={role}
             formConfig={formConfig}
-            errors={errors}
             control={control}
-            register={register}
+            errors={errors}
             watch={watch}
           />
           <div className="mt-6">

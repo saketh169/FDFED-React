@@ -168,7 +168,7 @@ function ChatBotPage() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-linear-to-b from-green-50 to-green-100 rounded-2xl shadow-2xl flex flex-col h-[90vh] border border-green-200 overflow-hidden">
+    <div className="w-full max-w-5xl mx-auto -mt-30 bg-linear-to-b from-green-50 to-green-100 rounded-2xl shadow-2xl flex flex-col h-[84vh] border border-green-200 overflow-hidden">
       {/* Header - Fixed */}
       <div className="bg-white rounded-t-2xl px-6 py-4 shadow-md border-b-4 border-[#27AE60] shrink-0">
         <div className="flex justify-between items-center">

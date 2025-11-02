@@ -42,7 +42,7 @@ const OrganizationHome = () => {
       {/* 1. INTRO / WELCOME SECTION (ENHANCED) */}
       {/* ======================================================= */}
       {/* Added bg-green-50 for a subtle background color */}
-      <section id="welcome-intro" className="bg-green-50 py-25 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-25 -mt-5  px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block (md:w-1/2) */}

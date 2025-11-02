@@ -72,7 +72,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 1. WELCOME SECTION (ENHANCED) */}
       {/* ======================================================= */}
-      <section id="welcome-intro" className="bg-green-50 py-25 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-25 -mt-5 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block */}
