@@ -1,18 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const RoleModal = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    console.log('[RoleModal] Component mounted');
+    const token = localStorage.getItem('authToken');
+    console.log('[RoleModal] Existing token found:', !!token);
+  }, []);
+
   const roles = [
-    { name: 'User', icon: 'fas fa-user', description: 'Log in to manage your personalized nutrition plan.', slug: 'user' },
-    { name: 'Dietitian', icon: 'fas fa-user-md', description: 'Access your professional dashboard and connect with clients.', slug: 'dietitian' },
-    { name: 'Certifying Organization', icon: 'fas fa-building', description: 'Manage dietitian certifications and access corporate insights.', slug: 'organization' },
-    { name: 'Corporate Partner', icon: 'fas fa-building', description: 'Provide wellness solutions to your employees.', slug: 'corporatepartner' },
+    { name: 'User', icon: 'fas fa-user', description: 'Log in to manage your personalized nutrition plan.', slug: 'user', dashboardRoute: '/user/home' },
+    { name: 'Dietitian', icon: 'fas fa-user-md', description: 'Access your professional dashboard and connect with clients.', slug: 'dietitian', dashboardRoute: '/dietitian/home' },
+    { name: 'Certifying Organization', icon: 'fas fa-building', description: 'Manage dietitian certifications and access corporate insights.', slug: 'organization', dashboardRoute: '/organization/home' },
+    { name: 'Corporate Partner', icon: 'fas fa-building', description: 'Provide wellness solutions to your employees.', slug: 'corporatepartner', dashboardRoute: '/corporatepartner/home' },
   ];
 
-  const handleRoleClick = (roleSlug) => {
-    navigate(`/signin?role=${roleSlug}`, { state: { scrollToTop: true } });
+  const handleRoleClick = (role) => {
+    console.log(`[RoleModal] Role clicked: ${role.slug}`);
+    
+    // Check if token exists in localStorage
+    const token = localStorage.getItem('authToken');
+    
+    if (token) {
+      // Token exists, go directly to dashboard
+      console.log(`[RoleModal] Token found, redirecting to ${role.slug} dashboard`);
+      navigate(role.dashboardRoute);
+    } else {
+      // No token, go to signin
+      console.log(`[RoleModal] No token found, redirecting to ${role.slug} signin`);
+      navigate(`/signin?role=${role.slug}`, { state: { scrollToTop: true } });
+    }
   };
 
   const handleClose = () => {
@@ -40,7 +59,7 @@ const RoleModal = () => {
                 <div
                   key={index}
                   className="bg-gray-50 p-6 rounded-lg border-2 border-[#E8F5E9] cursor-pointer hover:bg-green-100 hover:border-[#28B463] active:bg-gray-200 transition-all duration-300"
-                  onClick={() => handleRoleClick(role.slug)}
+                  onClick={() => handleRoleClick(role)}
                 >
                   <div className="text-4xl text-[#28B463] mb-2">
                     <i className={role.icon}></i>

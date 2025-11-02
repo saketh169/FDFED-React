@@ -99,13 +99,81 @@ const EngagementChart = ({ data }) => {
 const CorporateDashboard = () => {
   const navigate = useNavigate();
   const [partnerLogo, setPartnerLogo] = useState(mockPartner.logoImage);
+  const [showImageModal, setShowImageModal] = useState(false);
 
-  const handleLogoUpload = (e) => {
+  // Fetch logo image from backend on component mount
+  useEffect(() => {
+    const fetchLogoImage = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        const response = await fetch('/api/getcorporatepartner', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (data.success && data.profileImage) {
+          setPartnerLogo(data.profileImage);
+          localStorage.setItem('profileImage', data.profileImage);
+        }
+      } catch (error) {
+        console.error('Error fetching logo image:', error);
+      }
+    };
+
+    fetchLogoImage();
+  }, []);
+
+  const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setPartnerLogo(reader.result);
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Local preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPartnerLogo(reader.result);
+      // Store in localStorage for header display
+      localStorage.setItem('profileImage', reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to backend
+    const formData = new FormData();
+    formData.append("profileImage", file);
+
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        alert('Session expired. Please login again.');
+        navigate('/signin?role=corporatepartner');
+        return;
+      }
+
+      const res = await fetch('/api/uploadcorporatepartner', { 
+        method: 'POST', 
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Logo updated successfully!");
+      } else {
+        alert(`Upload failed: ${data.message || 'Unknown error'}`);
+        setPartnerLogo(mockPartner.logoImage);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Upload error occurred.");
+      setPartnerLogo(mockPartner.logoImage);
     }
   };
 
@@ -136,7 +204,8 @@ const CorporateDashboard = () => {
               <img
                 src={partnerLogo}
                 alt={`${mockPartner.name} Logo`}
-                className="w-32 h-32 object-contain border-4 border-emerald-600 p-2 bg-white rounded-xl"
+                className="w-32 h-32 object-contain border-4 border-emerald-600 p-2 bg-white rounded-xl cursor-pointer hover:opacity-80 transition"
+                onClick={() => setShowImageModal(true)}
                 onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=Logo'}
               />
               <label
@@ -291,6 +360,61 @@ const CorporateDashboard = () => {
               </li>
             </ul>
         </div>
+
+        {/* Image Modal */}
+        {showImageModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageModal(false)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
+                aria-label="Close modal"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
+
+              {/* Image Container */}
+              <div className="flex items-center justify-center bg-gray-100 p-8">
+                <img
+                  src={partnerLogo}
+                  alt="Partner Logo Full Size"
+                  className="max-w-full max-h-96 object-contain"
+                  onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/400?text=Partner'}
+                />
+              </div>
+
+              {/* Footer with partner info */}
+              <div className="bg-white p-6 border-t border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{mockPartner.name}</h2>
+                <p className="text-gray-600 mb-4">{mockPartner.contact}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      setShowImageModal(false);
+                      document.getElementById('logoUpload').click();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-full font-medium hover:bg-emerald-700 transition"
+                  >
+                    <i className="fas fa-camera"></i> Change Logo
+                  </button>
+                  <button
+                    onClick={() => setShowImageModal(false)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-400 text-gray-700 rounded-full font-medium hover:bg-gray-100 transition"
+                  >
+                    <i className="fas fa-times"></i> Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

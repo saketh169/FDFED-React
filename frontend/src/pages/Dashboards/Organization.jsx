@@ -237,13 +237,41 @@ const RecentDietitiansTable = () => {
 const OrganizationDashboard = () => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(mockOrganization.profileImage);
+  const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handleImageUpload = (e) => {
+  // Fetch profile image from backend on component mount
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        const response = await fetch('/api/getorganization', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (data.success && data.profileImage) {
+          setProfileImage(data.profileImage);
+          localStorage.setItem('profileImage', data.profileImage);
+        }
+      } catch (error) {
+        console.error('Error fetching profile image:', error);
+      }
+    };
+
+    fetchProfileImage();
+  }, []);
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Client-side validation (matching your JS)
+    // Client-side validation
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
       alert('Only JPEG or PNG images are allowed.');
       return;
@@ -255,12 +283,47 @@ const OrganizationDashboard = () => {
 
     // 1. Local Preview
     const reader = new FileReader();
-    reader.onload = () => setProfileImage(reader.result);
+    reader.onload = () => {
+      setProfileImage(reader.result);
+      // Store in localStorage for header display
+      localStorage.setItem('profileImage', reader.result);
+    };
     reader.readAsDataURL(file);
 
-    // 2. Mock API Upload (replace with actual fetch to /uploadorganization)
-    alert("Profile photo updated successfully!"); 
-    // In a real app, you would fetch and handle the server response here.
+    // 2. Upload to backend
+    const formData = new FormData();
+    formData.append("profileImage", file);
+
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        alert('Session expired. Please login again.');
+        navigate('/signin?role=organization');
+        return;
+      }
+
+      const res = await fetch('/api/uploadorganization', { 
+        method: 'POST', 
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Profile photo updated successfully!"); 
+      } else {
+        alert(`Upload failed: ${data.message || 'Unknown error'}`);
+        setProfileImage(mockOrganization.profileImage);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Upload error occurred.");
+      setProfileImage(mockOrganization.profileImage);
+    }
   };
 
   const handleLogout = () => {
@@ -291,7 +354,8 @@ const OrganizationDashboard = () => {
               <img
                 src={profileImage}
                 alt={`${mockOrganization.org_name} Logo`}
-                className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer"
+                className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer hover:opacity-80 transition"
+                onClick={() => setShowImageModal(true)}
                 onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=Org'}
               />
               <label
@@ -378,6 +442,61 @@ const OrganizationDashboard = () => {
           </h3>
           <RecentDietitiansTable />
         </div>
+
+        {/* Image Modal */}
+        {showImageModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageModal(false)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
+                aria-label="Close modal"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
+
+              {/* Image Container */}
+              <div className="flex items-center justify-center bg-gray-100 p-8">
+                <img
+                  src={profileImage}
+                  alt="Organization Logo Full Size"
+                  className="max-w-full max-h-96 rounded-lg object-contain"
+                  onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/400?text=Organization'}
+                />
+              </div>
+
+              {/* Footer with org info */}
+              <div className="bg-white p-6 border-t border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{mockOrganization.org_name}</h2>
+                <p className="text-gray-600 mb-4">{mockOrganization.email}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      setShowImageModal(false);
+                      fileInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full font-medium hover:bg-green-700 transition"
+                  >
+                    <i className="fas fa-camera"></i> Change Logo
+                  </button>
+                  <button
+                    onClick={() => setShowImageModal(false)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-400 text-gray-700 rounded-full font-medium hover:bg-gray-100 transition"
+                  >
+                    <i className="fas fa-times"></i> Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

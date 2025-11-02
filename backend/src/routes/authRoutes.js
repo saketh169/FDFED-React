@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-
+const upload = require('../middlewares/uploadMiddleware');
 
 /**
  * Middleware utility to explicitly set req.params.role based on the route path.
@@ -71,6 +71,28 @@ router.post('/signin/organization',
 router.post('/signin/corporatepartner', 
     injectRole('corporatepartner'), 
     authController.signinController
+);
+
+// --- DOCUMENT UPLOAD ROUTES ---
+// 11. Dietitian Document Upload: POST /api/documents/upload/dietitian
+router.post('/documents/upload/dietitian',
+    injectRole('dietitian'),
+    upload.any(), // Accept multiple files with any field names
+    authController.docUploadController
+);
+
+// 12. Organization Document Upload: POST /api/documents/upload/organization
+router.post('/documents/upload/organization',
+    injectRole('organization'),
+    upload.any(),
+    authController.docUploadController
+);
+
+// 13. Corporate Partner Document Upload: POST /api/documents/upload/corporatepartner
+router.post('/documents/upload/corporatepartner',
+    injectRole('corporatepartner'),
+    upload.any(),
+    authController.docUploadController
 );
 
 

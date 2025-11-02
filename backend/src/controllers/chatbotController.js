@@ -3,6 +3,9 @@ const { GoogleGenAI } = require('@google/genai');
 const axios = require('axios');
 
 // Initialize Google Gemini AI
+require('dotenv').config({ 
+  path: require('path').join(__dirname, '..', 'utils', '.env') 
+});
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // USDA API Configuration

@@ -86,19 +86,86 @@ const ProgressChart = ({ data }) => {
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(mockUser.profileImage);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   // Ensures 'latest' is safely accessed for metrics
-  const latest = mockProgressData[0] || {}; 
+  const latest = mockProgressData[0] || {};
 
-  const handleImageUpload = (e) => {
+  // Fetch profile image from backend on component mount
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        const response = await fetch('/api/getuser', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (data.success && data.profileImage) {
+          setProfileImage(data.profileImage);
+          localStorage.setItem('profileImage', data.profileImage);
+        }
+      } catch (error) {
+        console.error('Error fetching profile image:', error);
+      }
+    };
+
+    fetchProfileImage();
+  }, []);
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      // Optimistic UI update
-      reader.onload = () => setProfileImage(reader.result);
-      reader.readAsDataURL(file);
+    if (!file) return;
 
-      // In a real app, you would include an asynchronous fetch call here
-      // to upload the image file to the backend server.
+    // Preview image immediately
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfileImage(reader.result);
+      // Store in localStorage for header display
+      localStorage.setItem('profileImage', reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to backend
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      // Get token from localStorage (key: 'authToken' set during signup)
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        alert('Session expired. Please login again.');
+        navigate('/signin?role=user');
+        return;
+      }
+
+      const response = await fetch('/api/uploaduser', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Profile photo uploaded successfully!');
+      } else {
+        alert(`Upload failed: ${data.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload error occurred. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -129,7 +196,8 @@ const UserDashboard = () => {
               <img
                 src={profileImage}
                 alt="Profile"
-                className="w-32 h-32 rounded-full object-cover border-4 border-emerald-600"
+                className="w-32 h-32 rounded-full object-cover border-4 border-emerald-600 cursor-pointer hover:opacity-80 transition"
+                onClick={() => setShowImageModal(true)}
                 onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=User'}
               />
               <label
@@ -145,10 +213,13 @@ const UserDashboard = () => {
                 accept="image/*"
                 className="hidden"
                 onChange={handleImageUpload}
+                disabled={isUploading}
               />
             </div>
 
-            <p className="text-xs text-gray-500 mb-4">Click camera to update photo</p>
+            <p className="text-xs text-gray-500 mb-4">
+              {isUploading ? "Uploading..." : "Click camera to update photo"}
+            </p>
 
             <p className="font-semibold text-lg text-gray-800">{mockUser.name}</p>
             <p className="text-sm text-gray-600">Age: {mockUser.age} • Phone: {mockUser.phone}</p>
@@ -274,6 +345,61 @@ const UserDashboard = () => {
             </button>
           </div>
         </div>
+
+        {/* Image Modal */}
+        {showImageModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageModal(false)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
+                aria-label="Close modal"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
+
+              {/* Image Container */}
+              <div className="flex items-center justify-center bg-gray-100 p-8">
+                <img
+                  src={profileImage}
+                  alt="Profile Full Size"
+                  className="max-w-full max-h-96 rounded-lg object-contain"
+                  onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/400?text=User'}
+                />
+              </div>
+
+              {/* Footer with user info */}
+              <div className="bg-white p-6 border-t border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{mockUser.name}</h2>
+                <p className="text-gray-600 mb-4">{mockUser.email}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      setShowImageModal(false);
+                      document.getElementById('profileUpload').click();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-full font-medium hover:bg-emerald-700 transition"
+                  >
+                    <i className="fas fa-camera"></i> Change Photo
+                  </button>
+                  <button
+                    onClick={() => setShowImageModal(false)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-400 text-gray-700 rounded-full font-medium hover:bg-gray-100 transition"
+                  >
+                    <i className="fas fa-times"></i> Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

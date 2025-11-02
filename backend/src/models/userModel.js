@@ -23,6 +23,7 @@ const UserSchema = new Schema({
     dob: { type: Date, required: true },
     gender: { type: String, enum: ['male', 'female', 'other'], required: true },
     address: { type: String, required: true, maxlength: 200 },
+    profileImage: { type: Buffer },
 }, { timestamps: true });
 
 // 2b. Admin Profile (adminKey REMOVED)
@@ -32,6 +33,7 @@ const AdminSchema = new Schema({
     dob: { type: Date, required: true },
     gender: { type: String, enum: ['male', 'female', 'other'], required: true },
     address: { type: String, required: true, maxlength: 200 },
+    profileImage: { type: Buffer },
 }, { timestamps: true });
 
 // 2c. Dietitian Profile
@@ -40,6 +42,10 @@ const DietitianSchema = new Schema({
     age: { type: Number, required: true, min: 18 },
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^DLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
+    documents: { type: Schema.Types.Mixed, default: {} }, // Store document metadata
+    documentUploadStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+    lastDocumentUpdate: { type: Date, default: null },
+    profileImage: { type: Buffer },
 }, { timestamps: true });
 
 // 2d. Organization Profile
@@ -48,7 +54,11 @@ const OrganizationSchema = new Schema({
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^OLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
     address: { type: String, required: true, maxlength: 200 },
-});
+    documents: { type: Schema.Types.Mixed, default: {} }, // Store document metadata
+    documentUploadStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+    lastDocumentUpdate: { type: Date, default: null },
+    profileImage: { type: Buffer },
+}, { timestamps: true });
 
 // 2e. Corporate Partner Profile
 const CorporatePartnerSchema = new Schema({
@@ -56,7 +66,11 @@ const CorporatePartnerSchema = new Schema({
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^CLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
     address: { type: String, required: true, maxlength: 200 },
-});
+    documents: { type: Schema.Types.Mixed, default: {} }, // Store document metadata
+    documentUploadStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+    lastDocumentUpdate: { type: Date, default: null },
+    profileImage: { type: Buffer },
+}, { timestamps: true });
 
 
 module.exports = {

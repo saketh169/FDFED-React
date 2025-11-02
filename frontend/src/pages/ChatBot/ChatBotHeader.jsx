@@ -8,7 +8,7 @@ function ChatBotHeader() {
   return (
     <div className="w-full flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-[#27AE60] to-[#1E8449] rounded-full flex items-center justify-center shadow-md">
+        <div className="w-10 h-10 bg-linear-to-br from-[#27AE60] to-[#1E8449] rounded-full flex items-center justify-center shadow-md">
           <span className="text-white text-xl font-bold">🤖</span>
         </div>
         <div>

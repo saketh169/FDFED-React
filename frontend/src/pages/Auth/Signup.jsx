@@ -234,7 +234,7 @@ const Signup = () => {
             const responseData = response.data;
 
             // 2. Upon successful POST, the registration is complete.
-            setMessage(`Sign-up successful! Welcome! Redirecting to ${role} home page ...`);
+            setMessage(`Sign-up successful! Welcome! Redirecting to ${role} upload documents ...`);
 
             // Assuming your backend sends the JWT token in the response data (e.g., responseData.token)
             if (responseData.token) {
@@ -242,7 +242,12 @@ const Signup = () => {
                 localStorage.setItem('authToken', responseData.token);
             }
 
-            // Redirect after a short delay
+            // Store roleId from response for document upload
+            if (responseData.roleId) {
+                localStorage.setItem('userId', responseData.roleId);
+            }
+
+            // Redirect to document upload for specific roles
             setTimeout(() => {
                 setMessage('');
                 navigate(roleRoutes[role]);

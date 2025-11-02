@@ -200,10 +200,8 @@ const OrganizationTable = ({ organizations }) => {
 // --- Main Admin Dashboard Component ---
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [profileImage, setProfileImage] = useState(mockAdmin.profileImage);
   const [stats, setStats] = useState({ clients: 0, dietitians: 0, activePlans: 0 });
   const [organizations, setOrganizations] = useState([]);
-  const fileInputRef = useRef(null);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -222,22 +220,10 @@ const AdminDashboard = () => {
     loadData();
   }, []);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // 1. Local Preview
-    const reader = new FileReader();
-    reader.onload = () => setProfileImage(reader.result);
-    reader.readAsDataURL(file);
-
-    // 2. Mock API Upload (replace with actual fetch)
-    // alert("Profile photo updated successfully!"); // Use a proper notification system
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem("adminAuthToken");
-    navigate("/");
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
+    navigate('/');
   };
 
   return (
@@ -253,58 +239,18 @@ const AdminDashboard = () => {
 
         {/* Admin Info & Quick Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* 1. Admin Profile Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-green-600 flex flex-col items-center col-span-1 lg:col-span-1">
-            <h3 className="text-xl font-bold text-teal-900 mb-5 text-center w-full">
-              Admin Profile
-            </h3>
-
-            <div className="relative mb-4">
-              <img
-                src={profileImage}
-                alt="Admin Profile"
-                className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer"
-                onClick={() => { /* Modal logic here */ }}
-                onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=Admin'}
-              />
-              <label
-                htmlFor="profileUpload"
-                className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer shadow hover:bg-green-700 transition"
-              >
-                <i className="fas fa-camera text-sm"></i>
-              </label>
-              <input
-                type="file"
-                id="profileUpload"
-                ref={fileInputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mb-4">Click camera to update photo</p>
-
-            <h5 className="font-semibold text-lg text-gray-800">{mockAdmin.name}</h5>
-            <p className="text-sm text-gray-600">Email: {mockAdmin.email}</p>
-            <p className="text-sm text-gray-600">Phone: {mockAdmin.phone}</p>
-            <p className="text-sm font-bold text-green-700 mb-4">Role: Super Admin</p>
-
-            <div className="flex gap-2 flex-wrap justify-center mt-auto">
-              <button
-                onClick={() => navigate("/admin_dash/edit-profile")}
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-600 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-600 hover:text-white transition"
-              >
-                <i className="fas fa-user-edit"></i> Edit
-              </button>
-              <button
-                onClick={() => navigate("/admin_dash/change-pass")}
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-400 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition"
-              >
-                <i className="fas fa-lock"></i> Password
-              </button>
-            </div>
-            <span className="mt-4 bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Active</span>
-          </div>
+          {/* 1. Profile Card using Reusable Component */}
+          <ProfileImageSection
+            role="admin"
+            name={mockAdmin.name}
+            email={mockAdmin.email}
+            phone={mockAdmin.phone}
+            additionalInfo="Role: Super Admin"
+            onEditClick={() => navigate("/admin_dash/edit-profile")}
+            onPasswordClick={() => navigate("/admin_dash/change-pass")}
+            statusText="Active"
+            statusColor="bg-green-600"
+          />
 
           {/* 2. Quick Stats & Revenue (Merged into one large section) */}
           <div className="col-span-1 lg:col-span-2 space-y-6">

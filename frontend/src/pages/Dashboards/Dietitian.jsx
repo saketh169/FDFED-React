@@ -134,7 +134,35 @@ const VerificationStatusCard = () => {
 const DietitianDashboard = () => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(mockDietitian.profileImage);
+  const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = React.useRef(null);
+
+  // Fetch profile image from backend on component mount
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        const response = await fetch('/api/getdietitian', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (data.success && data.profileImage) {
+          setProfileImage(data.profileImage);
+          localStorage.setItem('profileImage', data.profileImage);
+        }
+      } catch (error) {
+        console.error('Error fetching profile image:', error);
+      }
+    };
+
+    fetchProfileImage();
+  }, []);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -142,25 +170,40 @@ const DietitianDashboard = () => {
 
     // 1. Local Preview
     const reader = new FileReader();
-    reader.onload = () => setProfileImage(reader.result);
+    reader.onload = () => {
+      setProfileImage(reader.result);
+      // Store in localStorage for header display
+      localStorage.setItem('profileImage', reader.result);
+    };
     reader.readAsDataURL(file);
 
-    // 2. Mock API Upload (replace with actual fetch)
+    // 2. Upload to backend
     const formData = new FormData();
     formData.append("profileImage", file);
 
     try {
-      // const res = await fetch('/uploaddietitian', { method: 'POST', body: formData });
-      // const data = await res.json();
-      // Mock Success:
-      const data = { success: true };
+      // Get token from localStorage
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        alert('Session expired. Please login again.');
+        navigate('/signin?role=dietitian');
+        return;
+      }
+
+      const res = await fetch('/api/uploaddietitian', { 
+        method: 'POST', 
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
 
       if (data.success) {
-        // In a real app, you would update the state with the new image URL/base64 from the server response
         alert("Profile photo updated successfully!");
-        // window.location.reload(); // Only if necessary to fetch new base64 image from server
       } else {
-        alert("Upload failed: Check console for details.");
+        alert(`Upload failed: ${data.message || 'Unknown error'}`);
         // Revert to old image on failure if needed
         setProfileImage(mockDietitian.profileImage); 
       }
@@ -199,10 +242,8 @@ const DietitianDashboard = () => {
               <img
                 src={profileImage}
                 alt={`${mockDietitian.name}'s Profile`}
-                className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer"
-                onClick={() => {
-                  /* Logic to open modal/lightbox for image */
-                }}
+                className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer hover:opacity-80 transition"
+                onClick={() => setShowImageModal(true)}
               />
               <label
                 htmlFor="profileUpload"
@@ -337,6 +378,61 @@ const DietitianDashboard = () => {
             </li>
           </ul>
         </div>
+
+        {/* Image Modal */}
+        {showImageModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageModal(false)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
+                aria-label="Close modal"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
+
+              {/* Image Container */}
+              <div className="flex items-center justify-center bg-gray-100 p-8">
+                <img
+                  src={profileImage}
+                  alt="Profile Full Size"
+                  className="max-w-full max-h-96 rounded-lg object-contain"
+                  onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/400?text=Dietitian'}
+                />
+              </div>
+
+              {/* Footer with user info */}
+              <div className="bg-white p-6 border-t border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{mockDietitian.name}</h2>
+                <p className="text-gray-600 mb-4">{mockDietitian.email}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      setShowImageModal(false);
+                      fileInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full font-medium hover:bg-green-700 transition"
+                  >
+                    <i className="fas fa-camera"></i> Change Photo
+                  </button>
+                  <button
+                    onClick={() => setShowImageModal(false)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-400 text-gray-700 rounded-full font-medium hover:bg-gray-100 transition"
+                  >
+                    <i className="fas fa-times"></i> Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
