@@ -1,23 +1,73 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
+
   // Defined to be used in the CSS variable or direct styling
   const primaryGreen = '#28a745'; // Primary CTA Green (Lighter)
   const darkGreen = '#1E6F5C'; // Dashboard Theme Green (Darker)
-  // Re-define darkGreen for the contact section to use the variable syntax
 
-
-  const menuItems = [
-    { name: 'Home', path: '/user/home', icon: 'fas fa-home' },
-    { name: 'Guide', path: '/user-guide', icon: 'fas fa-book' },
-    { name: 'Appointments', path: '/user-consultations', icon: 'fas fa-user-clock' },
-    { name: 'Pricing', path: '/pricing', icon: 'fas fa-crown' },
-    { name: 'Blog', path: '/blog', icon: 'fas fa-blog' },
-    { name: 'Meal Plans', path: '/user-meal-plans', icon: 'fas fa-utensils' },
-    { name: 'My Schedule', path: '/user-schedule', icon: 'fas fa-calendar-check' },
+  // --- Navbar Links Definitions (same as NavHeader.jsx) ---
+  const baseNavLinks = [
+    { name: 'Home', href: '/', icon: 'fas fa-home' },
+    { name: 'About Us', href: '/about-us', icon: 'fas fa-info-circle' },
+    { name: 'Guide', href: '/guide', icon: 'fas fa-book' },
+    { name: 'Blog', href: '/blog', icon: 'fas fa-blog' },
+    { name: 'Chatbot', href: '/chatbot', icon: 'fas fa-robot' },
   ];
+
+  const userNavLinks = [
+    { name: 'Home', href: '/user', icon: 'fas fa-home' },
+    { name: 'Dietitians', href: '/user/dietitian-profiles', icon: 'fas fa-user-tie' },
+    { name: 'Appointments', href: '/user/user-consultations', icon: 'fas fa-calendar' },
+    { name: 'Schedule', href: '/user/user-schedule', icon: 'fas fa-calendar-check' },
+    { name: 'Pricing', href: '/user/pricing', icon: 'fas fa-tag' },
+    { name: 'Blog', href: '/user/blog', icon: 'fas fa-blog' },
+    { name: 'Chatbot', href: '/user/chatbot', icon: 'fas fa-robot' },
+  ];
+
+  const dietitianNavLinks = [
+    { name: 'Home', href: '/dietitian', icon: 'fas fa-home' },
+    { name: 'My Clients', href: '/dietitian/dietitian-consultations', icon: 'fas fa-users' },
+    { name: 'Schedule', href: '/dietitian/dietitian-schedule', icon: 'fas fa-calendar-check' },
+    { name: 'MealPlans', href: '/dietitian/assign-plans', icon: 'fas fa-utensils' },
+    { name: 'Blog', href: '/dietitian/blog', icon: 'fas fa-blog' },
+  ];
+
+  const corporatePartnerNavLinks = [
+    { name: 'Plans/Offers', href: '/corporatepartner/plans-offers', icon: 'fas fa-briefcase' },
+    { name: 'Renewal', href: '/corporatepartner/renewal', icon: 'fas fa-sync-alt' },
+    { name: 'Bookings', href: '/corporatepartner/bookings', icon: 'fas fa-bookmark' },
+    { name: 'Chatbot', href: '/user/chatbot', icon: 'fas fa-robot' },
+  ];
+
+  const adminNavLinks = [
+    { name: 'Analytics', href: '/admin/analytics', icon: 'fas fa-chart-bar' },
+    { name: 'Users', href: '/admin/users', icon: 'fas fa-users' },
+    { name: 'Queries', href: '/admin/queries', icon: 'fas fa-question-circle' },
+    { name: 'Settings', href: '/admin/settings', icon: 'fas fa-cog' },
+  ];
+
+  const organizationNavLinks = [
+    { name: 'Verify Dietitians', href: '/organization/verify-dietitian', icon: 'fas fa-check-circle' },
+    { name: 'Verify Corps', href: '/organization/verify-corporate', icon: 'fas fa-check-double' },
+    { name: 'Documents', href: '/organization/documents', icon: 'fas fa-file' },
+  ];
+
+  // --- Function to Select Links based on Path ---
+  const getNavLinks = () => {
+    if (currentPath.startsWith('/admin')) return adminNavLinks;
+    if (currentPath.startsWith('/organization')) return organizationNavLinks;
+    if (currentPath.startsWith('/corporatepartner')) return corporatePartnerNavLinks;
+    if (currentPath.startsWith('/dietitian')) return dietitianNavLinks;
+    if (currentPath.startsWith('/user')) return userNavLinks;
+    return baseNavLinks;
+  };
+
+  const menuItems = getNavLinks();
 
   return (
     // Sidebar Container
@@ -27,7 +77,7 @@ const Sidebar = () => {
         {menuItems.map((item) => (
           <button
             key={item.name}
-            onClick={() => navigate(item.path)}
+            onClick={() => navigate(item.href)}
             // FIX: Removed the problematic hover:bg-[${primaryGreen}] class.
             // Using a custom CSS class `menu-item-hover` combined with the CSS variable.
             className={`w-full text-left menu-item-hover hover:text-white text-gray-700 font-medium flex items-center gap-3 rounded p-3 transition-all duration-200`}

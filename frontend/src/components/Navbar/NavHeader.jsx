@@ -18,7 +18,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
   // --- Role-Specific Links ---
 
   const userNavLinks = [
-    { name: 'Home', href: '/user' },
+    { name: 'Home', href: '/user/home' },
     { name: 'Dietitians', href: '/user/dietitian-profiles' },
     { name: 'Appointments', href: '/user/user-consultations' },
     { name: 'Schedule', href: '/user/user-schedule' },
@@ -30,7 +30,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
   ];
 
   const dietitianNavLinks = [
-    { name: 'Home', href: '/dietitian' },
+    { name: 'Home', href: '/dietitian/home' },
     { name: 'My Clients', href: '/dietitian/dietitian-consultations' },
     { name: 'Schedule', href: '/dietitian/dietitian-schedule' },
     { name: 'MealPlans', href: '/dietitian/assign-plans' },
@@ -41,6 +41,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
 
   
   const corporatePartnerNavLinks = [ 
+    { name: 'Home', href: '/corporatepartner/home' },
     { name: 'Plans/Offers', href: '/corporatepartner/plans-offers' },
     { name: 'Renewal', href: '/corporatepartner/renewal' },
     { name: 'Bookings', href: '/corporatepartner/bookings' },
@@ -50,6 +51,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
   ];
 
   const adminNavLinks = [
+    { name: 'Home', href: '/admin/home' },
     { name: 'Analytics', href: '/admin/analytics' },
     { name: 'Users', href: '/admin/users' },
     { name: 'Queries', href: '/admin/queries' },
@@ -58,6 +60,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
   ];
 
   const organizationNavLinks = [ 
+    { name: 'Home', href: '/organization/home' },
     { name: 'Verify Dietitians', href: '/organization/verify-dietitian' },
     { name: 'Verify Corps', href: '/organization/verify-corporate' },
     { name: 'Documents', href: '/organization/documents' },
@@ -67,6 +70,15 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
 
   // --- Function to Select Links based on Path ---
   const getNavLinks = () => {
+    // If on dashboard routes, return empty array (no nav links needed)
+    if (currentPath.startsWith('/admin/profile') || 
+        currentPath.startsWith('/organization/profile') || 
+        currentPath.startsWith('/corporatepartner/profile') || 
+        currentPath.startsWith('/dietitian/profile') || 
+        currentPath.startsWith('/user/profile')) {
+      return [];  // No nav links on dashboards
+    }
+
     if (currentPath.startsWith('/admin')) return adminNavLinks;
     if (currentPath.startsWith('/organization')) return organizationNavLinks;
     if (currentPath.startsWith('/corporatepartner')) return corporatePartnerNavLinks;
@@ -86,6 +98,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
             <li key={link.name}>
               <NavLink
                 to={link.href}
+                end
                 onClick={handleScrollToTop}
                 className={({ isActive }) =>
                   `font-poppins text-base lg:text-lg font-medium text-[#2C3E50] transition-colors duration-300 hover:text-[#28B463] hover:underline hover:underline-offset-4 ${
@@ -126,6 +139,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
               <li key={link.name}>
                 <NavLink
                   to={link.href}
+                  end
                   onClick={() => {
                     setIsMenuOpen(false);
                     handleScrollToTop();
@@ -142,7 +156,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
             ))}
           </ul>
 
-          <div className="flex flex-col items-center space-y-3 px-8">
+          <div className="flex flex-row items-center justify-center space-x-3 px-8">
             {/* Render action buttons for mobile if not already included in role nav (i.e., not Admin/Org/Corp) */}
             {!navLinks.some(link => link.name === 'Logout') && (
                 renderActionButtons(true)

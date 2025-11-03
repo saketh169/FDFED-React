@@ -238,8 +238,8 @@ const Signup = () => {
 
             // Assuming your backend sends the JWT token in the response data (e.g., responseData.token)
             if (responseData.token) {
-                // Handle token storage
-                localStorage.setItem('authToken', responseData.token);
+                // Handle token storage with role-specific key so multiple roles can be logged in simultaneously
+                localStorage.setItem(`authToken_${responseData.role}`, responseData.token);
             }
 
             // Store roleId from response for document upload

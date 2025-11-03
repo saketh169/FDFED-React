@@ -237,17 +237,18 @@ const RecentDietitiansTable = () => {
 const OrganizationDashboard = () => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(mockOrganization.profileImage);
+  const [organizationDetails, setOrganizationDetails] = useState(mockOrganization); // Store fetched organization details
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Fetch profile image from backend on component mount
+  // Fetch profile details from backend on component mount
   useEffect(() => {
-    const fetchProfileImage = async () => {
+    const fetchProfileDetails = async () => {
       try {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken_organization');
         if (!token) return;
 
-        const response = await fetch('/api/getorganization', {
+        const response = await fetch('/api/getorganizationdetails', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -255,16 +256,27 @@ const OrganizationDashboard = () => {
         });
 
         const data = await response.json();
-        if (data.success && data.profileImage) {
-          setProfileImage(data.profileImage);
-          localStorage.setItem('profileImage', data.profileImage);
+        if (data.success) {
+          // Update organization details from API response
+          setOrganizationDetails({
+            org_name: data.org_name || mockOrganization.org_name,
+            email: data.email || mockOrganization.email,
+            phone: data.phone || mockOrganization.phone,
+            address: data.address || mockOrganization.address
+          });
+          
+          // Update profile image
+          if (data.profileImage) {
+            setProfileImage(data.profileImage);
+            localStorage.setItem('profileImage', data.profileImage);
+          }
         }
       } catch (error) {
-        console.error('Error fetching profile image:', error);
+        console.error('Error fetching profile details:', error);
       }
     };
 
-    fetchProfileImage();
+    fetchProfileDetails();
   }, []);
 
   const handleImageUpload = async (e) => {
@@ -296,7 +308,7 @@ const OrganizationDashboard = () => {
 
     try {
       // Get token from localStorage
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken_organization');
       
       if (!token) {
         alert('Session expired. Please login again.');
@@ -339,7 +351,7 @@ const OrganizationDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-10">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-8 border-b border-gray-200 pb-4">
-          Welcome, {mockOrganization.org_name}! 🏢
+          Welcome, {organizationDetails.org_name}! 🏢
         </h1>
 
         {/* Grid Layout */}
@@ -353,7 +365,7 @@ const OrganizationDashboard = () => {
             <div className="relative mb-4">
               <img
                 src={profileImage}
-                alt={`${mockOrganization.org_name} Logo`}
+                alt={`${organizationDetails.org_name} Logo`}
                 className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer hover:opacity-80 transition"
                 onClick={() => setShowImageModal(true)}
                 onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=Org'}
@@ -376,10 +388,10 @@ const OrganizationDashboard = () => {
 
             <p className="text-xs text-gray-500 mb-4">Click camera to update photo</p>
 
-            <h5 className="font-semibold text-lg text-gray-800 text-center">{mockOrganization.org_name}</h5>
-            <p className="text-sm text-gray-600">Email: {mockOrganization.email}</p>
-            <p className="text-sm text-gray-600">Phone: {mockOrganization.phone}</p>
-            <p className="text-sm text-gray-600 mb-4 text-center">{mockOrganization.address}</p>
+            <h5 className="font-semibold text-lg text-gray-800 text-center">{organizationDetails.org_name}</h5>
+            <p className="text-sm text-gray-600">Email: {organizationDetails.email}</p>
+            <p className="text-sm text-gray-600">Phone: {organizationDetails.phone}</p>
+            <p className="text-sm text-gray-600 mb-4 text-center">{organizationDetails.address}</p>
 
             <div className="flex gap-2 flex-wrap justify-center mt-auto">
               <button

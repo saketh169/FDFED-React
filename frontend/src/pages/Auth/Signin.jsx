@@ -149,7 +149,8 @@ const Signin = () => {
 
             // Handle token storage
             if (data.token) {
-                localStorage.setItem('authToken', data.token);
+                // Store token with role-specific key so multiple roles can be logged in simultaneously
+                localStorage.setItem(`authToken_${data.role}`, data.token);
             }
 
             setMessage(`Sign-in successful! Redirecting to ${role} home page ...`);

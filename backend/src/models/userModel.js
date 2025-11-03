@@ -19,6 +19,7 @@ const UserAuthSchema = new Schema({
 // 2a. Standard User Profile
 const UserSchema = new Schema({
     name: { type: String, required: true, minlength: 5, unique: true, trim: true }, // ROLE-SPECIFIC UNIQUE
+    email: { type: String, required: true, lowercase: true, trim: true }, // Email from UserAuth
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     dob: { type: Date, required: true },
     gender: { type: String, enum: ['male', 'female', 'other'], required: true },
@@ -29,6 +30,7 @@ const UserSchema = new Schema({
 // 2b. Admin Profile (adminKey REMOVED)
 const AdminSchema = new Schema({
     name: { type: String, required: true, minlength: 5, unique: true, trim: true }, // ROLE-SPECIFIC UNIQUE
+    email: { type: String, required: true, lowercase: true, trim: true }, // Email from UserAuth
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     dob: { type: Date, required: true },
     gender: { type: String, enum: ['male', 'female', 'other'], required: true },
@@ -39,6 +41,7 @@ const AdminSchema = new Schema({
 // 2c. Dietitian Profile
 const DietitianSchema = new Schema({
     name: { type: String, required: true, minlength: 5, unique: true, trim: true }, // ROLE-SPECIFIC UNIQUE
+    email: { type: String, required: true, lowercase: true, trim: true }, // Email from UserAuth
     age: { type: Number, required: true, min: 18 },
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^DLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
@@ -51,6 +54,7 @@ const DietitianSchema = new Schema({
 // 2d. Organization Profile
 const OrganizationSchema = new Schema({
     name: { type: String, required: true, minlength: 5, unique: true, trim: true }, // ROLE-SPECIFIC UNIQUE
+    email: { type: String, required: true, lowercase: true, trim: true }, // Email from UserAuth
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^OLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
     address: { type: String, required: true, maxlength: 200 },
@@ -63,6 +67,7 @@ const OrganizationSchema = new Schema({
 // 2e. Corporate Partner Profile
 const CorporatePartnerSchema = new Schema({
     name: { type: String, required: true, minlength: 5, unique: true, trim: true }, // ROLE-SPECIFIC UNIQUE
+    email: { type: String, required: true, lowercase: true, trim: true }, // Email from UserAuth
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^CLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
     address: { type: String, required: true, maxlength: 200 },

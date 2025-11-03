@@ -6,8 +6,10 @@ const RoleModal = () => {
 
   useEffect(() => {
     console.log('[RoleModal] Component mounted');
-    const token = localStorage.getItem('authToken');
-    console.log('[RoleModal] Existing token found:', !!token);
+    // Check for any existing role tokens
+    const roles = ['user', 'dietitian', 'admin', 'organization', 'corporatepartner'];
+    const hasAnyToken = roles.some(role => localStorage.getItem(`authToken_${role}`));
+    console.log('[RoleModal] Existing token found:', hasAnyToken);
   }, []);
 
   const roles = [
@@ -20,16 +22,16 @@ const RoleModal = () => {
   const handleRoleClick = (role) => {
     console.log(`[RoleModal] Role clicked: ${role.slug}`);
     
-    // Check if token exists in localStorage
-    const token = localStorage.getItem('authToken');
+    // Check if token exists for this specific role
+    const token = localStorage.getItem(`authToken_${role.slug}`);
     
     if (token) {
       // Token exists, go directly to dashboard
-      console.log(`[RoleModal] Token found, redirecting to ${role.slug} dashboard`);
+      console.log(`[RoleModal] Token found for ${role.slug}, redirecting to dashboard`);
       navigate(role.dashboardRoute);
     } else {
       // No token, go to signin
-      console.log(`[RoleModal] No token found, redirecting to ${role.slug} signin`);
+      console.log(`[RoleModal] No token found for ${role.slug}, redirecting to signin`);
       navigate(`/signin?role=${role.slug}`, { state: { scrollToTop: true } });
     }
   };

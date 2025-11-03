@@ -500,8 +500,8 @@ const DocUpload = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      // Get user data from token stored during signup
-      const token = localStorage.getItem('authToken');
+      // Get user data from token stored during signup (use role-specific key)
+      const token = localStorage.getItem(`authToken_${role}`);
       const userIdFromStorage = localStorage.getItem('userId');
 
       if (!token || !userIdFromStorage) {

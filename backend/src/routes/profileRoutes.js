@@ -11,7 +11,12 @@ const {
     getAdminProfileImage,
     getDietitianProfileImage,
     getOrganizationProfileImage,
-    getCorporatePartnerProfileImage
+    getCorporatePartnerProfileImage,
+    getUserDetails,
+    getDietitianDetails,
+    getAdminDetails,
+    getOrganizationDetails,
+    getCorporatePartnerDetails
 } = require('../controllers/profileController');
 
 // Profile Image Upload Routes - No authentication required for now
@@ -27,5 +32,14 @@ router.get('/getadmin', getAdminProfileImage);
 router.get('/getdietitian', getDietitianProfileImage);
 router.get('/getorganization', getOrganizationProfileImage);
 router.get('/getcorporatepartner', getCorporatePartnerProfileImage);
+
+// Unified User Details Routes - Role-specific naming with matching controller functions
+// These will automatically detect the role from the JWT token
+router.get('/getuserdetails', getUserDetails);
+router.get('/getdietitiandetails', getDietitianDetails);
+router.get('/getadmindetails', getAdminDetails);
+router.get('/getorganizationdetails', getOrganizationDetails);
+router.get('/getcorporatepartnerdetails', getCorporatePartnerDetails);
+
 
 module.exports = router;
