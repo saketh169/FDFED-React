@@ -99,16 +99,17 @@ const EngagementChart = ({ data }) => {
 const CorporateDashboard = () => {
   const navigate = useNavigate();
   const [partnerLogo, setPartnerLogo] = useState(mockPartner.logoImage);
+  const [partnerDetails, setPartnerDetails] = useState(mockPartner); // Store fetched partner details
   const [showImageModal, setShowImageModal] = useState(false);
 
-  // Fetch logo image from backend on component mount
+  // Fetch profile details from backend on component mount
   useEffect(() => {
-    const fetchLogoImage = async () => {
+    const fetchProfileDetails = async () => {
       try {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken_corporatepartner');
         if (!token) return;
 
-        const response = await fetch('/api/getcorporatepartner', {
+        const response = await fetch('/api/getcorporatepartnerdetails', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -116,16 +117,33 @@ const CorporateDashboard = () => {
         });
 
         const data = await response.json();
-        if (data.success && data.profileImage) {
-          setPartnerLogo(data.profileImage);
-          localStorage.setItem('profileImage', data.profileImage);
+        if (data.success) {
+          // Update partner details from API response
+          setPartnerDetails({
+            name: data.name || mockPartner.name,
+            programName: data.programName || mockPartner.programName,
+            contact: data.contact || mockPartner.contact,
+            duration: data.duration || mockPartner.duration,
+            totalLicenses: data.totalLicenses || mockPartner.totalLicenses,
+            activeUsers: data.activeUsers || mockPartner.activeUsers,
+            enrollmentRate: data.enrollmentRate || mockPartner.enrollmentRate,
+            currentCommissionTier: data.currentCommissionTier || mockPartner.currentCommissionTier,
+            lastPayout: data.lastPayout || mockPartner.lastPayout,
+            nextContractDate: data.nextContractDate || mockPartner.nextContractDate
+          });
+          
+          // Update partner logo
+          if (data.profileImage) {
+            setPartnerLogo(data.profileImage);
+            localStorage.setItem('profileImage', data.profileImage);
+          }
         }
       } catch (error) {
-        console.error('Error fetching logo image:', error);
+        console.error('Error fetching profile details:', error);
       }
     };
 
-    fetchLogoImage();
+    fetchProfileDetails();
   }, []);
 
   const handleLogoUpload = async (e) => {
@@ -147,7 +165,7 @@ const CorporateDashboard = () => {
 
     try {
       // Get token from localStorage
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken_corporatepartner');
       
       if (!token) {
         alert('Session expired. Please login again.');
@@ -189,7 +207,7 @@ const CorporateDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-10">
         <h1 className="text-3xl lg:text-4xl font-bold text-teal-900 mb-8 border-b border-gray-200 pb-4">
-          👋 Welcome, {mockPartner.name}!
+          👋 Welcome, {partnerDetails.name}!
         </h1>
 
         {/* Grid Layout (Profile, Metrics, Quick Actions) */}
@@ -203,7 +221,7 @@ const CorporateDashboard = () => {
             <div className="relative mb-4">
               <img
                 src={partnerLogo}
-                alt={`${mockPartner.name} Logo`}
+                alt={`${partnerDetails.name} Logo`}
                 className="w-32 h-32 object-contain border-4 border-emerald-600 p-2 bg-white rounded-xl cursor-pointer hover:opacity-80 transition"
                 onClick={() => setShowImageModal(true)}
                 onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=Logo'}
@@ -224,18 +242,19 @@ const CorporateDashboard = () => {
               />
             </div>
 
-            <p className="font-semibold text-lg text-gray-800 text-center">{mockPartner.programName}</p>
-            <p className="text-sm text-gray-600 mb-4">{mockPartner.contact}</p>
+            <p className="font-semibold text-lg text-gray-800 text-center">{partnerDetails.programName}</p>
+            <p className="text-sm text-gray-600 mb-2">Email: {partnerDetails.email}</p>
+            <p className="text-sm text-gray-600 mb-4">Contact: {partnerDetails.contact}</p>
 
             {/* Key Agreement Status Boxes */}
             <div className="w-full space-y-2">
                 <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                     <p className="text-xs text-gray-600">Duration Left</p>
-                    <p className="font-bold text-yellow-700">{mockPartner.duration}</p>
+                    <p className="font-bold text-yellow-700">{partnerDetails.duration}</p>
                 </div>
                 <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
                     <p className="text-xs text-gray-600">Commission Tier</p>
-                    <p className="font-bold text-purple-700">{mockPartner.currentCommissionTier}</p>
+                    <p className="font-bold text-purple-700">{partnerDetails.currentCommissionTier}</p>
                 </div>
             </div>
 
@@ -252,26 +271,26 @@ const CorporateDashboard = () => {
             <div className="grid grid-cols-2 gap-3 mb-5 text-center">
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-xs text-gray-600">Total Licenses</p>
-                <p className="font-bold text-blue-700">{mockPartner.totalLicenses.toLocaleString()}</p>
+                <p className="font-bold text-blue-700">{partnerDetails.totalLicenses.toLocaleString()}</p>
               </div>
               <div className="p-3 bg-green-50 rounded-lg border border-green-200">
                 <p className="text-xs text-gray-600">Active Users</p>
-                <p className="font-bold text-green-700">{mockPartner.activeUsers.toLocaleString()}</p>
+                <p className="font-bold text-green-700">{partnerDetails.activeUsers.toLocaleString()}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="text-xs text-gray-600">Enrollment Rate</p>
-                <p className="font-bold text-gray-700">{mockPartner.enrollmentRate}</p>
+                <p className="font-bold text-gray-700">{partnerDetails.enrollmentRate}</p>
               </div>
               <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
                 <p className="text-xs text-gray-600">Last Payout</p>
-                <p className="font-bold text-purple-700">{mockPartner.lastPayout}</p>
+                <p className="font-bold text-purple-700">{partnerDetails.lastPayout}</p>
               </div>
             </div>
 
             {/* Renewal Call to Action */}
             <div className="mt-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg text-center">
                 <p className="font-semibold text-red-800 mb-1">Contract Renewal Due:</p>
-                <p className="text-lg font-extrabold text-red-900">{mockPartner.nextContractDate}</p>
+                <p className="text-lg font-extrabold text-red-900">{partnerDetails.nextContractDate}</p>
             </div>
 
             <button

@@ -9,67 +9,61 @@ const NavFooter = ({ handleScrollToTop }) => {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // --- Dynamic Footer Links Definitions ---
+  // --- Dynamic Footer Links Definitions (same as NavHeader.jsx) ---
 
   // 1. Base set of links for general/public pages
   const baseFooterLinks = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about-us' },
+    { name: 'Guide', href: '/guide' },
     { name: 'Blog', href: '/blog' },
     { name: 'Chatbot', href: '/chatbot' },
-    { name: 'Log In', href: '/role' },
-    { name: 'Contact Us', href: '/contact-us' },
   ];
 
-  // 2. Links for a general 'user' role
+  // 2. Links for a general 'user' role (matching userNavLinks from NavHeader)
   const userFooterLinks = [
-    { name: 'Home', href: '/user' },
-    { name: 'Guide', href: '/user-guide' },
-    { name: 'Dietitians', href: '/dietitian-profiles' },
-    { name: 'Appointments', href: '/user-consultations' },
-    { name: 'Schedule', href: '/user-schedule' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Pricing', href: '/pricing' },
+    { name: 'Home', href: '/user/home' },
+    { name: 'Dietitians', href: '/user/dietitian-profiles' },
+    { name: 'Appointments', href: '/user/user-consultations' },
+    { name: 'Schedule', href: '/user/user-schedule' },
+    { name: 'Pricing', href: '/user/pricing' },
+    { name: 'Blog', href: '/user/blog' },
+    { name: 'Chatbot', href: '/user/chatbot' },
   ];
 
-  // 3. Links for the 'dietitian' role
+  // 3. Links for the 'dietitian' role (matching dietitianNavLinks from NavHeader)
   const dietitianFooterLinks = [
-    { name: 'Home', href: '/dietitian' },
-    { name: 'Guide', href: '/dietitian-guide' },
-    { name: 'My Clients', href: '/dietitian-consultations' },
-    { name: 'Schedule', href: '/dietitian-schedule' },
-    { name: 'MealPlans', href: '/assign-plans' },
-    { name: 'Queries', href: '/dietitian-queries' },
+    { name: 'Home', href: '/dietitian/home' },
+    { name: 'My Clients', href: '/dietitian/dietitian-consultations' },
+    { name: 'Schedule', href: '/dietitian/dietitian-schedule' },
+    { name: 'MealPlans', href: '/dietitian/assign-plans' },
+    { name: 'Blog', href: '/dietitian/blog' },
   ];
   
-  // 4. Links for the 'admin' role
+  // 4. Links for the 'admin' role (matching adminNavLinks from NavHeader)
   const adminFooterLinks = [
-    { name: 'Dashboard', href: '/admin/dashboard' },
+    { name: 'Home', href: '/admin/home' },
     { name: 'Analytics', href: '/admin/analytics' },
     { name: 'Users', href: '/admin/users' },
     { name: 'Queries', href: '/admin/queries' },
     { name: 'Settings', href: '/admin/settings' },
-    { name: 'Profile', href: '/admin/profile' },
   ];
   
-  // 5. Links for the 'organization' role
+  // 5. Links for the 'organization' role (matching organizationNavLinks from NavHeader)
   const organizationFooterLinks = [ 
-    { name: 'Dashboard', href: '/organization/dashboard' },
+    { name: 'Home', href: '/organization/home' },
     { name: 'Verify Dietitians', href: '/organization/verify-dietitian' },
     { name: 'Verify Corps', href: '/organization/verify-corporate' },
     { name: 'Documents', href: '/organization/documents' },
-    { name: 'Contact', href: '/contact-us' }, 
-    { name: 'Profile', href: '/organization/profile' },
   ];
 
-  // 6. Links for the 'corporatepartner' role
+  // 6. Links for the 'corporatepartner' role (matching corporatePartnerNavLinks from NavHeader)
   const corporatePartnerFooterLinks = [ 
-    { name: 'Dashboard', href: '/corporatepartner/dashboard' },
+    { name: 'Home', href: '/corporatepartner/home' },
     { name: 'Plans/Offers', href: '/corporatepartner/plans-offers' },
     { name: 'Renewal', href: '/corporatepartner/renewal' },
     { name: 'Bookings', href: '/corporatepartner/bookings' },
-    { name: 'Contact', href: '/contact-us' }, 
-    { name: 'Profile', href: '/corporatepartner/profile' },
+    { name: 'Chatbot', href: '/user/chatbot' },
   ];
 
   // --- Logic to Determine Active Links ---
@@ -105,15 +99,13 @@ const NavFooter = ({ handleScrollToTop }) => {
           <li key={link.name} className="mb-2">
             <NavLink
               to={link.href}
+              end
               onClick={handleScrollToTop}
               className={({ isActive }) =>
                 `no-underline hover:text-[#FFD700] hover:pl-2 transition-all duration-300 ${
                   isActive ? 'text-[#FFD700]' : ''
                 }`
               }
-              // In React Router v6+, 'exact' is deprecated; the behavior is now default or handled by the route setup.
-              // I'm leaving it as a non-breaking attribute for now, but its functionality is managed by NavLink itself.
-              // The closest replacement is ensuring the 'to' path matches the route definition exactly.
             >
               {link.name}
             </NavLink>

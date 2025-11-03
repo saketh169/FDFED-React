@@ -202,6 +202,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ clients: 0, dietitians: 0, activePlans: 0 });
   const [organizations, setOrganizations] = useState([]);
+  const [adminDetails, setAdminDetails] = useState(mockAdmin); // Store fetched admin details
 
   // Fetch data on component mount
   useEffect(() => {
@@ -220,6 +221,45 @@ const AdminDashboard = () => {
     loadData();
   }, []);
 
+  // Fetch profile details from backend on component mount
+  useEffect(() => {
+    const fetchProfileDetails = async () => {
+      try {
+        const token = localStorage.getItem('authToken_admin');
+        if (!token) return;
+
+        const response = await fetch('/api/getadmindetails', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Update admin details from API response
+          setAdminDetails({
+            name: data.name || mockAdmin.name,
+            email: data.email || mockAdmin.email,
+            phone: data.phone || mockAdmin.phone,
+          });
+          
+          // Update localStorage with latest profile data
+          if (data.profileImage) {
+            localStorage.setItem('profileImage', data.profileImage);
+          }
+          if (data.name) {
+            localStorage.setItem('userName', data.name);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile details:', error);
+      }
+    };
+
+    fetchProfileDetails();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
@@ -234,7 +274,7 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-10">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-8 border-b border-gray-200 pb-4">
-          Welcome, {mockAdmin.name}! 👑
+          Welcome, {adminDetails.name}! 👑
         </h1>
 
         {/* Admin Info & Quick Stats */}
@@ -242,9 +282,9 @@ const AdminDashboard = () => {
           {/* 1. Profile Card using Reusable Component */}
           <ProfileImageSection
             role="admin"
-            name={mockAdmin.name}
-            email={mockAdmin.email}
-            phone={mockAdmin.phone}
+            name={adminDetails.name}
+            email={adminDetails.email}
+            phone={adminDetails.phone}
             additionalInfo="Role: Super Admin"
             onEditClick={() => navigate("/admin_dash/edit-profile")}
             onPasswordClick={() => navigate("/admin_dash/change-pass")}

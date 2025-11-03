@@ -86,19 +86,20 @@ const ProgressChart = ({ data }) => {
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(mockUser.profileImage);
+  const [userDetails, setUserDetails] = useState(mockUser); // Store fetched user details
   const [isUploading, setIsUploading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   // Ensures 'latest' is safely accessed for metrics
   const latest = mockProgressData[0] || {};
 
-  // Fetch profile image from backend on component mount
+  // Fetch profile details from backend on component mount
   useEffect(() => {
-    const fetchProfileImage = async () => {
+    const fetchProfileDetails = async () => {
       try {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken_user');
         if (!token) return;
 
-        const response = await fetch('/api/getuser', {
+        const response = await fetch('/api/getuserdetails', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -106,16 +107,28 @@ const UserDashboard = () => {
         });
 
         const data = await response.json();
-        if (data.success && data.profileImage) {
-          setProfileImage(data.profileImage);
-          localStorage.setItem('profileImage', data.profileImage);
+        if (data.success) {
+          // Update user details from API response
+          setUserDetails({
+            name: data.name || mockUser.name,
+            email: data.email || mockUser.email,
+            phone: data.phone || mockUser.phone,
+            age: data.age || mockUser.age,
+            address: data.address || mockUser.address
+          });
+          
+          // Update profile image
+          if (data.profileImage) {
+            setProfileImage(data.profileImage);
+            localStorage.setItem('profileImage', data.profileImage);
+          }
         }
       } catch (error) {
-        console.error('Error fetching profile image:', error);
+        console.error('Error fetching profile details:', error);
       }
     };
 
-    fetchProfileImage();
+    fetchProfileDetails();
   }, []);
 
   const handleImageUpload = async (e) => {
@@ -137,8 +150,8 @@ const UserDashboard = () => {
       const formData = new FormData();
       formData.append('profileImage', file);
 
-      // Get token from localStorage (key: 'authToken' set during signup)
-      const token = localStorage.getItem('authToken');
+      // Get token from localStorage (key: 'authToken_user' set during signin)
+      const token = localStorage.getItem('authToken_user');
       
       if (!token) {
         alert('Session expired. Please login again.');
@@ -182,7 +195,7 @@ const UserDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-10">
         <h1 className="text-3xl lg:text-4xl font-bold text-teal-900 mb-8 border-b border-gray-200 pb-4">
-          Hello, {mockUser.name}! Your Wellness Dashboard
+          Hello, {userDetails.name}! Your Wellness Dashboard
         </h1>
 
         {/* Grid Layout (3 columns for large screens) */}
@@ -221,10 +234,10 @@ const UserDashboard = () => {
               {isUploading ? "Uploading..." : "Click camera to update photo"}
             </p>
 
-            <p className="font-semibold text-lg text-gray-800">{mockUser.name}</p>
-            <p className="text-sm text-gray-600">Age: {mockUser.age} • Phone: {mockUser.phone}</p>
-            <p className="text-sm text-gray-600">{mockUser.email}</p>
-            <p className="text-sm text-gray-600 mb-4">{mockUser.address}</p>
+            <p className="font-semibold text-lg text-gray-800">{userDetails.name}</p>
+            <p className="text-sm text-gray-600">Age: {userDetails.age} • Phone: {userDetails.phone}</p>
+            <p className="text-sm text-gray-600">{userDetails.email}</p>
+            <p className="text-sm text-gray-600 mb-4">{userDetails.address}</p>
 
             <div className="mt-5 flex gap-2 flex-wrap justify-center">
               <button

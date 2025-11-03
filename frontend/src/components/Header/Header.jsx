@@ -63,6 +63,11 @@ const Header = () => {
     currentPath.startsWith('/organization') ||
     currentPath.startsWith('/corporatepartner');
 
+  // Check if user is on a profile page
+  const isProfilePage = 
+    currentPath.endsWith('/profile') || 
+    currentPath.includes('/profile/');
+
   // Determine which GET endpoint to use based on current path
   const getProfileImageEndpoint = React.useCallback(() => {
     if (currentPath.startsWith('/admin')) return '/api/getadmin';
@@ -73,12 +78,24 @@ const Header = () => {
     return null;
   }, [currentPath]);
 
+  // Get the current role based on path
+  const getCurrentRole = React.useCallback(() => {
+    if (currentPath.startsWith('/admin')) return 'admin';
+    if (currentPath.startsWith('/organization')) return 'organization';
+    if (currentPath.startsWith('/corporatepartner')) return 'corporatepartner';
+    if (currentPath.startsWith('/dietitian')) return 'dietitian';
+    if (currentPath.startsWith('/user')) return 'user';
+    return null;
+  }, [currentPath]);
+
   // Fetch profile image from backend using GET route
   React.useEffect(() => {
     if (isLoggedInArea) {
       const fetchProfileImage = async () => {
         try {
-          const token = localStorage.getItem('authToken');
+          const role = getCurrentRole();
+          // Get token for current role
+          const token = localStorage.getItem(`authToken_${role}`);
           if (!token) return;
 
           const endpoint = getProfileImageEndpoint();
@@ -103,7 +120,7 @@ const Header = () => {
 
       fetchProfileImage();
     }
-  }, [isLoggedInArea, getProfileImageEndpoint]);
+  }, [isLoggedInArea, getProfileImageEndpoint, getCurrentRole]);
 
   // **NEW LOGIC: Determine the correct Contact Us path**
   const getContactPath = () => {
@@ -139,8 +156,12 @@ const Header = () => {
   const handleLogout = () => {
     console.log('[Header] Logging out user...');
     
-    // Remove all user data from localStorage
-    localStorage.removeItem('authToken');
+    // Remove all role-specific tokens and user data from localStorage
+    localStorage.removeItem('authToken_user');
+    localStorage.removeItem('authToken_dietitian');
+    localStorage.removeItem('authToken_admin');
+    localStorage.removeItem('authToken_organization');
+    localStorage.removeItem('authToken_corporatepartner');
     localStorage.removeItem('profileImage');
     localStorage.removeItem('userId');
     
@@ -178,7 +199,7 @@ const Header = () => {
               <img
                 src={profileImage}
                 alt="Profile"
-                className="w-10 h-10 rounded-full object-cover"
+                className="w-9 h-9 rounded-full object-cover"
                 onError={(e) => e.currentTarget.style.display = 'none'}
               />
             ) : (
@@ -226,7 +247,7 @@ const Header = () => {
 
   return (
     <>
-      <header className="bg-white shadow-sm py-4 px-4 md:px-8 lg:px-16 sticky top-0 z-50 border-b-2 border-[#28B463]">
+      <header className={`${isProfilePage ? 'bg-[#E8F5E9]' : 'bg-white'} shadow-sm ${isLoggedInArea ? 'py-2' : 'py-3'} px-4 md:px-8 lg:px-16 sticky top-0 z-50 border-b-2 border-[#28B463]`}>
         <FontAwesomeLink />
 
         <div className="max-w-7xl mx-auto  flex items-center justify-between">

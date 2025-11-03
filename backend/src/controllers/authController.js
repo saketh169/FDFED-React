@@ -87,8 +87,8 @@ exports.signupController = async (req, res) => {
         // 5. HASH PASSWORD AND SAVE
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Save the Role-Specific Profile
-        const profile = new ProfileModel({ ...profileData, licenseNumber }); 
+        // Save the Role-Specific Profile with email
+        const profile = new ProfileModel({ ...profileData, email, licenseNumber }); 
         await profile.save(); 
 
         // Create Central Authentication Record 
@@ -113,6 +113,7 @@ exports.signupController = async (req, res) => {
             message: 'Registration successful! Proceed to the next step.',
             name: registeredName,
             token,
+            role: role,
             roleId: profile._id // Include roleId for document upload
         });
 
@@ -212,6 +213,7 @@ exports.signinController = async (req, res) => {
         return res.status(200).json({ 
             message: 'Login successful!',
             token,
+            role: authUser.role,
             expiresIn 
         });
 

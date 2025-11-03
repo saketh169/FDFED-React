@@ -134,17 +134,18 @@ const VerificationStatusCard = () => {
 const DietitianDashboard = () => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(mockDietitian.profileImage);
+  const [dietitianDetails, setDietitianDetails] = useState(mockDietitian); // Store fetched dietitian details
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = React.useRef(null);
 
-  // Fetch profile image from backend on component mount
+  // Fetch profile details from backend on component mount
   useEffect(() => {
-    const fetchProfileImage = async () => {
+    const fetchProfileDetails = async () => {
       try {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken_dietitian');
         if (!token) return;
 
-        const response = await fetch('/api/getdietitian', {
+        const response = await fetch('/api/getdietitiandetails', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -152,16 +153,29 @@ const DietitianDashboard = () => {
         });
 
         const data = await response.json();
-        if (data.success && data.profileImage) {
-          setProfileImage(data.profileImage);
-          localStorage.setItem('profileImage', data.profileImage);
+        if (data.success) {
+          // Update dietitian details from API response
+          setDietitianDetails({
+            name: data.name || mockDietitian.name,
+            email: data.email || mockDietitian.email,
+            phone: data.phone || mockDietitian.phone,
+            age: data.age || mockDietitian.age,
+            specialization: data.specialization || mockDietitian.specialization,
+            experience: data.experience || mockDietitian.experience
+          });
+          
+          // Update profile image
+          if (data.profileImage) {
+            setProfileImage(data.profileImage);
+            localStorage.setItem('profileImage', data.profileImage);
+          }
         }
       } catch (error) {
-        console.error('Error fetching profile image:', error);
+        console.error('Error fetching profile details:', error);
       }
     };
 
-    fetchProfileImage();
+    fetchProfileDetails();
   }, []);
 
   const handleImageUpload = async (e) => {
@@ -183,7 +197,7 @@ const DietitianDashboard = () => {
 
     try {
       // Get token from localStorage
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken_dietitian');
       
       if (!token) {
         alert('Session expired. Please login again.');
@@ -227,7 +241,7 @@ const DietitianDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-10">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-8 border-b border-gray-200 pb-4">
-          Welcome, {mockDietitian.name}! 👋
+          Welcome, {dietitianDetails.name}! 👋
         </h1>
 
         {/* Grid Layout */}
@@ -241,7 +255,7 @@ const DietitianDashboard = () => {
             <div className="relative mb-4">
               <img
                 src={profileImage}
-                alt={`${mockDietitian.name}'s Profile`}
+                alt={`${dietitianDetails.name}'s Profile`}
                 className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer hover:opacity-80 transition"
                 onClick={() => setShowImageModal(true)}
               />
@@ -266,12 +280,12 @@ const DietitianDashboard = () => {
             </p>
 
             <h5 className="font-semibold text-lg text-gray-800">
-              {mockDietitian.name}
+              {dietitianDetails.name}
             </h5>
-            <p className="text-sm text-gray-600">Age: {mockDietitian.age}</p>
-            <p className="text-sm text-gray-600">{mockDietitian.email}</p>
+            <p className="text-sm text-gray-600">Age: {dietitianDetails.age}</p>
+            <p className="text-sm text-gray-600">{dietitianDetails.email}</p>
             <p className="text-sm text-gray-600 mb-3">
-              Contact: {mockDietitian.phone}
+              Contact: {dietitianDetails.phone}
             </p>
 
             <div className="flex gap-2 flex-wrap justify-center mt-auto">
