@@ -6,6 +6,8 @@ import UserSchedule from '../pages/Schedules/UserSchedule';
 
 import UserDashboard from '../pages/Dashboards/User';
 import UserProgress from '../pages/UserProgress'; 
+import ChangePassword from '../pages/ChangePassword';
+import EditProfile from '../pages/EditPassword';
 
 
 import Chatbot from '../pages/Chatbot';
@@ -25,6 +27,8 @@ export default function UserRoutes() {
         <Route path="profile" element={<ProtectedRoute element={<UserDashboard />} requiredRole="user" />} />
         <Route path="schedule" element={<ProtectedRoute element={<UserSchedule />} requiredRole="user" />} />
         <Route path="progress" element={<ProtectedRoute element={<UserProgress />} requiredRole="user" />} />  
+        <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword />} requiredRole="user" />} />
+        <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="user" />} />
         
         {/* Optional: Chatbot, Blog, Contact (can be public or protected) */}
         <Route path="blog" element={<Blog/>} />

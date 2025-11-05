@@ -553,6 +553,177 @@ async function getCorporatePartnerDetails(req, res) {
     return getUserDetailsGeneric(req, res);
 }
 
+// ----------------------------------------------------------------------
+// UPDATE PROFILE CONTROLLER
+// ----------------------------------------------------------------------
+
+async function updateUserProfile(req, res) {
+    try {
+        const userId = getUserIdFromToken(req);
+        const userRole = getRoleFromToken(req);
+
+        if (!userId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'User ID not found in token. Please provide a valid authentication token.' 
+            });
+        }
+
+        if (!userRole) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'User role not found in token.' 
+            });
+        }
+
+        let UserModel = null;
+
+        // Get the correct model based on role
+        switch (userRole.toLowerCase()) {
+            case 'user':
+                UserModel = User;
+                break;
+            case 'dietitian':
+                UserModel = Dietitian;
+                break;
+            case 'admin':
+                UserModel = Admin;
+                break;
+            case 'organization':
+                UserModel = Organization;
+                break;
+            case 'corporatepartner':
+                UserModel = CorporatePartner;
+                break;
+            default:
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Unknown role: ${userRole}` 
+                });
+        }
+
+        // Find the user
+        const user = await UserModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: `${userRole.charAt(0).toUpperCase() + userRole.slice(1)} not found` 
+            });
+        }
+
+        // Get update data from request body
+        const updateData = {};
+        const allowedFields = ['name', 'phone', 'address', 'dob', 'gender', 'age'];
+
+        // Only update fields that are provided and allowed
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined && req.body[field] !== null && req.body[field] !== '') {
+                updateData[field] = req.body[field];
+            }
+        });
+
+        // Validate that at least one field is being updated
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No valid fields provided for update.'
+            });
+        }
+
+        // Check if name is being updated and if it conflicts with existing names
+        if (updateData.name && updateData.name !== user.name) {
+            const models = [User, Admin, Dietitian, Organization, CorporatePartner];
+            for (const Model of models) {
+                const existing = await Model.findOne({ name: updateData.name, _id: { $ne: userId } });
+                if (existing) {
+                    return res.status(409).json({
+                        success: false,
+                        message: `The name "${updateData.name}" is already in use by another profile.`
+                    });
+                }
+            }
+        }
+
+        // Check if phone is being updated and if it conflicts
+        if (updateData.phone && updateData.phone !== user.phone) {
+            const models = [User, Admin, Dietitian, Organization, CorporatePartner];
+            for (const Model of models) {
+                const existing = await Model.findOne({ phone: updateData.phone, _id: { $ne: userId } });
+                if (existing) {
+                    return res.status(409).json({
+                        success: false,
+                        message: `The phone number "${updateData.phone}" is already registered.`
+                    });
+                }
+            }
+        }
+
+        // Update the user
+        Object.keys(updateData).forEach(key => {
+            user[key] = updateData[key];
+        });
+
+        await user.save();
+
+        // Prepare updated response
+        const response = {
+            success: true,
+            message: 'Profile updated successfully!',
+            data: {
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+            }
+        };
+
+        // Add role-specific fields to response
+        if (userRole.toLowerCase() === 'user' || userRole.toLowerCase() === 'admin') {
+            response.data.address = user.address;
+            response.data.gender = user.gender;
+            response.data.dob = user.dob;
+        } else if (userRole.toLowerCase() === 'dietitian') {
+            response.data.age = user.age;
+        } else if (userRole.toLowerCase() === 'organization' || userRole.toLowerCase() === 'corporatepartner') {
+            response.data.address = user.address;
+        }
+
+        res.status(200).json(response);
+
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            const errors = {};
+            for (const field in error.errors) {
+                errors[field] = error.errors[field].message;
+            }
+            return res.status(400).json({ 
+                success: false,
+                message: 'Validation failed.', 
+                errors 
+            });
+        }
+
+        // Handle duplicate key errors
+        if (error.code === 11000) {
+            let field = 'A field';
+            if (error.message.includes('name')) field = 'Name';
+            else if (error.message.includes('phone')) field = 'Phone';
+            
+            return res.status(409).json({ 
+                success: false,
+                message: `${field} is already in use.` 
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to update profile'
+        });
+    }
+}
+
 module.exports = {
     uploadUserProfileImage,
     uploadAdminProfileImage,
@@ -568,5 +739,6 @@ module.exports = {
     getDietitianDetails,
     getAdminDetails,
     getOrganizationDetails,
-    getCorporatePartnerDetails
+    getCorporatePartnerDetails,
+    updateUserProfile
 };
