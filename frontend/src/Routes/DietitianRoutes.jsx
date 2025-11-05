@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from '../middleware/ProtectedRoute';
 
 import DietitianHome from '../pages/HomePages/DietitianHome';
 import DietitianDashboard from '../pages/Dashboards/Dietitian';
@@ -16,13 +17,15 @@ export default function DietitianRoutes() {
       <Routes>
         <Route index element={<Navigate to="home" replace />} />
 
-        <Route path="home" element={<DietitianHome />} />
-        <Route path="profile" element={<DietitianDashboard />} />
+        {/* Protected Routes - Require Dietitian Authentication */}
+        <Route path="home" element={<ProtectedRoute element={<DietitianHome />} requiredRole="dietitian" />} />
+        <Route path="profile" element={<ProtectedRoute element={<DietitianDashboard />} requiredRole="dietitian" />} />
+        <Route path="schedule" element={<ProtectedRoute element={<DietitianSchedule/>} requiredRole="dietitian" />} />
+        <Route path="setup" element={<ProtectedRoute element={<DietitianSetup/>} requiredRole="dietitian" />} />
 
+        {/* Optional: Public pages */}
          <Route path="blog" element={<Blog/>} />
          <Route path="contact-us" element={<Contact/>} />
-         <Route path="schedule" element={<DietitianSchedule/>} />
-         <Route path="setup" element={<DietitianSetup/>} />
         
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>

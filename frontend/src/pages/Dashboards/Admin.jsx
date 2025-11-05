@@ -351,8 +351,8 @@ const AdminDashboard = () => {
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 p-6 lg:p-10">
-        <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-8 border-b border-gray-200 pb-4">
+      <div className="flex-1 p-6 lg:p-2">
+        <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
           Welcome, {adminDetails.name}! 👑
         </h1>
 
@@ -475,7 +475,7 @@ const AdminDashboard = () => {
         {/* Image Modal */}
         {showImageModal && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={() => setShowImageModal(false)}
           >
             <div
@@ -492,11 +492,11 @@ const AdminDashboard = () => {
               </button>
 
               {/* Image Container */}
-              <div className="flex items-center justify-center bg-gray-100 p-8">
+              <div className="flex items-center justify-center bg-gray-100 p-8 h-96">
                 <img
                   src={profileImage}
                   alt="Admin Profile Full Size"
-                  className="max-w-full max-h-96 rounded-lg object-contain"
+                  className="w-full h-full rounded-lg object-contain"
                   onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/400?text=Admin'}
                 />
               </div>

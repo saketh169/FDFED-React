@@ -193,9 +193,9 @@ const UserDashboard = () => {
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 p-6 lg:p-10">
-        <h1 className="text-3xl lg:text-4xl font-bold text-teal-900 mb-8 border-b border-gray-200 pb-4">
-          Hello, {userDetails.name}! Your Wellness Dashboard
+      <div className="flex-1 p-2 lg:p-2">
+        <h1 className="text-3xl lg:text-4xl font-bold text-teal-900 mb-6 border-b border-gray-200 pb-4">
+          Welcome , {userDetails.name}! 
         </h1>
 
         {/* Grid Layout (3 columns for large screens) */}
@@ -328,7 +328,29 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        {/* 4. Recent Activities (Consistent Card Styling) */}
+        {/* 4. Notifications */}
+        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
+          <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
+            Notifications
+          </h3>
+
+          <ul className="space-y-3">
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
+              <i className="fas fa-bell text-yellow-500"></i>
+              <span>Your consultation with <span className="font-semibold text-gray-900">Dr. Sarah</span> is tomorrow at <span className="font-semibold text-gray-900">2:00 PM</span>.</span>
+            </li>
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
+              <i className="fas fa-calendar-alt text-blue-500"></i>
+              <span>Your meal plan for this week has been <span className="font-semibold text-gray-900">updated</span>.</span>
+            </li>
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
+              <i className="fas fa-check-circle text-green-500"></i>
+              <span>Great progress this week! You've completed <span className="font-semibold text-gray-900">4 out of 7 goals</span>.</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* 5. Recent Activities (Consistent Card Styling) */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Recent Activities</h3>
 
@@ -362,7 +384,7 @@ const UserDashboard = () => {
         {/* Image Modal */}
         {showImageModal && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={() => setShowImageModal(false)}
           >
             <div
@@ -379,11 +401,11 @@ const UserDashboard = () => {
               </button>
 
               {/* Image Container */}
-              <div className="flex items-center justify-center bg-gray-100 p-8">
+              <div className="flex items-center justify-center bg-gray-100 p-8 h-96">
                 <img
                   src={profileImage}
                   alt="Profile Full Size"
-                  className="max-w-full max-h-96 rounded-lg object-contain"
+                  className="w-full h-full rounded-lg object-contain"
                   onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/400?text=User'}
                 />
               </div>

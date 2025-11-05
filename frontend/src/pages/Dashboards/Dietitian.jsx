@@ -239,9 +239,9 @@ const DietitianDashboard = () => {
       <Sidebar /> 
 
       {/* Main Content */}
-      <div className="flex-1 p-6 lg:p-10">
-        <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-8 border-b border-gray-200 pb-4">
-          Welcome, {dietitianDetails.name}! 👋
+      <div className="flex-1 p-6 lg:p-2">
+        <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
+          Welcome, {dietitianDetails.name}! 
         </h1>
 
         {/* Grid Layout */}
@@ -356,17 +356,17 @@ const DietitianDashboard = () => {
           </h3>
 
           <ul className="space-y-3">
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b">
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
               <i className="fas fa-bell text-yellow-500"></i>
-              You have a **new client request**.
+              <span>You have a <span className="font-semibold text-gray-900">new client request</span>.</span>
             </li>
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b">
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
               <i className="fas fa-calendar-alt text-blue-500"></i>
-              Your appointment with **[Client Name]** is scheduled for tomorrow.
+              <span>Your appointment with <span className="font-semibold text-gray-900">John Doe</span> is scheduled for tomorrow.</span>
             </li>
-            <li className="flex items-center gap-2 text-gray-700 p-2">
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
               <i className="fas fa-check-circle text-green-500"></i>
-              Your documents have been **successfully verified**.
+              <span>Your documents have been <span className="font-semibold text-gray-900">successfully verified</span>.</span>
             </li>
           </ul>
         </div>
@@ -378,17 +378,17 @@ const DietitianDashboard = () => {
           </h3>
 
           <ul className="space-y-3">
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b">
-              <i className="fas fa-circle text-xs text-gray-500"></i>
-              Logged in today at **10:00 AM**
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
+              <i className="fas fa-circle text-xs text-teal-600"></i>
+              <span>Logged in today at <span className="font-semibold text-gray-900">10:00 AM</span></span>
             </li>
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b">
-              <i className="fas fa-circle text-xs text-gray-500"></i>
-              Created a new meal plan for **[Client Name]**
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
+              <i className="fas fa-circle text-xs text-teal-600"></i>
+              <span>Created a new meal plan for <span className="font-semibold text-gray-900">John Doe</span></span>
             </li>
-            <li className="flex items-center gap-2 text-gray-700 p-2">
-              <i className="fas fa-circle text-xs text-gray-500"></i>
-              Uploaded **new certification documents**
+            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
+              <i className="fas fa-circle text-xs text-teal-600"></i>
+              <span>Uploaded <span className="font-semibold text-gray-900">new certification documents</span></span>
             </li>
           </ul>
         </div>
@@ -396,7 +396,7 @@ const DietitianDashboard = () => {
         {/* Image Modal */}
         {showImageModal && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={() => setShowImageModal(false)}
           >
             <div
@@ -413,11 +413,11 @@ const DietitianDashboard = () => {
               </button>
 
               {/* Image Container */}
-              <div className="flex items-center justify-center bg-gray-100 p-8">
+              <div className="flex items-center justify-center bg-gray-100 p-8 h-96" >
                 <img
                   src={profileImage}
                   alt="Profile Full Size"
-                  className="max-w-full max-h-96 rounded-lg object-contain"
+                  className="w-full h-full rounded-lg object-contain"
                   onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/400?text=Dietitian'}
                 />
               </div>

@@ -39,7 +39,7 @@ const FloatingContactButton = ({ handleScrollToTop, contactPath }) => (
     to={contactPath} 
     onClick={handleScrollToTop}
     // positioned 180px below top of viewport; brighter green background, slightly darker on hover
-    className="fixed hidden md:flex items-center right-4 top-30 bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-9999 group cursor-pointer"
+    className="fixed hidden md:flex items-center right-4 top-30 bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-40 group cursor-pointer"
     aria-label="Contact Us"
     title="Contact Us"
   >
