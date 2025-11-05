@@ -487,7 +487,7 @@ async function getUserDetailsGeneric(req, res) {
         const response = {
             success: true,
             role: userRole,
-            name: user.name || user.org_name || 'User', // Handle organization name
+            name: user.name ||'User', // Handle organization name
             email: user.email,
             phone: user.phone || 'N/A',
             dob: user.dob || null,
@@ -512,7 +512,7 @@ async function getUserDetailsGeneric(req, res) {
             response.experience = user.experience;
             response.licenseNumber = user.licenseNumber;
         } else if (userRole.toLowerCase() === 'organization') {
-            response.org_name = user.org_name;
+            response.org_name =  user.name; // Return org_name (alias name field)
             response.address = user.address;
             response.licenseNumber = user.licenseNumber;
         } else if (userRole.toLowerCase() === 'corporatepartner') {

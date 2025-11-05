@@ -52,19 +52,19 @@ const buildValidationSchema = (role) => {
 
         case 'organization':
             schema = schema.shape({
-                organizationId: Yup.string()
-                    .required('Organization ID is required.')
-                    .min(5, 'Organization ID must be at least 5 characters.')
-                    .max(20, 'Organization ID must not exceed 20 characters.'),
+                licenseNumber: Yup.string()
+                    .required('License Number is required.')
+                    .min(5, 'License Number must be at least 5 characters.')
+                    .max(20, 'License Number must not exceed 20 characters.'),
             });
             break;
 
         case 'corporatepartner':
             schema = schema.shape({
-                partnerId: Yup.string()
-                    .required('Partner ID is required.')
-                    .min(5, 'Partner ID must be at least 5 characters.')
-                    .max(20, 'Partner ID must not exceed 20 characters.'),
+                licenseNumber: Yup.string()
+                    .required('License Number is required.')
+                    .min(5, 'License Number must be at least 5 characters.')
+                    .max(20, 'License Number must not exceed 20 characters.'),
             });
             break;
 
@@ -96,9 +96,9 @@ const getInitialValues = (role) => {
         case 'dietitian':
             return { ...base, licenseNumber: '' };
         case 'organization':
-            return { ...base, organizationId: '' };
+            return { ...base, licenseNumber: '' };
         case 'corporatepartner':
-            return { ...base, partnerId: '' };
+            return { ...base, licenseNumber: '' };
         case 'admin':
             return { ...base, adminKey: '' };
         default:
@@ -133,8 +133,8 @@ const Signin = () => {
 
         // Map role-specific fields to the API payload
         if (role === 'dietitian') formData.licenseNumber = values.licenseNumber;
-        if (role === 'organization') formData.organizationId = values.organizationId;
-        if (role === 'corporatepartner') formData.partnerId = values.partnerId;
+        if (role === 'organization') formData.licenseNumber = values.licenseNumber;
+        if (role === 'corporatepartner') formData.licenseNumber = values.licenseNumber;
         if (role === 'admin') formData.adminKey = values.adminKey;
 
         const apiRoute = `/api/signin/${role}`; // e.g., /api/signin/user
@@ -219,9 +219,9 @@ const Signin = () => {
         if (role === 'dietitian') {
             roleFields.push(renderInputGroup('text', 'License Number', 'e.g., DLN123456', getFieldIdAndName('licenseNumber')));
         } else if (role === 'organization') {
-            roleFields.push(renderInputGroup('text', 'Organization ID', 'Enter organization ID (e.g., ORG1234)', getFieldIdAndName('organizationId')));
+            roleFields.push(renderInputGroup('text', 'License Number', 'Enter your License Number', getFieldIdAndName('licenseNumber')));
         } else if (role === 'corporatepartner') {
-            roleFields.push(renderInputGroup('text', 'Partner ID/License', 'Enter your Partner ID or License', getFieldIdAndName('partnerId')));
+            roleFields.push(renderInputGroup('text', 'License Number', 'Enter your License Number', getFieldIdAndName('licenseNumber')));
         } else if (role === 'admin') {
             roleFields.push(renderInputGroup('password', 'Admin Key', 'Enter Admin Key', getFieldIdAndName('adminKey')));
         }

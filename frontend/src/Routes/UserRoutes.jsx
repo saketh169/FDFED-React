@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from '../middleware/ProtectedRoute';
 
 import UserHome from '../pages/HomePages/UserHome';
 import UserSchedule from '../pages/Schedules/UserSchedule';
@@ -19,17 +20,19 @@ export default function UserRoutes() {
       <Routes>
         <Route index element={<Navigate to="home" replace />} />
 
-        <Route path="home" element={<UserHome />} />
-        <Route path="profile" element={<UserDashboard />} />
-        <Route path="schedule" element={<UserSchedule />} />
-        <Route path="progress" element={<UserProgress />} />  
+        {/* Protected Routes - Require User Authentication */}
+        <Route path="home" element={<ProtectedRoute element={<UserHome />} requiredRole="user" />} />
+        <Route path="profile" element={<ProtectedRoute element={<UserDashboard />} requiredRole="user" />} />
+        <Route path="schedule" element={<ProtectedRoute element={<UserSchedule />} requiredRole="user" />} />
+        <Route path="progress" element={<ProtectedRoute element={<UserProgress />} requiredRole="user" />} />  
         
-        {/* Add more /user/* routes here */}
+        {/* Optional: Chatbot, Blog, Contact (can be public or protected) */}
+        <Route path="blog" element={<Blog/>} />
+        <Route path="contact-us" element={<Contact/>} />
+        <Route path="chatbot" element={<Chatbot/>} />
+        
+        {/* Fallback Route */}
         <Route path="*" element={<Navigate to="home" replace />} />
-
-         <Route path="blog" element={<Blog/>} />
-         <Route path="contact-us" element={<Contact/>} />
-         <Route path="chatbot" element={<Chatbot/>} />
       </Routes>
     </div>
   );
