@@ -2,8 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import AdminHome from '../pages/HomePages/AdminHome';
 import AdminDashboard from '../pages/Dashboards/Admin';
-import AdminManagement from '../pages/Dashboards/AdminManagement';
-import Analytics from '../pages/Dashboards/Analytics';
+import AdminManagement from '../pages/AdminManagement';
+import Analytics from '../pages/Analytics';
 
 export default function AdminRoutes() {
   return (
