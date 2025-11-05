@@ -20,8 +20,8 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
   const userNavLinks = [
     { name: 'Home', href: '/user/home' },
     { name: 'Dietitians', href: '/user/dietitian-profiles' },
-    { name: 'Appointments', href: '/user/user-consultations' },
-    { name: 'Schedule', href: '/user/user-schedule' },
+    { name: 'Appointments', href: '/user/consultations' },
+    { name: 'Schedule', href: '/user/schedule' },
     { name: 'Pricing', href: '/user/pricing' },
 
     { name: 'Blog', href: '/user/blog' },
@@ -31,8 +31,8 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
 
   const dietitianNavLinks = [
     { name: 'Home', href: '/dietitian/home' },
-    { name: 'My Clients', href: '/dietitian/dietitian-consultations' },
-    { name: 'Schedule', href: '/dietitian/dietitian-schedule' },
+    { name: 'My Clients', href: '/dietitian/consultations' },
+    { name: 'Schedule', href: '/dietitian/schedule' },
     { name: 'MealPlans', href: '/dietitian/assign-plans' },
 
     { name: 'Blog', href: '/dietitian/blog' },

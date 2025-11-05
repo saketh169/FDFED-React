@@ -19,20 +19,37 @@ const RoleModal = () => {
     { name: 'Corporate Partner', icon: 'fas fa-building', description: 'Provide wellness solutions to your employees.', slug: 'corporatepartner', dashboardRoute: '/corporatepartner/home' },
   ];
 
-  const handleRoleClick = (role) => {
-    console.log(`[RoleModal] Role clicked: ${role.slug}`);
-    
-    // Check if token exists for this specific role
+  const verifyToken = async (token, role) => {
+    try {
+      const res = await fetch('/api/verify-token', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.status === 401) {
+        localStorage.removeItem(`authToken_${role.slug}`);
+        alert(`Session expired for ${role.name}`);
+        navigate(`/signin?role=${role.slug}`);
+        return false;
+      }
+      return true;
+    } catch {
+      localStorage.removeItem(`authToken_${role.slug}`);
+      alert('Verification failed');
+      navigate(`/signin?role=${role.slug}`);
+      return false;
+    }
+  };
+
+  const handleRoleClick = async (role) => {
     const token = localStorage.getItem(`authToken_${role.slug}`);
     
-    if (token) {
-      // Token exists, go directly to dashboard
-      console.log(`[RoleModal] Token found for ${role.slug}, redirecting to dashboard`);
+    if (!token) {
+      navigate(`/signin?role=${role.slug}`);
+      return;
+    }
+    
+    if (await verifyToken(token, role)) {
       navigate(role.dashboardRoute);
-    } else {
-      // No token, go to signin
-      console.log(`[RoleModal] No token found for ${role.slug}, redirecting to signin`);
-      navigate(`/signin?role=${role.slug}`, { state: { scrollToTop: true } });
     }
   };
 

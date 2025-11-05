@@ -39,7 +39,7 @@ const FloatingContactButton = ({ handleScrollToTop, contactPath }) => (
     to={contactPath} 
     onClick={handleScrollToTop}
     // positioned 180px below top of viewport; brighter green background, slightly darker on hover
-    className="fixed hidden md:flex items-center right-4 top-30 bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-50 group cursor-pointer"
+    className="fixed hidden md:flex items-center right-4 top-30 bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-9999 group cursor-pointer"
     aria-label="Contact Us"
     title="Contact Us"
   >
@@ -156,16 +156,24 @@ const Header = () => {
   const handleLogout = () => {
     console.log('[Header] Logging out user...');
     
-    // Remove all role-specific tokens and user data from localStorage
-    localStorage.removeItem('authToken_user');
-    localStorage.removeItem('authToken_dietitian');
-    localStorage.removeItem('authToken_admin');
-    localStorage.removeItem('authToken_organization');
-    localStorage.removeItem('authToken_corporatepartner');
-    localStorage.removeItem('profileImage');
-    localStorage.removeItem('userId');
+    // Determine current role from path
+    let currentRole = null;
+    if (currentPath.startsWith('/admin')) currentRole = 'admin';
+    else if (currentPath.startsWith('/organization')) currentRole = 'organization';
+    else if (currentPath.startsWith('/corporatepartner')) currentRole = 'corporatepartner';
+    else if (currentPath.startsWith('/dietitian')) currentRole = 'dietitian';
+    else if (currentPath.startsWith('/user')) currentRole = 'user';
     
-    console.log('[Header] localStorage cleared');
+    if (currentRole) {
+      // Remove only the current role's token
+      localStorage.removeItem(`authToken_${currentRole}`);
+      console.log(`[Header] Removed authToken_${currentRole}`);
+    }
+    
+    // Clear profile image for this session
+    localStorage.removeItem('profileImage');
+    
+    console.log('[Header] Logging out from:', currentRole || 'unknown role');
     console.log('[Header] Redirecting to home...');
     
     // Redirect to home

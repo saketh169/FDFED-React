@@ -203,6 +203,10 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ clients: 0, dietitians: 0, activePlans: 0 });
   const [organizations, setOrganizations] = useState([]);
   const [adminDetails, setAdminDetails] = useState(mockAdmin); // Store fetched admin details
+  const [profileImage, setProfileImage] = useState(mockAdmin.profileImage);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const fileInputRef = React.useRef(null);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -260,6 +264,81 @@ const AdminDashboard = () => {
     fetchProfileDetails();
   }, []);
 
+  // Fetch profile image on component mount
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const token = localStorage.getItem('authToken_admin');
+        if (!token) return;
+
+        const response = await fetch('/api/getadmin', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (data.success && data.profileImage) {
+          setProfileImage(data.profileImage);
+          localStorage.setItem('profileImage', data.profileImage);
+        }
+      } catch (error) {
+        console.error('Error fetching profile image:', error);
+      }
+    };
+
+    fetchProfileImage();
+  }, []);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Preview image immediately
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfileImage(reader.result);
+      localStorage.setItem('profileImage', reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to backend
+    const formData = new FormData();
+    formData.append('profileImage', file);
+
+    try {
+      setIsUploading(true);
+      const token = localStorage.getItem('authToken_admin');
+      
+      if (!token) {
+        alert('Session expired. Please login again.');
+        navigate('/signin?role=admin');
+        return;
+      }
+
+      const response = await fetch('/api/uploadadmin', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Profile photo updated successfully!');
+      } else {
+        alert(`Upload failed: ${data.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload error occurred.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
@@ -278,19 +357,64 @@ const AdminDashboard = () => {
         </h1>
 
         {/* Admin Info & Quick Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* 1. Profile Card using Reusable Component */}
-          <ProfileImageSection
-            role="admin"
-            name={adminDetails.name}
-            email={adminDetails.email}
-            phone={adminDetails.phone}
-            additionalInfo="Role: Super Admin"
-            onEditClick={() => navigate("/admin_dash/edit-profile")}
-            onPasswordClick={() => navigate("/admin_dash/change-pass")}
-            statusText="Active"
-            statusColor="bg-green-600"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* 1. Profile Card (Consistent Styling) */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-green-700 flex flex-col items-center">
+            <h3 className="text-xl font-bold text-teal-900 mb-5 text-center w-full">Admin Profile</h3>
+
+            <div className="relative mb-4">
+              <img
+                src={profileImage}
+                alt="Admin Profile"
+                className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer hover:opacity-80 transition"
+                onClick={() => setShowImageModal(true)}
+                onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=Admin'}
+              />
+              <label
+                htmlFor="profileUpload"
+                className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full w-9 h-9 flex items-center justify-center cursor-pointer shadow hover:bg-green-700 transition"
+                aria-label="Upload profile photo"
+              >
+                <i className="fas fa-camera text-sm"></i>
+              </label>
+              <input
+                type="file"
+                id="profileUpload"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+                disabled={isUploading}
+              />
+            </div>
+
+            <p className="text-xs text-gray-500 mb-4">
+              {isUploading ? "Uploading..." : "Click camera to update photo"}
+            </p>
+            
+            <p className="font-semibold text-lg text-gray-800">{adminDetails.name}</p>
+            <p className="text-sm text-gray-600">Email: {adminDetails.email}</p>
+            <p className="text-sm text-gray-600 mb-4">Phone: {adminDetails.phone}</p>
+
+            <div className="mt-5 flex gap-2 flex-wrap justify-center">
+              <button
+                onClick={() => navigate("/admin_dash/edit-profile")}
+                className="flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-600 hover:text-white transition"
+              >
+                <i className="fas fa-user-edit"></i> Edit Profile
+              </button>
+              <button
+                onClick={() => navigate("/admin_dash/change-pass")}
+                className="flex items-center gap-1.5 px-4 py-2 border border-gray-400 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition"
+              >
+                <i className="fas fa-lock"></i> Change Password
+              </button>
+            </div>
+
+            <span className="mt-4 bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+              Active
+            </span>
+          </div>
 
           {/* 2. Quick Stats & Revenue (Merged into one large section) */}
           <div className="col-span-1 lg:col-span-2 space-y-6">
@@ -347,6 +471,61 @@ const AdminDashboard = () => {
             <i className="fas fa-sign-out-alt"></i> Log Out
           </button>
         </div>
+
+        {/* Image Modal */}
+        {showImageModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageModal(false)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
+                aria-label="Close modal"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
+
+              {/* Image Container */}
+              <div className="flex items-center justify-center bg-gray-100 p-8">
+                <img
+                  src={profileImage}
+                  alt="Admin Profile Full Size"
+                  className="max-w-full max-h-96 rounded-lg object-contain"
+                  onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/400?text=Admin'}
+                />
+              </div>
+
+              {/* Footer with user info */}
+              <div className="bg-white p-6 border-t border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{adminDetails.name}</h2>
+                <p className="text-gray-600 mb-4">{adminDetails.email}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      setShowImageModal(false);
+                      fileInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full font-medium hover:bg-green-700 transition"
+                  >
+                    <i className="fas fa-camera"></i> Change Photo
+                  </button>
+                  <button
+                    onClick={() => setShowImageModal(false)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-400 text-gray-700 rounded-full font-medium hover:bg-gray-100 transition"
+                  >
+                    <i className="fas fa-times"></i> Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
