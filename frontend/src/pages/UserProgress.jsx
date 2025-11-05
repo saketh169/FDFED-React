@@ -1,0 +1,716 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, LineChart as LineChartAlt } from 'recharts';
+
+const UserProgress = () => {
+  const navigate = useNavigate();
+  const [progressData, setProgressData] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState('');
+  const [formData, setFormData] = useState({ weight: '', waterIntake: '', goal: '', calories: '', steps: '', days: '' });
+  const [message, setMessage] = useState('');
+  const [deleteId, setDeleteId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const role = 'user';
+
+  // Predefined plans with descriptions, suggested durations, and tracked metrics
+  const planOptions = [
+    { id: 'weight-loss', name: 'Weight Loss', description: 'Daily calorie deficit tracking', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'] },
+    { id: 'muscle-gain', name: 'Muscle Gain', description: 'Protein intake & strength training', suggestedDays: 60, metrics: ['weight', 'calories', 'steps'] },
+    { id: 'cardio', name: 'Cardio Fitness', description: 'Running, cycling & heart health', suggestedDays: 45, metrics: ['steps', 'weight', 'waterIntake'] },
+    { id: 'hydration', name: 'Hydration Goal', description: 'Daily water intake tracking', suggestedDays: 21, metrics: ['waterIntake', 'weight'] },
+    { id: 'balanced-diet', name: 'Balanced Diet', description: 'Nutritious meal planning', suggestedDays: 90, metrics: ['weight', 'calories', 'waterIntake'] },
+    { id: 'energy', name: 'Energy Boost', description: 'Sleep & nutrition optimization', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'] },
+    { id: 'detox', name: 'Detox Program', description: 'Clean eating & toxin removal', suggestedDays: 14, metrics: ['waterIntake', 'weight'] },
+    { id: 'stamina', name: 'Stamina Building', description: 'Endurance & performance training', suggestedDays: 60, metrics: ['steps', 'weight'] },
+    { id: 'maintenance', name: 'Weight Maintenance', description: 'Stable weight & health metrics', suggestedDays: 180, metrics: ['weight', 'calories', 'waterIntake', 'steps'] },
+    { id: 'flexibility', name: 'Flexibility & Mobility', description: 'Yoga & stretching routine', suggestedDays: 30, metrics: ['weight'] },
+    { id: 'recovery', name: 'Post-Injury Recovery', description: 'Rehabilitative exercises', suggestedDays: 45, metrics: ['weight', 'steps'] },
+    { id: 'diabetes', name: 'Diabetes Management', description: 'Blood sugar & nutrition control', suggestedDays: 90, metrics: ['weight', 'calories'] },
+    { id: 'stress', name: 'Stress Relief', description: 'Meditation & mental wellness', suggestedDays: 21, metrics: ['waterIntake', 'weight'] },
+    { id: 'athletic', name: 'Athletic Performance', description: 'Sport-specific training', suggestedDays: 60, metrics: ['steps', 'weight', 'calories'] },
+    { id: 'general', name: 'General Wellness', description: 'Overall health improvement', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'] }
+  ];
+
+  // Get metrics for selected plan
+  const getMetricsForPlan = () => {
+    const plan = planOptions.find(p => p.id === selectedPlan);
+    return plan ? plan.metrics : [];
+  };
+
+  const handlePlanChange = (e) => {
+    const planId = e.target.value;
+    const plan = planOptions.find(p => p.id === planId);
+    
+    if (plan) {
+      setSelectedPlan(plan.id);
+      // Reset form with new plan's suggested days
+      setFormData({
+        weight: '',
+        waterIntake: '',
+        goal: '',
+        calories: '',
+        steps: '',
+        days: plan.suggestedDays.toString()
+      });
+    } else if (planId === '') {
+      // Clear selection
+      setSelectedPlan('');
+    }
+  };
+
+  const metricsForPlan = getMetricsForPlan();
+
+  // Check token on mount
+  useEffect(() => {
+    const token = localStorage.getItem(`authToken_${role}`);
+    if (!token) {
+      alert('Session expired. Please login again.');
+      navigate(`/signin?role=${role}`);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/user-progress', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem(`authToken_${role}`);
+          navigate(`/signin?role=${role}`);
+          return;
+        }
+
+        const data = await response.json();
+        setProgressData(data.data || []);
+      } catch (error) {
+        console.error('Error loading progress:', error);
+        // Silently handle error - show empty state instead of alert
+        setProgressData([]);
+      }
+    };
+
+    fetchData();
+  }, [navigate, role]);
+
+  const showAlert = (msg, type) => {
+    setMessage({ text: msg, type });
+    setTimeout(() => setMessage(''), 4000);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const plan = selectedPlan;
+
+    if (!plan) {
+      showAlert('Please select a plan', 'error');
+      return;
+    }
+
+    if (!formData.goal || formData.goal.trim().length === 0) {
+      showAlert('Goal is required', 'error');
+      return;
+    }
+
+    if (formData.goal.trim().length > 100) {
+      showAlert('Goal must be max 100 characters', 'error');
+      return;
+    }
+
+    const days = formData.days ? parseInt(formData.days) : null;
+    if (!days || days < 1 || days > 365) {
+      showAlert('Days must be between 1-365', 'error');
+      return;
+    }
+
+    // Only validate fields that are in the plan's metrics
+    if (metricsForPlan.includes('weight')) {
+      const weight = parseFloat(formData.weight);
+      if (!formData.weight || isNaN(weight) || weight < 20 || weight > 300) {
+        showAlert('Weight must be between 20-300 kg', 'error');
+        return;
+      }
+    }
+
+    if (metricsForPlan.includes('waterIntake')) {
+      const waterIntake = parseFloat(formData.waterIntake);
+      if (!formData.waterIntake || isNaN(waterIntake) || waterIntake < 0 || waterIntake > 10) {
+        showAlert('Water intake must be between 0-10 L', 'error');
+        return;
+      }
+    }
+
+    if (metricsForPlan.includes('calories')) {
+      const calories = parseFloat(formData.calories);
+      if (!formData.calories || isNaN(calories) || calories < 0 || calories > 5000) {
+        showAlert('Calories must be between 0-5000 kcal', 'error');
+        return;
+      }
+    }
+
+    if (metricsForPlan.includes('steps')) {
+      const steps = parseInt(formData.steps);
+      if (!formData.steps || isNaN(steps) || steps < 0) {
+        showAlert('Steps must be a positive number', 'error');
+        return;
+      }
+    }
+
+    // Prepare data for submission - only include fields that are tracked
+    const submitData = {
+      plan,
+      days,
+      goal: formData.goal.trim(),
+      weight: metricsForPlan.includes('weight') ? parseFloat(formData.weight) : null,
+      waterIntake: metricsForPlan.includes('waterIntake') ? parseFloat(formData.waterIntake) : null,
+      calories: metricsForPlan.includes('calories') ? parseFloat(formData.calories) : null,
+      steps: metricsForPlan.includes('steps') ? parseInt(formData.steps) : null,
+    };
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem(`authToken_${role}`);
+      const response = await fetch('/api/user-progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(submitData)
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem(`authToken_${role}`);
+        navigate(`/signin?role=${role}`);
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        showAlert(errorData.message || 'Error saving progress', 'error');
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        showAlert('Progress saved successfully!', 'success');
+        // Add new entry to the list and keep the plan selected
+        setProgressData([data.entry, ...progressData]);
+        // Keep the selected plan and form data - don't clear it
+        // Just reset the form fields for next entry
+        setFormData({ weight: '', waterIntake: '', goal: '', calories: '', steps: '', days: formData.days });
+      } else {
+        showAlert(data.message || 'Error saving progress', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      showAlert('Network error. Please check your connection and try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem(`authToken_${role}`);
+      const response = await fetch(`/api/user-progress/${deleteId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem(`authToken_${role}`);
+        navigate(`/signin?role=${role}`);
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        showAlert(errorData.message || 'Error deleting entry', 'error');
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setProgressData(progressData.filter(p => p._id !== deleteId));
+        showAlert('Entry deleted successfully!', 'success');
+      } else {
+        showAlert(data.message || 'Error deleting entry', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting progress:', error);
+      showAlert('Network error. Please try again.', 'error');
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteId(null);
+      setLoading(false);
+    }
+  };
+
+
+
+  return (
+    <div className="min-h-screen bg-linear-to-br from-[#E8F5E9] via-[#F1F8E9] to-[#FFF9C4]">
+      {/* Alert */}
+      {message && (
+        <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg shadow-lg ${
+          message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`}>
+          {message.text}
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-[#1E6F5C]">Your Progress Tracker</h1>
+            <p className="text-gray-600 mt-2">Monitor your daily health metrics and goals</p>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          {/* Filter stats by selected plan */}
+          {selectedPlan ? (() => {
+            const planData = progressData.filter(p => p.plan === selectedPlan);
+            return (
+              <>
+                <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                  <p className="text-gray-600 text-sm font-semibold">Total Entries</p>
+                  <p className="text-3xl font-bold text-[#28B463]">{planData.length}</p>
+                </div>
+                {metricsForPlan.includes('weight') && (
+                  <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                    <p className="text-gray-600 text-sm font-semibold">Avg Weight</p>
+                    <p className="text-3xl font-bold text-[#1E6F5C]">
+                      {planData.length ? (planData.reduce((sum, p) => sum + (p.weight || 0), 0) / planData.length).toFixed(1) : 0} kg
+                    </p>
+                  </div>
+                )}
+                {metricsForPlan.includes('waterIntake') && (
+                  <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                    <p className="text-gray-600 text-sm font-semibold">Total Water</p>
+                    <p className="text-3xl font-bold text-blue-500">{planData.reduce((sum, p) => sum + (p.waterIntake || 0), 0).toFixed(1)} L</p>
+                  </div>
+                )}
+                {metricsForPlan.includes('calories') && (
+                  <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                    <p className="text-gray-600 text-sm font-semibold">Total Calories</p>
+                    <p className="text-3xl font-bold text-orange-500">{planData.reduce((sum, p) => sum + (p.calories || 0), 0)}</p>
+                  </div>
+                )}
+                {metricsForPlan.includes('steps') && (
+                  <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                    <p className="text-gray-600 text-sm font-semibold">Total Steps</p>
+                    <p className="text-3xl font-bold text-purple-500">{planData.reduce((sum, p) => sum + (p.steps || 0), 0).toLocaleString()}</p>
+                  </div>
+                )}
+              </>
+            );
+          })() : (
+            <>
+              <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                <p className="text-gray-600 text-sm font-semibold">Total Entries</p>
+                <p className="text-3xl font-bold text-[#28B463]">{progressData.length}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                <p className="text-gray-600 text-sm font-semibold">Avg Weight</p>
+                <p className="text-3xl font-bold text-[#1E6F5C]">
+                  {progressData.length ? (progressData.reduce((sum, p) => sum + (p.weight || 0), 0) / progressData.length).toFixed(1) : 0} kg
+                </p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                <p className="text-gray-600 text-sm font-semibold">Total Water</p>
+                <p className="text-3xl font-bold text-blue-500">{progressData.reduce((sum, p) => sum + (p.waterIntake || 0), 0).toFixed(1)} L</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                <p className="text-gray-600 text-sm font-semibold">Total Calories</p>
+                <p className="text-3xl font-bold text-orange-500">{progressData.reduce((sum, p) => sum + (p.calories || 0), 0)}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                <p className="text-gray-600 text-sm font-semibold">Total Steps</p>
+                <p className="text-3xl font-bold text-purple-500">{progressData.reduce((sum, p) => sum + (p.steps || 0), 0).toLocaleString()}</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Main Content: Left Filter + Right Dynamic Fields */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
+          {/* LEFT SIDEBAR: FILTER */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-4 border-t-4 border-[#28B463]">
+              <h2 className="text-2xl font-bold text-[#1E6F5C] mb-4">Filter</h2>
+              
+              {/* Plan Selection Filter */}
+              <div className="bg-[#F0F9F7] p-4 rounded-lg border-2 border-[#28B463]">
+                <label className="block text-sm font-semibold text-[#1E6F5C] mb-2">Select Your Plan</label>
+                <select
+                  value={selectedPlan}
+                  onChange={handlePlanChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]"
+                >
+                  <option value="">-- Choose a Plan --</option>
+                  {planOptions.map(plan => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedPlan && (
+                  <>
+                    <div className="mt-4 text-sm space-y-2">
+                      <p className="text-gray-700 font-semibold">{planOptions.find(p => p.id === selectedPlan)?.description}</p>
+                      <p className="text-gray-600">
+                        Duration: {planOptions.find(p => p.id === selectedPlan)?.suggestedDays} days
+                      </p>
+                      <p className="text-gray-600 font-semibold mt-3">Tracked Metrics:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {metricsForPlan.map(metric => (
+                          <span key={metric} className="bg-[#28B463] text-white text-xs px-2 py-1 rounded">
+                            {metric === 'weight' && 'Weight'}
+                            {metric === 'waterIntake' && 'Water'}
+                            {metric === 'calories' && 'Calories'}
+                            {metric === 'steps' && 'Steps'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePlanChange({ target: { value: '' } })}
+                      className="mt-4 w-full px-3 py-2 bg-gray-300 text-gray-800 text-sm rounded-lg hover:bg-gray-400 transition font-semibold"
+                    >
+                      Change Plan
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE: DYNAMIC INPUT FIELDS */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-[#28B463]">
+              <h2 className="text-2xl font-bold text-[#1E6F5C] mb-4">Add Daily Progress</h2>
+              
+              {selectedPlan ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Duration */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-[#F0F9F7] p-4 rounded-lg border-2 border-[#1E6F5C]">
+                      <label className="block text-sm font-semibold text-[#1E6F5C] mb-2">Duration (Days) *</label>
+                      <input
+                        type="number"
+                        name="days"
+                        value={formData.days}
+                        onChange={handleInputChange}
+                        min="1"
+                        max="365"
+                        required
+                        placeholder="e.g., 30"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E6F5C]"
+                      />
+                    </div>
+
+                    <div className="bg-[#F0F9F7] p-4 rounded-lg border-2 border-gray-300">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Goal *</label>
+                      <input
+                        type="text"
+                        name="goal"
+                        value={formData.goal}
+                        onChange={handleInputChange}
+                        maxLength="100"
+                        required
+                        placeholder="e.g., Lose 5 kg"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* WEIGHT (always shown if in metrics) */}
+                  {metricsForPlan.includes('weight') && (
+                    <div className="bg-[#F0F9F7] p-4 rounded-lg border-2 border-[#28B463]">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Weight (kg) *</label>
+                      <input
+                        type="number"
+                        name="weight"
+                        value={formData.weight}
+                        onChange={handleInputChange}
+                        step="0.1"
+                        min="20"
+                        max="300"
+                        required
+                        placeholder="e.g., 70.5"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]"
+                      />
+                    </div>
+                  )}
+
+                  {/* WATER INTAKE (conditional) */}
+                  {metricsForPlan.includes('waterIntake') && (
+                    <div className="bg-[#F0F9F7] p-4 rounded-lg border-2 border-blue-300">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Water Intake (L) *</label>
+                      <input
+                        type="number"
+                        name="waterIntake"
+                        value={formData.waterIntake}
+                        onChange={handleInputChange}
+                        step="0.1"
+                        min="0"
+                        max="10"
+                        required
+                        placeholder="e.g., 2.0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
+                  )}
+
+                  {/* CALORIES (conditional) */}
+                  {metricsForPlan.includes('calories') && (
+                    <div className="bg-[#F0F9F7] p-4 rounded-lg border-2 border-orange-300">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Calories (kcal) *</label>
+                      <input
+                        type="number"
+                        name="calories"
+                        value={formData.calories}
+                        onChange={handleInputChange}
+                        min="0"
+                        max="5000"
+                        required={metricsForPlan.includes('calories')}
+                        placeholder="e.g., 2000"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      />
+                    </div>
+                  )}
+
+                  {/* STEPS (conditional) */}
+                  {metricsForPlan.includes('steps') && (
+                    <div className="bg-[#F0F9F7] p-4 rounded-lg border-2 border-purple-300">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Steps (daily) *</label>
+                      <input
+                        type="number"
+                        name="steps"
+                        value={formData.steps}
+                        onChange={handleInputChange}
+                        min="0"
+                        required={metricsForPlan.includes('steps')}
+                        placeholder="e.g., 10000"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#28B463] text-white py-3 rounded-lg font-semibold hover:bg-[#1E6F5C] transition disabled:bg-gray-400"
+                  >
+                    {loading ? 'Saving...' : 'Save Progress'}
+                  </button>
+                </form>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600 text-lg">Select a plan from the left to start tracking your progress</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM: METRICS & GRAPHS SECTION */}
+        {selectedPlan && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-t-4 border-[#28B463]">
+            <h2 className="text-2xl font-bold text-[#1E6F5C] mb-6">Your Metrics & Progress</h2>
+            
+            {/* Filter charts by metrics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Weight Chart */}
+              {metricsForPlan.includes('weight') && (
+                <div className="bg-linear-to-br from-[#F0F9F7] to-white rounded-lg p-6 border-l-4 border-[#28B463]">
+                  <h3 className="text-xl font-bold text-[#1E6F5C] mb-4">Weight Trend</h3>
+                  {progressData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={progressData.slice().reverse()}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="createdAt" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
+                        <YAxis />
+                        <Tooltip formatter={(value) => `${value} kg`} />
+                        <Legend />
+                        <Line type="monotone" dataKey="weight" stroke="#28B463" dot={{ fill: '#28B463' }} strokeWidth={2} name="Weight (kg)" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-center text-gray-500 py-8">No weight data yet</p>
+                  )}
+                </div>
+              )}
+
+              {/* Water Chart */}
+              {metricsForPlan.includes('waterIntake') && (
+                <div className="bg-linear-to-br from-blue-50 to-white rounded-lg p-6 border-l-4 border-blue-500">
+                  <h3 className="text-xl font-bold text-[#1E6F5C] mb-4">Water Intake Progress</h3>
+                  {progressData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={progressData.slice().reverse()}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="createdAt" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
+                        <YAxis />
+                        <Tooltip formatter={(value) => `${value} L`} />
+                        <Legend />
+                        <Bar dataKey="waterIntake" fill="#3B82F6" name="Water (L)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-center text-gray-500 py-8">No water intake data yet</p>
+                  )}
+                </div>
+              )}
+
+              {/* Calories Chart */}
+              {metricsForPlan.includes('calories') && (
+                <div className="bg-linear-to-br from-orange-50 to-white rounded-lg p-6 border-l-4 border-orange-500">
+                  <h3 className="text-xl font-bold text-[#1E6F5C] mb-4">Calories Burned</h3>
+                  {progressData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={progressData.slice().reverse()}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="createdAt" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
+                        <YAxis />
+                        <Tooltip formatter={(value) => `${value} kcal`} />
+                        <Legend />
+                        <Bar dataKey="calories" fill="#F97316" name="Calories (kcal)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-center text-gray-500 py-8">No calories data yet</p>
+                  )}
+                </div>
+              )}
+
+              {/* Steps Chart */}
+              {metricsForPlan.includes('steps') && (
+                <div className="bg-linear-to-br from-purple-50 to-white rounded-lg p-6 border-l-4 border-purple-500">
+                  <h3 className="text-xl font-bold text-[#1E6F5C] mb-4">Daily Steps</h3>
+                  {progressData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={progressData.slice().reverse()}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="createdAt" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
+                        <YAxis />
+                        <Tooltip formatter={(value) => `${value.toLocaleString()} steps`} />
+                        <Legend />
+                        <Bar dataKey="steps" fill="#A855F7" name="Steps" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-center text-gray-500 py-8">No steps data yet</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Progress History Table */}
+        <div className="bg-white rounded-xl shadow-lg p-6 overflow-x-auto border-t-4 border-[#28B463]">
+          <h2 className="text-2xl font-bold text-[#1E6F5C] mb-4">
+            {selectedPlan ? `${planOptions.find(p => p.id === selectedPlan)?.name} - Progress History` : 'Progress History'}
+          </h2>
+          {(() => {
+            const displayData = selectedPlan 
+              ? progressData.filter(p => p.plan === selectedPlan) 
+              : progressData;
+            
+            return displayData.length > 0 ? (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-[#E8F5E9]">
+                    <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Date</th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Weight (kg)</th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Water (L)</th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Calories</th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Steps</th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Goal</th>
+                    {!selectedPlan && <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Plan</th>}
+                    <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Days</th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#1E6F5C]">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayData.map((entry) => (
+                    <tr key={entry._id} className="border-b border-gray-200 hover:bg-[#F9F9F9] transition">
+                      <td className="py-3 px-4">{new Date(entry.createdAt).toLocaleDateString()}</td>
+                      <td className="py-3 px-4 font-semibold text-[#28B463]">{entry.weight || '-'}</td>
+                      <td className="py-3 px-4 text-blue-500 font-semibold">{entry.waterIntake || '-'}</td>
+                      <td className="py-3 px-4 text-orange-500">{entry.calories || '-'}</td>
+                      <td className="py-3 px-4 text-purple-500">{entry.steps || '-'}</td>
+                      <td className="py-3 px-4 text-gray-700">{entry.goal}</td>
+                      {!selectedPlan && <td className="py-3 px-4 text-gray-700">{entry.plan || '-'}</td>}
+                      <td className="py-3 px-4 font-semibold text-[#1E6F5C]">{entry.days || '-'} days</td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => {
+                            setDeleteId(entry._id);
+                            setShowDeleteModal(true);
+                          }}
+                          className="text-red-500 hover:text-red-700 text-lg transition"
+                          title="Delete"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                {selectedPlan ? 'No progress entries for this plan yet.' : 'No progress entries yet. Start tracking!'}
+              </p>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm shadow-xl">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Confirm Deletion</h3>
+            <p className="text-gray-600 mb-6">Are you sure you want to delete this progress entry?</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteId(null);
+                }}
+                className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition disabled:bg-gray-400"
+              >
+                {loading ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UserProgress;

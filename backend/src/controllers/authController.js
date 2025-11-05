@@ -201,7 +201,7 @@ exports.signinController = async (req, res) => {
         }
 
         // 4. Generate JWT
-        const expiresIn = rememberMe ? '7d' : '1h'; 
+        const expiresIn = rememberMe ? '7d' : '1d'; 
         
         const token = jwt.sign(
             { userId: authUser._id, role: authUser.role, roleId: authUser.roleId },
@@ -294,5 +294,18 @@ exports.docUploadController = async (req, res) => {
         res.status(500).json({ 
             message: 'Error uploading documents. Please try again.' 
         });
+    }
+};
+
+// VERIFY TOKEN CONTROLLER
+exports.verifyTokenController = async (req, res) => {
+    try {
+        const token = req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: 'No token' });
+        
+        const decoded = jwt.verify(token, JWT_SECRET);
+        res.status(200).json({ message: 'Valid', userId: decoded.userId, role: decoded.role });
+    } catch (error) {
+        res.status(401).json({ message: error.name === 'TokenExpiredError' ? 'Expired' : 'Invalid' });
     }
 };

@@ -285,7 +285,7 @@ const UserDashboard = () => {
             </div>
 
             <button
-              onClick={() => navigate("/user-progress")}
+              onClick={() => navigate("/user/progress")}
               className="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-full hover:bg-emerald-700 transition shadow-md"
             >
               <i className="fas fa-chart-line mr-2"></i> View Full Progress

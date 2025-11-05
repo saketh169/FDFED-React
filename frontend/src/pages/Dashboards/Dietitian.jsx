@@ -61,7 +61,7 @@ const VerificationStatusCard = () => {
           button: (
             <button
               className="mt-3 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition shadow"
-              onClick={() => navigate("/dietitian-setup")}
+              onClick={() => navigate("/dietitian/setup")}
             >
               <i className="fas fa-arrow-right"></i> Proceed to Setup
             </button>

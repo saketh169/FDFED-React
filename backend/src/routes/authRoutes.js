@@ -95,5 +95,7 @@ router.post('/documents/upload/corporatepartner',
     authController.docUploadController
 );
 
+// 14. Verify Token: GET /api/verify-token (Check if JWT is valid/expired)
+router.get('/verify-token', authController.verifyTokenController);
 
 module.exports = router;

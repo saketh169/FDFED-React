@@ -4,6 +4,7 @@ const connectDB = require('./utils/db');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
+const progressRoutes = require('./routes/progressRoutes');
 
 // Load environment variables from .env file
 require('dotenv').config();
@@ -27,6 +28,9 @@ app.use('/api', authRoutes);
 
 // Profile routes mounted at '/api' for profile image operations
 app.use('/api', profileRoutes);
+
+// Progress routes mounted at '/api'
+app.use('/api', progressRoutes);
 
 // Chatbot routes mounted at '/api/chatbot'
 app.use('/api/chatbot', chatbotRoutes);
