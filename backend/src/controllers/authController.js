@@ -309,3 +309,75 @@ exports.verifyTokenController = async (req, res) => {
         res.status(401).json({ message: error.name === 'TokenExpiredError' ? 'Expired' : 'Invalid' });
     }
 };
+
+// ----------------------------------------------------------------------
+// CHANGE PASSWORD CONTROLLER
+// ----------------------------------------------------------------------
+
+exports.changePasswordController = async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+        return res.status(400).json({ message: 'Old password and new password are required.' });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+    }
+
+    try {
+        // Get user ID from JWT token
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) {
+            return res.status(401).json({ message: 'No authorization token provided.' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Invalid token format.' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.userId;
+
+        // Find user in central Auth collection
+        const authUser = await UserAuth.findById(userId);
+        if (!authUser) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // Verify old password
+        const isMatch = await bcrypt.compare(oldPassword, authUser.passwordHash);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Current password is incorrect.' });
+        }
+
+        // Check if new password is same as old password
+        const isSameAsOld = await bcrypt.compare(newPassword, authUser.passwordHash);
+        if (isSameAsOld) {
+            return res.status(400).json({ message: 'New password must be different from the current password.' });
+        }
+
+        // Hash new password and update
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        authUser.passwordHash = hashedPassword;
+        await authUser.save();
+
+        return res.status(200).json({ 
+            message: 'Password changed successfully!',
+            success: true 
+        });
+
+    } catch (error) {
+        console.error('Error during password change:', error);
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: 'Invalid token.' });
+        }
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Token expired. Please login again.' });
+        }
+
+        res.status(500).json({ message: 'Internal Server Error during password change.' });
+    }
+};

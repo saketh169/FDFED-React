@@ -16,7 +16,8 @@ const {
     getDietitianDetails,
     getAdminDetails,
     getOrganizationDetails,
-    getCorporatePartnerDetails
+    getCorporatePartnerDetails,
+    updateUserProfile
 } = require('../controllers/profileController');
 
 // Profile Image Upload Routes - No authentication required for now
@@ -40,6 +41,9 @@ router.get('/getdietitiandetails', getDietitianDetails);
 router.get('/getadmindetails', getAdminDetails);
 router.get('/getorganizationdetails', getOrganizationDetails);
 router.get('/getcorporatepartnerdetails', getCorporatePartnerDetails);
+
+// Update Profile Route - Works for all roles
+router.put('/update-profile', updateUserProfile);
 
 
 module.exports = router;

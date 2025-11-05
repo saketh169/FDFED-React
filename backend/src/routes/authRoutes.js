@@ -98,4 +98,7 @@ router.post('/documents/upload/corporatepartner',
 // 14. Verify Token: GET /api/verify-token (Check if JWT is valid/expired)
 router.get('/verify-token', authController.verifyTokenController);
 
+// 15. Change Password: POST /api/change-password (Update user password)
+router.post('/change-password', authController.changePasswordController);
+
 module.exports = router;
