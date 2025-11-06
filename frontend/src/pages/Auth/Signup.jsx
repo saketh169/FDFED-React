@@ -234,7 +234,10 @@ const Signup = () => {
             const responseData = response.data;
 
             // 2. Upon successful POST, the registration is complete.
-            setMessage(`Sign-up successful! Welcome! Redirecting to ${role} upload documents ...`);
+            const redirectMessage = ['organization', 'corporatepartner', 'dietitian'].includes(role) 
+                ? `Sign-up successful! Welcome! Redirecting to ${role} upload documents ...`
+                : `Sign-up successful! Welcome! Redirecting to ${role} home page ...`;
+            setMessage(redirectMessage);
 
             // Assuming your backend sends the JWT token in the response data (e.g., responseData.token)
             if (responseData.token) {

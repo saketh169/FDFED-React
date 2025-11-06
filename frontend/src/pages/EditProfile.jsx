@@ -115,15 +115,12 @@ const EditProfile = () => {
     handleSubmit,
     formState: { errors },
     setValue,
-    reset,
-    watch
+    reset
   } = useForm({
     resolver: yupResolver(getValidationSchema(config.fields)),
     mode: 'onBlur'
   });
   
-  const formData = watch();
-
   // Fetch user details on component mount
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -243,7 +240,7 @@ const EditProfile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
+      <div className="w-[70%] mx-auto">
         <div className="bg-white rounded-2xl shadow-lg p-8 border-t-4 border-emerald-600">
           {/* Header */}
           <div className="mb-6">
@@ -475,12 +472,12 @@ const EditProfile = () => {
           </form>
 
           {/* Info Box */}
-          <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">
+          <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-200">
+            <h3 className="text-sm font-semibold text-green-900 mb-2">
               <i className="fas fa-info-circle mr-2"></i>
               Profile Update Information
             </h3>
-            <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+            <ul className="text-xs text-green-800 space-y-1 list-disc list-inside">
               <li>Your email address cannot be changed</li>
               <li>All fields marked with * are required</li>
               <li>Changes will be saved immediately after submission</li>

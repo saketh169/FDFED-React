@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, LineChart as LineChartAlt } from 'recharts';
 
@@ -14,7 +14,7 @@ const UserProgress = () => {
   const role = 'user';
 
   // Predefined plans with descriptions, suggested durations, and tracked metrics
-  const planOptions = [
+  const planOptions = useMemo(() => [
     { id: 'weight-loss', name: 'Weight Loss', description: 'Daily calorie deficit tracking', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'] },
     { id: 'muscle-gain', name: 'Muscle Gain', description: 'Protein intake & strength training', suggestedDays: 60, metrics: ['weight', 'calories', 'steps'] },
     { id: 'cardio', name: 'Cardio Fitness', description: 'Running, cycling & heart health', suggestedDays: 45, metrics: ['steps', 'weight', 'waterIntake'] },
@@ -30,7 +30,7 @@ const UserProgress = () => {
     { id: 'stress', name: 'Stress Relief', description: 'Meditation & mental wellness', suggestedDays: 21, metrics: ['waterIntake', 'weight'] },
     { id: 'athletic', name: 'Athletic Performance', description: 'Sport-specific training', suggestedDays: 60, metrics: ['steps', 'weight', 'calories'] },
     { id: 'general', name: 'General Wellness', description: 'Overall health improvement', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'] }
-  ];
+  ], []);
 
   // Get metrics for selected plan
   const getMetricsForPlan = () => {
@@ -84,6 +84,17 @@ const UserProgress = () => {
 
         const data = await response.json();
         setProgressData(data.data || []);
+        
+        // Set the last chosen plan by default if data exists
+        if (data.data && data.data.length > 0) {
+          const latestEntry = data.data[0]; // Assuming data is sorted by date descending
+          const planId = latestEntry.plan;
+          const plan = planOptions.find(p => p.id === planId);
+          if (plan) {
+            setSelectedPlan(planId);
+            setFormData(prev => ({ ...prev, days: plan.suggestedDays.toString() }));
+          }
+        }
       } catch (error) {
         console.error('Error loading progress:', error);
         // Silently handle error - show empty state instead of alert
@@ -92,7 +103,7 @@ const UserProgress = () => {
     };
 
     fetchData();
-  }, [navigate, role]);
+  }, [navigate, role, planOptions]);
 
   const showAlert = (msg, type) => {
     setMessage({ text: msg, type });

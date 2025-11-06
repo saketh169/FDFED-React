@@ -31,6 +31,7 @@ const Sidebar = () => {
 
   const dietitianNavLinks = [
     { name: 'Home', href: '/dietitian', icon: 'fas fa-home' },
+    { name: 'My Verification', href: '/dietitian/doc-status', icon: 'fas fa-handshake' },
     { name: 'My Clients', href: '/dietitian/dietitian-consultations', icon: 'fas fa-users' },
     { name: 'Schedule', href: '/dietitian/dietitian-schedule', icon: 'fas fa-calendar-check' },
     { name: 'MealPlans', href: '/dietitian/assign-plans', icon: 'fas fa-utensils' },
@@ -39,6 +40,7 @@ const Sidebar = () => {
 
   const corporatePartnerNavLinks = [
     { name: 'Home', href: '/corporatepartner', icon: 'fas fa-home' },
+    { name: 'My Verification', href: '/corporatepartner/doc-status', icon: 'fas fa-handshake' },
     { name: 'Plans/Offers', href: '/corporatepartner/plans-offers', icon: 'fas fa-briefcase' },
     { name: 'Renewal', href: '/corporatepartner/renewal', icon: 'fas fa-sync-alt' },
     { name: 'Bookings', href: '/corporatepartner/bookings', icon: 'fas fa-bookmark' },
@@ -49,15 +51,17 @@ const Sidebar = () => {
     { name: 'Home', href: '/admin', icon: 'fas fa-home' },
     { name: 'Analytics', href: '/admin/analytics', icon: 'fas fa-chart-bar' },
     { name: 'Users', href: '/admin/users', icon: 'fas fa-users' },
+    { name: 'Verify Organizations', href: '/admin/verify-organizations', icon: 'fas fa-user-shield' },
     { name: 'Queries', href: '/admin/queries', icon: 'fas fa-question-circle' },
     { name: 'Settings', href: '/admin/settings', icon: 'fas fa-cog' },
   ];
 
   const organizationNavLinks = [
     { name: 'Home', href: '/organization', icon: 'fas fa-home' },
-    { name: 'Verify Dietitians', href: '/organization/verify-dietitian', icon: 'fas fa-check-circle' },
-    { name: 'Verify Corps', href: '/organization/verify-corporate', icon: 'fas fa-check-double' },
-    { name: 'Documents', href: '/organization/documents', icon: 'fas fa-file' },
+    { name: 'My Verification', href: '/organization/doc-status', icon: 'fas fa-handshake' },
+    { name: 'Verify Dietitians', href: '/organization/verify-dietitian', icon: 'fas fa-user-md' },
+    { name: 'Verify Corps', href: '/organization/verify-corporate', icon: 'fas fa-building' },
+   
   ];
 
   // --- Function to Select Links based on Path ---

@@ -5,6 +5,7 @@ import DietitianHome from '../pages/HomePages/DietitianHome';
 import DietitianDashboard from '../pages/Dashboards/Dietitian';
 import DietitianSchedule from '../pages/Schedules/DietitanSchedule';
 import DietitianSetup from '../pages/DietitianSetup';
+import DietitianDocStatus from '../pages/Status/DietitianDocStatus';  
 import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
 
@@ -24,6 +25,8 @@ export default function DietitianRoutes() {
         <Route path="profile" element={<ProtectedRoute element={<DietitianDashboard />} requiredRole="dietitian" />} />
         <Route path="schedule" element={<ProtectedRoute element={<DietitianSchedule/>} requiredRole="dietitian" />} />
         <Route path="setup" element={<ProtectedRoute element={<DietitianSetup/>} requiredRole="dietitian" />} />
+        <Route path="doc-status" element={<ProtectedRoute element={<DietitianDocStatus/>} requiredRole="dietitian" />} />
+
               <Route element={<ProtectedRoute requiredRole="dietitian" />}>
         <Route path="/dietitian/change-pass" element={<ChangePassword />} />
       </Route>

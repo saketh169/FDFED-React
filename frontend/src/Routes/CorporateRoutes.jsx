@@ -3,6 +3,7 @@ import ProtectedRoute from '../middleware/ProtectedRoute';
 
 import CorporateHome from '../pages/HomePages/CorporateHome';
 import CorporateDashboard from '../pages/Dashboards/CorporatePartner';
+import CorporateDocStatus from '../pages/Status/CorporateDocStatus';    
 import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
 
@@ -19,6 +20,7 @@ export default function CorporateRoutes() {
         {/* Protected Routes - Require Corporate Partner Authentication */}
         <Route path="home" element={<ProtectedRoute element={<CorporateHome />} requiredRole="corporatepartner" />} />
         <Route path="profile" element={<ProtectedRoute element={<CorporateDashboard />} requiredRole="corporatepartner" />} />
+        <Route path="doc-status" element={<ProtectedRoute element={<CorporateDocStatus/>} requiredRole="corporatepartner" />} />
         <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword />} requiredRole="corporatepartner" />} />
         <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="corporatepartner" />} />
 
