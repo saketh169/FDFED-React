@@ -259,13 +259,13 @@ const CorporateDashboard = () => {
 
             <div className="mt-5 flex gap-2 flex-wrap justify-center">
               <button
-                onClick={() => navigate("/corporate_dash/edit-profile")}
+                onClick={() => navigate("/corporatepartner/edit-profile")}
                 className="flex items-center gap-1.5 px-4 py-2 border border-emerald-600 text-emerald-600 rounded-full text-sm font-medium hover:bg-emerald-600 hover:text-white transition"
               >
                 <i className="fas fa-user-edit"></i> Edit Profile
               </button>
               <button
-                onClick={() => navigate("/corporate_dash/change-pass")}
+                onClick={() => navigate("/corporatepartner/change-pass")}
                 className="flex items-center gap-1.5 px-4 py-2 border border-gray-400 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition"
               >
                 <i className="fas fa-lock"></i> Change Password

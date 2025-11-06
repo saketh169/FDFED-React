@@ -1,66 +1,102 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as Yup from 'yup';
 import axios from 'axios';
+
+// Validation Schema for Change Password
+const changePasswordSchema = Yup.object().shape({
+  oldPassword: Yup.string()
+    .required('Current password is required.')
+    .min(6, 'Password must be at least 6 characters.'),
+  newPassword: Yup.string()
+    .required('New password is required.')
+    .min(6, 'Password must be at least 6 characters.')
+    .max(20, 'Password must not exceed 20 characters.'),
+  confirmPassword: Yup.string()
+    .required('Please confirm your new password.')
+    .oneOf([Yup.ref('newPassword')], 'Passwords must match.')
+});
+
+// Role configurations
+const roleConfig = {
+  user: {
+    tokenKey: 'authToken_user',
+    signinPath: '/signin?role=user',
+    dashboardPath: '/user/profile',
+    roleLabel: 'User'
+  },
+  dietitian: {
+    tokenKey: 'authToken_dietitian',
+    signinPath: '/signin?role=dietitian',
+    dashboardPath: '/dietitian/profile',
+    roleLabel: 'Dietitian'
+  },
+  organization: {
+    tokenKey: 'authToken_organization',
+    signinPath: '/signin?role=organization',
+    dashboardPath: '/organization/profile',
+    roleLabel: 'Organization'
+  },
+  admin: {
+    tokenKey: 'authToken_admin',
+    signinPath: '/signin?role=admin',
+    dashboardPath: '/admin/profile',
+    roleLabel: 'Admin'
+  },
+  corporatepartner: {
+    tokenKey: 'authToken_corporatepartner',
+    signinPath: '/signin?role=corporatepartner',
+    dashboardPath: '/corporatepartner/profile',
+    roleLabel: 'Corporate Partner'
+  }
+};
 
 const ChangePassword = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    oldPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
+  const location = useLocation();
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Detect role from current path
+  const detectRole = () => {
+    const path = location.pathname;
+    if (path.includes('/user/')) return 'user';
+    if (path.includes('/dietitian/')) return 'dietitian';
+    if (path.includes('/organization/')) return 'organization';
+    if (path.includes('/admin/')) return 'admin';
+    if (path.includes('/corporatepartner/')) return 'corporatepartner';
+    return 'user'; // default
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const currentRole = detectRole();
+  const config = roleConfig[currentRole];
+
+  // React Hook Form setup
+  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+    resolver: yupResolver(changePasswordSchema),
+    mode: 'onBlur'
+  });
+
+  const onSubmit = async (data) => {
     setMessage('');
-
-    // Validation
-    if (!formData.oldPassword || !formData.newPassword || !formData.confirmPassword) {
-      setMessage('All fields are required.');
-      return;
-    }
-
-    if (formData.newPassword.length < 6) {
-      setMessage('New password must be at least 6 characters long.');
-      return;
-    }
-
-    if (formData.newPassword !== formData.confirmPassword) {
-      setMessage('New password and confirm password do not match.');
-      return;
-    }
-
-    if (formData.oldPassword === formData.newPassword) {
-      setMessage('New password must be different from the current password.');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('authToken_user');
+      const token = localStorage.getItem(config.tokenKey);
       if (!token) {
         setMessage('Session expired. Please login again.');
-        setTimeout(() => navigate('/signin?role=user'), 2000);
+        setTimeout(() => navigate(config.signinPath), 2000);
         return;
       }
 
       const response = await axios.post('/api/change-password', {
-        oldPassword: formData.oldPassword,
-        newPassword: formData.newPassword
+        oldPassword: data.oldPassword,
+        newPassword: data.newPassword
       }, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -69,13 +105,9 @@ const ChangePassword = () => {
 
       if (response.data.success) {
         setMessage('Password changed successfully! Redirecting to dashboard...');
-        setFormData({
-          oldPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        });
+        reset();
         setTimeout(() => {
-          navigate('/user/profile');
+          navigate(config.dashboardPath);
         }, 2000);
       }
     } catch (error) {
@@ -94,21 +126,21 @@ const ChangePassword = () => {
           {/* Header */}
           <div className="mb-6">
             <button
-              onClick={() => navigate('/user/profile')}
+              onClick={() => navigate(config.dashboardPath)}
               className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition mb-4"
             >
               <i className="fas fa-arrow-left"></i>
               <span>Back to Dashboard</span>
             </button>
             <h2 className="text-3xl font-bold text-teal-900">Change Password</h2>
-            <p className="text-gray-600 mt-2">Update your account password</p>
+            <p className="text-gray-600 mt-2">Update your {config.roleLabel} account password</p>
           </div>
 
           {/* Message Display */}
           {message && (
             <div
               className={`p-4 mb-6 rounded-lg ${
-                message.includes('Error') || message.includes('required') || message.includes('do not match')
+                message.includes('Error')
                   ? 'bg-red-100 text-red-800 border border-red-300'
                   : 'bg-green-100 text-green-800 border border-green-300'
               }`}
@@ -118,7 +150,7 @@ const ChangePassword = () => {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Current Password */}
             <div>
               <label htmlFor="oldPassword" className="block text-sm font-medium text-gray-700 mb-2">
@@ -128,12 +160,11 @@ const ChangePassword = () => {
                 <input
                   type={showOldPassword ? 'text' : 'password'}
                   id="oldPassword"
-                  name="oldPassword"
-                  value={formData.oldPassword}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 pr-12"
+                  {...register('oldPassword')}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    errors.oldPassword ? 'border-red-500' : 'border-gray-300'
+                  } focus:outline-none focus:ring-2 focus:ring-emerald-600 pr-12`}
                   placeholder="Enter your current password"
-                  required
                 />
                 <button
                   type="button"
@@ -143,6 +174,9 @@ const ChangePassword = () => {
                   <i className={`fas ${showOldPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                 </button>
               </div>
+              {errors.oldPassword && (
+                <p className="text-red-500 text-sm mt-1">{errors.oldPassword.message}</p>
+              )}
             </div>
 
             {/* New Password */}
@@ -154,13 +188,11 @@ const ChangePassword = () => {
                 <input
                   type={showNewPassword ? 'text' : 'password'}
                   id="newPassword"
-                  name="newPassword"
-                  value={formData.newPassword}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 pr-12"
+                  {...register('newPassword')}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    errors.newPassword ? 'border-red-500' : 'border-gray-300'
+                  } focus:outline-none focus:ring-2 focus:ring-emerald-600 pr-12`}
                   placeholder="Enter new password (min. 6 characters)"
-                  required
-                  minLength="6"
                 />
                 <button
                   type="button"
@@ -170,6 +202,9 @@ const ChangePassword = () => {
                   <i className={`fas ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                 </button>
               </div>
+              {errors.newPassword && (
+                <p className="text-red-500 text-sm mt-1">{errors.newPassword.message}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters long</p>
             </div>
 
@@ -182,12 +217,11 @@ const ChangePassword = () => {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 pr-12"
+                  {...register('confirmPassword')}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                  } focus:outline-none focus:ring-2 focus:ring-emerald-600 pr-12`}
                   placeholder="Confirm your new password"
-                  required
                 />
                 <button
                   type="button"
@@ -197,6 +231,9 @@ const ChangePassword = () => {
                   <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                 </button>
               </div>
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -220,7 +257,7 @@ const ChangePassword = () => {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/user/profile')}
+                onClick={() => navigate(config.dashboardPath)}
                 className="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-300 transition"
               >
                 Cancel

@@ -395,13 +395,13 @@ const OrganizationDashboard = () => {
 
             <div className="flex gap-2 flex-wrap justify-center mt-auto">
               <button
-                onClick={() => navigate("/organization_dash/edit-profile")}
+                onClick={() => navigate("/organization/edit-profile")}
                 className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-600 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-600 hover:text-white transition"
               >
                 <i className="fas fa-user-edit"></i> Edit Profile
               </button>
               <button
-                onClick={() => navigate("/organization_dash/change-pass")}
+                onClick={() => navigate("/organization/change-pass")}
                 className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-400 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition"
               >
                 <i className="fas fa-lock"></i> Change Password
