@@ -398,13 +398,13 @@ const AdminDashboard = () => {
 
             <div className="mt-5 flex gap-2 flex-wrap justify-center">
               <button
-                onClick={() => navigate("/admin_dash/edit-profile")}
+                onClick={() => navigate("/admin/edit-profile")}
                 className="flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-600 hover:text-white transition"
               >
                 <i className="fas fa-user-edit"></i> Edit Profile
               </button>
               <button
-                onClick={() => navigate("/admin_dash/change-pass")}
+                onClick={() => navigate("/admin/change-pass")}
                 className="flex items-center gap-1.5 px-4 py-2 border border-gray-400 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition"
               >
                 <i className="fas fa-lock"></i> Change Password

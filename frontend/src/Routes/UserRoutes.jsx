@@ -7,7 +7,7 @@ import UserSchedule from '../pages/Schedules/UserSchedule';
 import UserDashboard from '../pages/Dashboards/User';
 import UserProgress from '../pages/UserProgress'; 
 import ChangePassword from '../pages/ChangePassword';
-import EditProfile from '../pages/EditPassword';
+import EditProfile from '../pages/EditProfile';
 
 
 import Chatbot from '../pages/Chatbot';

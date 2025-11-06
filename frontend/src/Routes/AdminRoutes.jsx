@@ -5,6 +5,8 @@ import AdminHome from '../pages/HomePages/AdminHome';
 import AdminDashboard from '../pages/Dashboards/Admin';
 import AdminManagement from '../pages/AdminManagement';
 import Analytics from '../pages/Analytics';
+import ChangePassword from '../pages/ChangePassword';
+import EditProfile from '../pages/EditProfile';
 
 export default function AdminRoutes() {
   return (
@@ -17,6 +19,8 @@ export default function AdminRoutes() {
         <Route path="profile" element={<ProtectedRoute element={<AdminDashboard />} requiredRole="admin" />} />
         <Route path="users" element={<ProtectedRoute element={<AdminManagement />} requiredRole="admin" />} />
         <Route path="analytics" element={<ProtectedRoute element={<Analytics/>} requiredRole="admin" />} />
+        <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword />} requiredRole="admin" />} />
+        <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="admin" />} />
         
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>
