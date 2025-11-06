@@ -50,6 +50,14 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
 
   ];
 
+   const organizationNavLinks = [ 
+    { name: 'Home', href: '/organization/home' },
+    { name: 'Verify Dietitians', href: '/organization/verify-dietitian' },
+    { name: 'Verify Corps', href: '/organization/verify-corporate' },
+    { name: 'Monitoring', href: '/organization/Monitoring' },
+    
+  ];
+
   const adminNavLinks = [
     { name: 'Home', href: '/admin/home' },
     { name: 'Analytics', href: '/admin/analytics' },
@@ -59,15 +67,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
    
   ];
 
-  const organizationNavLinks = [ 
-    { name: 'Home', href: '/organization/home' },
-    { name: 'Verify Dietitians', href: '/organization/verify-dietitian' },
-    { name: 'Verify Corps', href: '/organization/verify-corporate' },
-    { name: 'Documents', href: '/organization/documents' },
-    
-  ];
-
-
+ 
   // --- Function to Select Links based on Path ---
   const getNavLinks = () => {
     // If on dashboard routes, return empty array (no nav links needed)
