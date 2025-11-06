@@ -1,83 +1,107 @@
-import React, { useState, useEffect, useCallback } from "react";
+// src/pages/DietitianProfilesPage.jsx
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import FilterSidebar from "./Consultations/FilterSidebar";
 import BookingSidebar from "./Consultations/BookingSidebar";
 import PaymentModal from "./Consultations/PaymentModal";
+import { Notification } from "./AllDietitiansPage";
 import DietitianCard from "./Consultations/DietitianCard";
-import FilterSidebar from "./Consultations/FilterSidebar";
-import axios from "axios";
+import axios from 'axios';
 
-// Notification Component with Green Theme
-const Notification = ({ show, message, type, onClose }) => {
-  useEffect(() => {
-    if (show) {
-      console.log("Notification shown:", message, type);
-    }
-  }, [show, message, type]);
-
-  if (!show) return null;
-
-  const bgColor = type === "success" ? "bg-[#28B463]" : "bg-red-600";
-  const textColor = "text-white";
-  const borderColor =
-    type === "success" ? "border-[#1E6F5C]" : "border-red-700";
-  const icon = type === "success" ? "✓" : "✕";
-  const iconBg = type === "success" ? "bg-[#1E6F5C]" : "bg-red-700";
-
-  return (
-    <div
-      className={`fixed top-16 right-6 max-w-sm w-full md:w-96 z-9999`}
-      role="alert"
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      <div
-        className={`${bgColor} ${borderColor} ${textColor} border-2 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 animate-slide-in-right`}
-      >
-        <div
-          className={`${iconBg} rounded-full w-8 h-8 flex items-center justify-center shrink-0`}
-        >
-          <span className="text-lg font-bold">{icon}</span>
-        </div>
-        <div className="flex-1">
-          <p className="text-sm md:text-base font-semibold">{message}</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-white hover:text-gray-200 transition-colors shrink-0"
-          aria-label="Close notification"
-        >
-          <i className="fas fa-times text-lg"></i>
-        </button>
-      </div>
-      <style>{`
-        @keyframes slideInRight {
-          from {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-in-right {
-          animation: slideInRight 0.3s ease-out;
-        }
-      `}</style>
-    </div>
-  );
+// Helper to get specialization filters based on the page type
+const getSpecializationData = (specializationType) => {
+  const specializations = {
+    "skin-hair": {
+      title: "Find a Skin & Hair Care Nutritionist",
+      subtitle: "Transform Your Complexion, Revitalize Your Locks",
+      filters: [
+        { value: "Acne Management", label: "Acne Management" },
+        { value: "Hair Loss", label: "Hair Loss" },
+        { value: "Skin Glow", label: "Skin Glow" },
+        { value: "Anti-Aging", label: "Anti-Aging" },
+        { value: "Hair Strength", label: "Hair Strength" },
+        { value: "Scalp Health", label: "Scalp Health" },
+        { value: "Skin Elasticity", label: "Skin Elasticity" },
+      ],
+    },
+    "womens-health": {
+      title: "Find a Women's Health Nutritionist",
+      subtitle: "Empower Your Wellness Journey",
+      filters: [
+        { value: "PCOS", label: "PCOS" },
+        { value: "Pregnancy Nutrition", label: "Pregnancy Nutrition" },
+        { value: "Menopause", label: "Menopause" },
+        { value: "Fertility", label: "Fertility" },
+        { value: "Hormonal Balance", label: "Hormonal Balance" },
+        { value: "Breastfeeding Support", label: "Breastfeeding Support" },
+        { value: "Post-Partum Diet", label: "Post-Partum Diet" },
+      ],
+    },
+    "weight-management": {
+      title: "Find a Weight Management Nutritionist",
+      subtitle: "Achieve Your Goal Weight, Embrace Your Best Self",
+      filters: [
+        { value: "Weight Loss", label: "Weight Loss" },
+        { value: "Weight Gain", label: "Weight Gain" },
+        { value: "Obesity Management", label: "Obesity Management" },
+        { value: "Metabolic Health", label: "Metabolic Health" },
+        { value: "Mindful Eating", label: "Mindful Eating" },
+        { value: "Sports Nutrition", label: "Sports Nutrition" },
+        { value: "Holistic Nutrition", label: "Holistic Nutrition" },
+      ],
+    },
+    "gut-health": {
+      title: "Find a Gut Health Nutritionist",
+      subtitle: "Heal Your Gut, Transform Your Life",
+      filters: [
+        { value: "IBS Management", label: "IBS Management" },
+        { value: "GERD", label: "GERD" },
+        { value: "Gut Microbiome", label: "Gut Microbiome" },
+        { value: "Food Sensitivities", label: "Food Sensitivities" },
+        { value: "Gut Inflammation", label: "Gut Inflammation" },
+        { value: "Leaky Gut Syndrome", label: "Leaky Gut Syndrome" },
+        { value: "IBD", label: "IBD" },
+        { value: "Food Intolerances", label: "Food Intolerances" },
+      ],
+    },
+    "diabetes-thyroid": {
+      title: "Find a Diabetes & Thyroid Care Specialist",
+      subtitle: "Balance Your Health, Control Your Numbers",
+      filters: [
+        { value: "Type 2 Diabetes", label: "Type 2 Diabetes" },
+        { value: "Type 1 Diabetes", label: "Type 1 Diabetes" },
+        { value: "Hypothyroidism", label: "Hypothyroidism" },
+        { value: "Hyperthyroidism", label: "Hyperthyroidism" },
+      ],
+    },
+    "cardiac-health": {
+      title: "Find a Cardiac Health Nutritionist",
+      subtitle: "Nourish Your Heart, Extend Your Life",
+      filters: [
+        { value: "Cholesterol Management", label: "Cholesterol Management" },
+        { value: "Hypertension", label: "Hypertension" },
+        { value: "Post-Cardiac Surgery", label: "Post-Cardiac Surgery" },
+      ],
+    },
+    all: {
+      title: "Find a Nutritionist Near You",
+      subtitle: "Expert Guidance for Your Unique Health Goals",
+      filters: [],
+    },
+  };
+  return specializations[specializationType] || specializations["all"];
 };
 
-const AllDietitiansPage = () => {
+const DietitianProfilesPage = ({ specializationType = "all" }) => {
   const [allDietitians, setAllDietitians] = useState([]);
   const [filteredDietitians, setFilteredDietitians] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     specialization: [],
-    mode: [],
     experience: [],
     fees: [],
     language: [],
     rating: [],
+    location: "",
   });
   const [isBookingSidebarOpen, setIsBookingSidebarOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -88,70 +112,60 @@ const AllDietitiansPage = () => {
     message: "",
     type: "",
   });
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  const specializationData = useMemo(() => getSpecializationData(specializationType), [specializationType]);
 
   const showNotification = (message, type = "success") => {
     setNotification({ show: true, message, type });
-    // Auto-hide after 5 seconds instead of 3.5
-    setTimeout(
-      () => setNotification({ show: false, message: "", type: "" }),
-      5000
-    );
+    setTimeout(() => {
+      setNotification({ show: false, message: "", type: "" });
+    }, 5000);
   };
 
   const hideNotification = () => {
     setNotification({ show: false, message: "", type: "" });
   };
 
-  const [specializations, setSpecializations] = useState([]);
-
   // Load dietitians data from API
   useEffect(() => {
     const loadDietitians = async () => {
       try {
         setLoading(true);
-
+        
         // Get auth token for user
-        const token = localStorage.getItem("authToken_user");
+        const token = localStorage.getItem('authToken_user');
 
-        const config = token
-          ? {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          : {};
+        const config = token ? {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        } : {};
 
-        const response = await axios.get("/api/dietitians", config);
-
+        const response = await axios.get('/api/dietitians', config);
+        
+        let data;
         if (response.data.success) {
-          // Filter out dietitians with empty specialization arrays
-          const filteredData = response.data.data.filter(
-            (d) => d.specialties && d.specialties.length > 0
-          );
-          setAllDietitians(filteredData);
-          setFilteredDietitians(filteredData);
-
-          // Extract unique specializations for filter - keep only primary 6 plus Others
-          const primarySpecializations = [
-            "Weight Loss",
-            "Diabetes Management",
-            "Women's Health",
-            "Gut Health",
-            "Skin & Hair",
-            "Cardiac Health",
-            "Others",
-          ];
-          const specOptions = primarySpecializations.map((spec) => ({
-            value: spec,
-            label: spec,
-          }));
-          setSpecializations(specOptions);
+          data = response.data.data;
         } else {
-          throw new Error(
-            response.data.message || "Failed to fetch dietitians"
+          throw new Error(response.data.message || 'Failed to fetch dietitians');
+        }
+
+        // Filter by specialization if not 'all'
+        if (specializationType !== "all") {
+          const specializationFilters = specializationData.filters.map(
+            (f) => f.value
+          );
+          data = data.filter((d) =>
+            d.specialties?.some((s) => specializationFilters.some(f => f.toLowerCase() === s.toLowerCase()))
           );
         }
+
+        // Filter out dietitians with empty specialization arrays
+        data = data.filter((d) => d.specialties && d.specialties.length > 0);
+
+        setAllDietitians(data);
+        setFilteredDietitians(data);
       } catch (error) {
         console.error("Error loading dietitians:", error);
         showNotification("Error loading dietitians", "error");
@@ -163,81 +177,37 @@ const AllDietitiansPage = () => {
     };
 
     loadDietitians();
-  }, []);
+  }, [specializationType, specializationData]);
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Apply filters and search
+  // Apply filters and search whenever they change
   useEffect(() => {
     let result = [...allDietitians];
 
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (d) =>
-          d.name.toLowerCase().includes(query) ||
+          d.name?.toLowerCase().includes(query) ||
           d.location?.toLowerCase().includes(query) ||
           d.specialties?.some((s) => s.toLowerCase().includes(query))
       );
     }
 
-    // Specialization filter
     if (filters.specialization.length > 0) {
-      const primarySpecs = [
-        "Weight Loss",
-        "Diabetes Management",
-        "Women's Health",
-        "Gut Health",
-        "Skin & Hair",
-        "Cardiac Health",
-      ];
-
-      if (filters.specialization.includes("Others")) {
-        // If "Others" is selected, show only dietitians whose specializations don't match the primary 6
-        result = result.filter(
-          (d) =>
-            !d.specialties?.some((s) =>
-              primarySpecs.some(
-                (primary) => primary.toLowerCase() === s.toLowerCase()
-              )
-            )
-        );
-      } else {
-        // Normal filtering for primary specializations
-        result = result.filter((d) =>
-          d.specialties?.some((s) =>
-            filters.specialization.some(
-              (f) => f.toLowerCase() === s.toLowerCase()
-            )
-          )
-        );
-      }
-    }
-
-    // Mode filter - check both online/offline and onlineConsultation/offlineConsultation fields
-    if (filters.mode.length > 0) {
       result = result.filter((d) =>
-        filters.mode.some((m) => {
-          if (m === "online") {
-            return d.onlineConsultation === true || d.online === true;
-          } else if (m === "offline") {
-            return d.offlineConsultation === true || d.offline === true;
-          }
-          return false;
-        })
+        d.specialties?.some((s) => filters.specialization.some(f => f.toLowerCase() === s.toLowerCase()))
       );
     }
 
     // Experience filter - single selection, show dietitians with experience >= selected value
     if (filters.experience.length > 0) {
       const selectedExp = Math.max(...filters.experience); // Get the highest selected experience
-      result = result.filter(
-        (d) => (d.experience || d.yearsOfExperience || 0) >= selectedExp
-      );
+      result = result.filter((d) => (d.experience || d.yearsOfExperience || 0) >= selectedExp);
     }
 
     // Fees filter - single selection, show dietitians with fees <= selected value
@@ -246,12 +216,9 @@ const AllDietitiansPage = () => {
       result = result.filter((d) => d.fees <= selectedFee);
     }
 
-    // Language filter
     if (filters.language.length > 0) {
       result = result.filter((d) =>
-        d.languages?.some((lang) =>
-          filters.language.some((l) => l.toLowerCase() === lang.toLowerCase())
-        )
+        d.languages?.some((lang) => filters.language.some(l => l.toLowerCase() === lang.toLowerCase()))
       );
     }
 
@@ -261,16 +228,28 @@ const AllDietitiansPage = () => {
       result = result.filter((d) => d.rating >= selectedRating);
     }
 
+    if (filters.location) {
+      result = result.filter((d) =>
+        d.location?.toLowerCase().includes(filters.location.toLowerCase())
+      );
+    }
+
     setFilteredDietitians(result);
   }, [filters, allDietitians, searchQuery]);
 
   const handleFilterChange = useCallback((filterName, value) => {
     setFilters((prevFilters) => {
+      if (filterName === "location") {
+        return { ...prevFilters, location: value };
+      }
+
       const currentValues = prevFilters[filterName];
+
       if (["experience", "fees", "rating"].includes(filterName)) {
         const newValues = currentValues.includes(value) ? [] : [value];
         return { ...prevFilters, [filterName]: newValues };
       }
+
       const newValues = currentValues.includes(value)
         ? currentValues.filter((v) => v !== value)
         : [...currentValues, value];
@@ -281,11 +260,11 @@ const AllDietitiansPage = () => {
   const handleClearFilters = useCallback(() => {
     setFilters({
       specialization: [],
-      mode: [],
       experience: [],
       fees: [],
       language: [],
       rating: [],
+      location: "",
     });
     setSearchQuery("");
   }, []);
@@ -301,28 +280,19 @@ const AllDietitiansPage = () => {
   };
 
   const handleProceedToPayment = (details) => {
-    console.log("====== AllDietitiansPage - handleProceedToPayment ======");
-    console.log("Details received from BookingSidebar:", details);
-    console.log("Current dietitian:", currentDietitian);
-    console.log("======================================================");
-
     setPaymentDetails({
-      amount: details.amount || currentDietitian?.fees || 500,
-      dietitianId: details.dietitianId || currentDietitian?._id,
-      dietitianName: details.dietitianName || currentDietitian?.name,
-      dietitianEmail: details.dietitianEmail || currentDietitian?.email,
-      dietitianPhone: details.dietitianPhone || currentDietitian?.phone,
-      dietitianSpecialization:
-        details.dietitianSpecialization ||
-        currentDietitian?.specialties?.[0] ||
-        "",
+      amount: currentDietitian.fees,
+      dietitianId: currentDietitian._id,
+      dietitianName: currentDietitian.name,
+      dietitianEmail: currentDietitian.email,
+      dietitianPhone: currentDietitian.phone,
+      dietitianSpecialization: details.dietitianSpecialization || currentDietitian.specialties?.[0] || currentDietitian.specialization,
       date: details.date,
       time: details.time,
-      type: details.type || details.consultationType,
-      consultationType: details.consultationType || details.type,
-      userId: details.userId,
+      type: details.consultationType,
       userName: details.userName,
       userEmail: details.userEmail,
+      userId: details.userId,
       userPhone: details.userPhone,
       userAddress: details.userAddress,
     });
@@ -333,48 +303,43 @@ const AllDietitiansPage = () => {
   // Handle payment submit (simulation only)
   const handlePaymentSubmit = async (paymentData) => {
     try {
-      // Validate email
-      if (
-        !paymentData.email ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentData.email)
-      ) {
-        showNotification("Please enter a valid email address", "error");
-        return;
-      }
-
-      // Close modals
-      setIsPaymentModalOpen(false);
-
       // Show success notification
       showNotification(
-        "✨ Your consultation has been booked successfully! Confirmation email sent to " +
-          paymentData.email,
+        `✨ Your consultation has been booked successfully! Confirmation email sent to ${paymentData.email}`,
         "success"
       );
-
+      
       // Reset state after a short delay
       setTimeout(() => {
         setCurrentDietitian(null);
         setPaymentDetails(null);
       }, 1500);
+
     } catch (error) {
       console.error("Booking error:", error);
       showNotification("Booking error: " + error.message, "error");
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-xl text-secondary-text">Loading dietitians...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 pb-2">
+    <div className="min-h-screen bg-gray-100">
       {/* Header Section */}
       <div className="border-b-2 bg-white border-[#28B463] pt-2 fixed top-16 left-0 right-0 z-20">
         <div className="max-w-screen-2xl mx-auto px-6 py-1">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-[#1E6F5C] mb-0">
-              Find Your Perfect Dietitian
+              {specializationData.title}
             </h1>
             <p className="text-gray-600 font-medium max-w-2xl mx-auto">
-              Connect with certified nutrition experts for personalized health
-              guidance
+              {specializationData.subtitle}
             </p>
             <div className="w-16 h-0.5 bg-[#28B463] mx-auto mt-1 rounded-full" />
           </div>
@@ -384,13 +349,26 @@ const AllDietitiansPage = () => {
       {/* Main Content */}
       <div className="max-w-screen-2xl mx-auto px-6 pt-17 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
+              {/* Back Button */}
+              <div className="mb-6">
+                <button
+                  onClick={() => window.location.href = '/user/dietitian-profiles'}
+                  className="w-full inline-flex items-center justify-center px-4 py-3 bg-[#28B463] text-white font-semibold rounded-lg hover:bg-[#1E6F5C] transition-colors"
+                >
+                  <i className="fas fa-chevron-left mr-2"></i>
+                  Browse All
+                </button>
+              </div>
+
               <FilterSidebar
-                specializations={specializations}
+                specializations={specializationData.filters}
                 onFilterChange={handleFilterChange}
                 onClearFilters={handleClearFilters}
                 filters={filters}
+                showModeFilter={false}
               />
             </div>
           </div>
@@ -425,12 +403,14 @@ const AllDietitiansPage = () => {
                   </p>
                 </div>
                 {filteredDietitians.length > 0 && (
-                  <p className="text-sm text-gray-600">Sorted by relevance</p>
+                  <p className="text-sm text-gray-600">
+                    Sorted by relevance
+                  </p>
                 )}
               </div>
 
               {/* Results Grid */}
-              <div className="h-[1650px] overflow-y-auto">
+              <div className="h-[1350px] overflow-y-auto">
                 <div className="space-y-6">
                   {filteredDietitians.length > 0 ? (
                     filteredDietitians.map((dietitian) => (
@@ -450,15 +430,8 @@ const AllDietitiansPage = () => {
                           No dietitians found
                         </h3>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                          Try adjusting your search terms or clearing some
-                          filters to see more results.
+                          Try adjusting your search or filters
                         </p>
-                        <button
-                          onClick={handleClearFilters}
-                          className="px-6 py-3 bg-[#28B463] text-white font-semibold rounded-full hover:bg-[#1E6F5C] transition-colors shadow-md"
-                        >
-                          Clear All Filters
-                        </button>
                       </div>
                     </div>
                   )}
@@ -497,5 +470,4 @@ const AllDietitiansPage = () => {
   );
 };
 
-export default AllDietitiansPage;
-export { Notification };
+export default DietitianProfilesPage;
