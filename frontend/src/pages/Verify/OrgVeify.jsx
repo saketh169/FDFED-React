@@ -4,14 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 
 // --- Configuration and Data (Replicated from HTML) ---
 const FIELD_MAP = {
-    org_logo: { name: 'Organization Logo', ext: 'png', icon: 'fas fa-image', isImage: true },
-    org_brochure: { name: 'Organization Brochure', ext: 'pdf', icon: 'fas fa-file-pdf', isImage: false },
-    legal_document: { name: 'Legal Document', ext: 'pdf', icon: 'fas fa-file-contract', isImage: false },
-    tax_document: { name: 'Tax Document', ext: 'pdf', icon: 'fas fa-file-invoice-dollar', isImage: false },
-    address_proof: { name: 'Proof of Address', ext: 'pdf', icon: 'fas fa-map-marker-alt', isImage: false },
-    business_license: { name: 'Business License', ext: 'pdf', icon: 'fas fa-id-card', isImage: false },
-    authorized_rep_id: { name: 'Identity Proof', ext: 'pdf', icon: 'fas fa-user-check', isImage: false },
-    bank_document: { name: 'Bank Document', ext: 'pdf', icon: 'fas fa-university', isImage: false },
+    orgLogo: { name: 'Organization Logo', ext: 'png', icon: 'fas fa-image', isImage: true },
+    orgBrochure: { name: 'Organization Brochure', ext: 'pdf', icon: 'fas fa-file-pdf', isImage: false },
+    legalDocument: { name: 'Legal Document', ext: 'pdf', icon: 'fas fa-file-contract', isImage: false },
+    taxDocument: { name: 'Tax Document', ext: 'pdf', icon: 'fas fa-file-invoice-dollar', isImage: false },
+    addressProof: { name: 'Proof of Address', ext: 'pdf', icon: 'fas fa-map-marker-alt', isImage: false },
+    businessLicense: { name: 'Business License', ext: 'pdf', icon: 'fas fa-id-card', isImage: false },
+    authorizedRepId: { name: 'Identity Proof', ext: 'pdf', icon: 'fas fa-user-check', isImage: false },
+    bankDocument: { name: 'Bank Document', ext: 'pdf', icon: 'fas fa-university', isImage: false },
     finalReport: { name: 'Final Report', ext: 'pdf', icon: 'fas fa-file-alt', isImage: false }
 };
 
@@ -30,34 +30,34 @@ const mockOrganizationData = [
         _id: 'o001',
         org_name: 'TechSolutions Corp.',
         verificationStatus: {
-            org_logo: 'Received',
-            org_brochure: 'Pending',
-            legal_document: 'Verified',
-            tax_document: 'Rejected',
-            address_proof: 'Received',
-            business_license: 'Received',
-            authorized_rep_id: 'Received',
-            bank_document: 'Pending',
+            orgLogo: 'Received',
+            orgBrochure: 'Pending',
+            legalDocument: 'Verified',
+            taxDocument: 'Rejected',
+            addressProof: 'Received',
+            businessLicense: 'Received',
+            authorizedRepId: 'Received',
+            bankDocument: 'Pending',
             finalReport: 'Not Received' // Awaiting admin report upload
         },
         fileData: { // Mock file data (Base64 is a large string placeholder)
-            org_logo: { base64: 'base64_data_logo', mime: 'image/png' },
-            legal_document: { base64: 'base64_data_legal', mime: 'application/pdf' },
-            address_proof: { base64: 'base64_data_address', mime: 'application/pdf' }
+            orgLogo: { base64: 'base64_data_logo', mime: 'image/png' },
+            legalDocument: { base64: 'base64_data_legal', mime: 'application/pdf' },
+            addressProof: { base64: 'base64_data_address', mime: 'application/pdf' }
         }
     },
     {
         _id: 'o002',
         org_name: 'Global Ventures LLC',
         verificationStatus: {
-            org_logo: 'Verified',
-            org_brochure: 'Verified',
-            legal_document: 'Verified',
-            tax_document: 'Verified',
-            address_proof: 'Verified',
-            business_license: 'Verified',
-            authorized_rep_id: 'Verified',
-            bank_document: 'Verified',
+            orgLogo: 'Verified',
+            orgBrochure: 'Verified',
+            legalDocument: 'Verified',
+            taxDocument: 'Verified',
+            addressProof: 'Verified',
+            businessLicense: 'Verified',
+            authorizedRepId: 'Verified',
+            bankDocument: 'Verified',
             finalReport: 'Verified'
         }
     },
@@ -65,14 +65,14 @@ const mockOrganizationData = [
         _id: 'o003',
         org_name: 'New Startups Inc.',
         verificationStatus: {
-            org_logo: 'Not Uploaded',
-            org_brochure: 'Not Uploaded',
-            legal_document: 'Not Uploaded',
-            tax_document: 'Not Uploaded',
-            address_proof: 'Not Uploaded',
-            business_license: 'Not Uploaded',
-            authorized_rep_id: 'Not Uploaded',
-            bank_document: 'Not Uploaded',
+            orgLogo: 'Not Uploaded',
+            orgBrochure: 'Not Uploaded',
+            legalDocument: 'Not Uploaded',
+            taxDocument: 'Not Uploaded',
+            addressProof: 'Not Uploaded',
+            businessLicense: 'Not Uploaded',
+            authorizedRepId: 'Not Uploaded',
+            bankDocument: 'Not Uploaded',
             finalReport: 'Not Received'
         }
     }
@@ -97,344 +97,533 @@ const OrgVerify = () => {
         setTimeout(() => setNotification(null), duration);
     };
 
-    const handleConfirm = (message, action) => {
-        setModal({ active: true, message, onConfirm: () => {
-            action();
-            setModal({ active: false, message: '', onConfirm: () => {} });
-        }});
-    };
-
     const closeFileViewer = () => setFileViewer({ active: false, file: null });
     const toggleDocumentDetails = (rowId) => setExpandedRow(expandedRow === rowId ? null : rowId);
 
-    // --- Mock API/Action Handlers ---
+    // --- API Handlers ---
 
-    const fetchOrganizations = useCallback(() => {
-        setOrganizations(mockOrganizationData.map((o, index) => ({...o, rowId: index + 1})));
+    const fetchOrganizations = useCallback(async () => {
+        try {
+            const response = await fetch('/api/verify/organizations', {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            setOrganizations(data.map((o, index) => ({ ...o, rowId: index + 1 })));
+        } catch (error) {
+            console.error('Error fetching organizations:', error);
+            handleNotify('Failed to load organizations. Please try again.', 'error');
+            // Fallback to mock data for development
+            setOrganizations(
+                mockOrganizationData.map((o, index) => ({ ...o, rowId: index + 1 }))
+            );
+        }
     }, []);
 
     useEffect(() => {
         fetchOrganizations();
     }, [fetchOrganizations]);
 
-    const findOrganization = (id) => organizations.find(o => o._id === id);
-
-    const updateStatusLocally = (orgId, field, status) => {
-        setOrganizations(prev => prev.map(o => {
-            if (o._id === orgId) {
-                return {
-                    ...o,
-                    verificationStatus: { ...o.verificationStatus, [field]: status }
-                };
+    const verifyDocument = async (orgId, field) => {
+        try {
+            const response = await fetch(`/api/verify/org/${orgId}/approve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ field }),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to approve document');
             }
-            return o;
-        }));
-    };
-
-    const verifyDocument = (orgId, field) => {
-        handleConfirm(`Confirm verification for ${FIELD_MAP[field].name}?`, () => {
-            updateStatusLocally(orgId, field, 'Verified');
             handleNotify(`Document ${FIELD_MAP[field].name} verified.`, 'success');
-        });
-    };
-
-    const rejectDocument = (orgId, field) => {
-        handleConfirm(`Confirm rejection for ${FIELD_MAP[field].name}?`, () => {
-            updateStatusLocally(orgId, field, 'Rejected');
-            handleNotify(`Document ${FIELD_MAP[field].name} rejected.`, 'error');
-        });
-    };
-
-    const finalVerify = (orgId) => {
-        handleConfirm('Are you sure you want to **finally approve** this Organization?', () => {
-            updateStatusLocally(orgId, 'finalReport', 'Verified');
-            handleNotify('Organization has been finally approved!', 'success');
-            fetchOrganizations(); 
-        });
-    };
-
-    const finalReject = (orgId) => {
-        handleConfirm('Are you sure you want to **finally reject** this Organization?', () => {
-            updateStatusLocally(orgId, 'finalReport', 'Rejected');
-            handleNotify('Organization has been finally rejected.', 'error', 5000, true);
-            fetchOrganizations(); 
-        });
-    };
-
-    const handleFileUpload = (orgId, file) => {
-        if (!file) return handleNotify('Please select a file to upload.', 'warning');
-        
-        // Mock file upload logic
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const base64 = e.target.result.split(',')[1];
-            const mime = file.type;
-
-            setOrganizations(prev => prev.map(o => {
-                if (o._id === orgId) {
-                    return {
-                        ...o,
-                        verificationStatus: { ...o.verificationStatus, finalReport: 'Received' },
-                        fileData: { ...o.fileData, finalReport: { base64, mime } }
-                    };
-                }
-                return o;
-            }));
-            handleNotify('Verification report uploaded successfully.', 'success');
-        };
-        reader.readAsDataURL(file);
-    };
-
-    const viewFile = (orgId, field) => {
-        const organization = findOrganization(orgId);
-        const file = organization?.fileData?.[field];
-
-        if (!file || !file.base64) {
-            return handleNotify('File is not uploaded or data is missing.', 'warning');
+            fetchOrganizations(); // Refresh data
+        } catch (error) {
+            console.error('Error approving document:', error);
+            handleNotify('Failed to approve document', 'error');
         }
+    };
 
-        const dataUrl = `data:${file.mime};base64,${file.base64}`;
-        setFileViewer({ active: true, file: { dataUrl, mime: file.mime } });
+    const rejectDocument = async (orgId, field) => {
+        try {
+            const response = await fetch(`/api/verify/org/${orgId}/disapprove`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ field }),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to reject document');
+            }
+            handleNotify(`Document ${FIELD_MAP[field].name} rejected.`, 'error');
+            fetchOrganizations(); // Refresh data
+        } catch (error) {
+            console.error('Error rejecting document:', error);
+            handleNotify('Failed to reject document', 'error');
+        }
+    };
+
+    const finalVerify = async (orgId) => {
+        try {
+            const response = await fetch(`/api/verify/org/${orgId}/final-approve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+            if (!response.ok) {
+                throw new Error('Failed to finalize approval');
+            }
+            handleNotify('Organization has been finally approved!', 'success');
+            fetchOrganizations(); // Refresh data
+            setExpandedRow(null); // Close the expanded row
+            setTimeout(() => {
+                const element = document.getElementById(`org-row-${orgId}`);
+                if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        } catch (error) {
+            console.error('Error finalizing approval:', error);
+            handleNotify('Failed to finalize approval', 'error');
+        }
+    };
+
+    const finalReject = async (orgId) => {
+        try {
+            const response = await fetch(`/api/verify/org/${orgId}/final-disapprove`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+            if (!response.ok) {
+                throw new Error('Failed to finalize rejection');
+            }
+            handleNotify('Organization has been finally rejected.', 'error', 5000, true);
+            fetchOrganizations(); // Refresh data
+            setExpandedRow(null); // Close the expanded row
+            setTimeout(() => {
+                const element = document.getElementById(`org-row-${orgId}`);
+                if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        } catch (error) {
+            console.error('Error finalizing rejection:', error);
+            handleNotify('Failed to finalize rejection', 'error');
+        }
+    };
+
+    const handleFileUpload = async (orgId, file) => {
+        if (!file) return handleNotify('Please select a file to upload.', 'warning');
+
+        const formData = new FormData();
+        formData.append('finalReport', file);
+
+        try {
+            const response = await fetch(`/api/verify/org/${orgId}/upload-report`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+            });
+            if (!response.ok) {
+                throw new Error('Failed to upload report');
+            }
+            handleNotify('Verification report uploaded successfully.', 'success');
+            fetchOrganizations(); // Refresh data
+        } catch (error) {
+            console.error('Error uploading report:', error);
+            handleNotify('Failed to upload verification report', 'error');
+        }
+    };
+
+    const viewFile = async (orgId, field) => {
+        try {
+            const response = await fetch(`/api/verify/org/files/${orgId}/${field}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch file');
+            }
+            const data = await response.json();
+            const dataUrl = `data:${data.file.mime};base64,${data.file.base64}`;
+            setFileViewer({ active: true, file: { dataUrl, mime: data.file.mime } });
+        } catch (error) {
+            console.error('Error fetching file:', error);
+            handleNotify('File is not uploaded or data is missing.', 'warning');
+        }
     };
     
-    const downloadFile = (orgId, field, fileName, fileExt) => {
-        const organization = findOrganization(orgId);
-        const file = organization?.fileData?.[field];
-
-        if (!file || !file.base64) {
-            return handleNotify('File is not uploaded or data is missing.', 'warning');
+    const downloadFile = async (orgId, field, fileName, fileExt) => {
+        try {
+            const response = await fetch(`/api/verify/org/files/${orgId}/${field}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch file');
+            }
+            const data = await response.json();
+            const dataUrl = `data:${data.file.mime};base64,${data.file.base64}`;
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `${fileName}.${fileExt}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            handleNotify(`Starting download for ${fileName}.`, 'info');
+        } catch (error) {
+            console.error('Error fetching file:', error);
+            handleNotify('File is not uploaded or data is missing.', 'warning');
         }
-        
-        const dataUrl = `data:${file.mime};base64,${file.base64}`;
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `${fileName}.${fileExt}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        handleNotify(`Starting download for ${fileName}.`, 'info');
     };
 
 
 
   return (
-    <div className='min-h-screen bg-gray-50 pb-8 px-4 sm:px-6 md:px-8 font-inter'>
-      {/* Increased max-width to 7xl for a wider look (approx 80% on large screens) */}
+    <div className='min-h-screen bg-linear-to-br from-slate-50 via-emerald-50 to-teal-50 pb-12 px-4 sm:px-6 lg:px-8'>
       <div className='w-full max-w-7xl mx-auto'>
-        <h1 className={`text-3xl sm:text-4xl font-extrabold text-[#1A4A40] text-center mb-8 pt-6`}>
-          Organization Document Verification
-        </h1>
+        {/* Compact Header in Single Line */}
+        <div className='flex items-center justify-center gap-4 mb-4 pt-2 px-4' style={{ minHeight: '60px', maxHeight: '100px' }}>
+          <div className='flex-1 text-center'>
+            <div className='inline-flex items-center justify-center gap-3'>
+              <div className='inline-flex items-center justify-center w-10 h-10 bg-linear-to-r from-emerald-500 to-teal-600 rounded-2xl shadow-lg'>
+                <i className='fas fa-building text-lg text-white'></i>
+              </div>
+              <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent leading-tight'>
+                Organization Verification
+              </h1>
+            </div>
+            <p className='text-sm text-slate-600 mt-2 leading-tight max-w-lg mx-auto'>
+              Streamlined document verification system for organizations
+            </p>
+          </div>
+        </div>
 
-        {/* Notification */}
+        {/* Modern Notification */}
         {notification && (
           <div
-            className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg border-l-4 transition-all duration-500 transform w-full max-w-sm ${
+            className={`fixed top-6 right-6 z-50 p-4 rounded-2xl shadow-xl border-l-4 backdrop-blur-sm animate-in slide-in-from-right-4 duration-500 w-full max-w-md ${
               notification.type === 'success'
-                ? 'bg-green-100 border-green-500 text-green-800'
+                ? 'bg-emerald-50/95 border-emerald-400 text-emerald-800 shadow-emerald-100'
                 : notification.type === 'error'
-                ? 'bg-red-100 border-red-500 text-red-800'
-                : 'bg-blue-100 border-blue-500 text-blue-800'
+                ? 'bg-red-50/95 border-red-400 text-red-800 shadow-red-100'
+                : 'bg-blue-50/95 border-blue-400 text-blue-800 shadow-blue-100'
             }`}
           >
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center'>
-                <i
-                  className={`text-xl mr-3 ${
-                    notification.type === 'success'
-                      ? 'fa-check-circle'
-                      : notification.type === 'error'
-                      ? 'fa-exclamation-triangle'
-                      : 'fa-info-circle'
-                  }`}
-                ></i>
-                <p className='font-medium'>{notification.message}</p>
+            <div className='flex items-start justify-between'>
+              <div className='flex items-start'>
+                <div className={`p-2 rounded-xl mr-3 ${
+                  notification.type === 'success'
+                    ? 'bg-emerald-100'
+                    : notification.type === 'error'
+                    ? 'bg-red-100'
+                    : 'bg-blue-100'
+                }`}>
+                  <i
+                    className={`text-lg ${
+                      notification.type === 'success'
+                        ? 'fa-check-circle text-emerald-600'
+                        : notification.type === 'error'
+                        ? 'fa-exclamation-triangle text-red-600'
+                        : 'fa-info-circle text-blue-600'
+                    }`}
+                  ></i>
+                </div>
+                <div>
+                  <p className='font-semibold text-sm'>{notification.message}</p>
+                </div>
               </div>
               <button
                 onClick={() => setNotification(null)}
-                className='text-lg ml-4 text-gray-500 hover:text-gray-700'
+                className='text-slate-400 hover:text-slate-600 transition-colors ml-4 p-1 hover:bg-slate-100 rounded-lg'
               >
-                <i className='fas fa-times'></i>
+                <i className='fas fa-times text-sm'></i>
               </button>
             </div>
           </div>
         )}
 
-        {/* Confirmation Modal */}
+        {/* Modern Confirmation Modal */}
         {modal.active && (
-          <div className='fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4'>
-            <div className='bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full'>
-              <h4 className={`text-2xl font-bold text-[#1A4A40] mb-4`}>
-                Confirm Action
-              </h4>
+          <div className='fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300'>
+            <div className='bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full border border-slate-200'>
+              <div className='text-center mb-6'>
+                <div className='inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-2xl mb-4'>
+                  <i className='fas fa-question text-2xl text-amber-600'></i>
+                </div>
+                <h4 className='text-2xl font-bold text-slate-800 mb-2'>
+                  Confirm Action
+                </h4>
+              </div>
               <p
-                className='text-gray-700 mb-6'
+                className='text-slate-600 mb-8 text-center leading-relaxed'
                 dangerouslySetInnerHTML={{ __html: modal.message }}
               ></p>
-              <div className='flex gap-4'>
+              <div className='flex gap-3'>
                 <button
-                  className={`flex-1 bg-[#48BB78] text-white py-2 px-4 rounded-xl font-semibold hover:bg-[#27AE60] transition-all duration-300 shadow-md`}
-                  onClick={modal.onConfirm}
-                >
-                  <i className='fas fa-check mr-2'></i> Yes, Proceed
-                </button>
-                <button
-                  className='flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-xl font-semibold hover:bg-gray-400 transition-all duration-300 shadow-md'
-                  onClick={() =>
-                    setModal({
-                      active: false,
-                      message: '',
-                      onConfirm: () => {}
-                    })
-                  }
+                  className='flex-1 bg-slate-100 text-slate-700 py-3 px-6 rounded-2xl font-semibold hover:bg-slate-200 transition-all duration-200 shadow-sm hover:shadow-md'
+                  onClick={() => {
+                    setModal({ active: false, message: '', onConfirm: () => {} })
+                  }}
                 >
                   <i className='fas fa-times mr-2'></i> Cancel
+                </button>
+                <button
+                  className='flex-1 bg-linear-to-r from-emerald-500 to-teal-600 text-white py-3 px-6 rounded-2xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                  onClick={modal.onConfirm}
+                >
+                  <i className='fas fa-check mr-2'></i> Confirm
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* File Viewer */}
+        {/* Modern File Viewer */}
         {fileViewer.active && (
-          <div className='fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4'>
-            <div className='bg-white rounded-2xl shadow-2xl max-w-full lg:max-w-5xl w-full mx-4 max-h-[95vh] flex flex-col'>
-              <div className='p-4 border-b border-gray-200 flex justify-between items-center bg-[#f7f7f7] rounded-t-2xl'>
-                <h3 className={`text-xl font-bold text-[#48BB78]`}>
-                  Document Viewer
-                </h3>
+          <div className='fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300' style={{ paddingTop: '2vh' }}>
+            <div className='bg-white rounded-3xl shadow-2xl max-w-full lg:max-w-6xl w-full mx-4 flex flex-col overflow-hidden border border-slate-200' style={{ height: '600px' }}>
+              <div className='p-6 border-b border-slate-200 bg-linear-to-r from-slate-50 to-emerald-50 rounded-t-3xl flex justify-between items-center'>
+                <div className='flex items-center'>
+                  <div className='p-2 bg-emerald-100 rounded-xl mr-3'>
+                    <i className='fas fa-file-alt text-emerald-600'></i>
+                  </div>
+                  <h3 className='text-xl font-bold text-slate-800'>
+                    Document Viewer
+                  </h3>
+                </div>
                 <button
                   onClick={closeFileViewer}
-                  className='text-gray-600 hover:text-red-500 transition-colors'
+                  className='p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200'
                 >
-                  <i className='fas fa-times text-2xl'></i>
+                  <i className='fas fa-times text-xl'></i>
                 </button>
               </div>
-              <div className='grow h-[75vh] p-4 overflow-y-auto'>
+              <div className='grow p-6 overflow-y-auto bg-slate-50' style={{ height: 'calc(600px - 80px)' }}>
                 {fileViewer.file?.mime?.startsWith('image/') ? (
-                  <img
-                    src={fileViewer.file.dataUrl}
-                    alt='Document View'
-                    className='w-full h-full object-contain mx-auto'
-                  />
+                  <div className='bg-white p-4 rounded-2xl shadow-sm h-full'>
+                    <img
+                      src={fileViewer.file.dataUrl}
+                      alt='Document View'
+                      className='w-full h-full object-contain mx-auto rounded-xl'
+                    />
+                  </div>
                 ) : (
-                  <iframe
-                    src={fileViewer.file?.dataUrl}
-                    title='Document Viewer'
-                    className='w-full h-full border-none'
-                    allow='fullscreen'
-                  ></iframe>
+                  <div className='bg-white rounded-2xl shadow-sm overflow-hidden h-full'>
+                    <iframe
+                      src={fileViewer.file?.dataUrl}
+                      title='Document Viewer'
+                      className='w-full h-full border-none'
+                      allow='fullscreen'
+                    ></iframe>
+                  </div>
                 )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Table */}
-        <div className='bg-white rounded-2xl shadow-xl overflow-x-auto'>
-          <table className='min-w-full divide-y divide-gray-200'>
-            {/* Updated Header BG to Lighter Green */}
-            <thead className={`bg-[#27AE60] text-white`}>
+        {/* Modern Table */}
+        <div className='bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden'>
+          <table className='min-w-full divide-y divide-slate-200'>
+            {/* Modern Header */}
+            <thead className='bg-linear-to-r from-emerald-600 to-teal-600'>
               <tr>
-                <th className='py-4 px-6 text-left text-sm font-semibold uppercase tracking-wider min-w-[250px]'>
-                  Organization Name
+                <th className='py-4 px-8 text-left text-sm font-bold uppercase tracking-wider text-white'>
+                  <div className='flex items-center'>
+                    <i className='fas fa-building mr-3 opacity-90'></i>
+                    Organization Name
+                  </div>
                 </th>
-                <th className='py-4 px-6 text-left text-sm font-semibold uppercase tracking-wider min-w-[150px]'>
-                  Overall Status
+                <th className='py-4 px-8 text-left text-sm font-bold uppercase tracking-wider text-white'>
+                  <div className='flex items-center'>
+                    <i className='fas fa-chart-line mr-3 opacity-90'></i>
+                    Verification Status
+                  </div>
                 </th>
               </tr>
             </thead>
-            <tbody className='divide-y divide-gray-100'>
-              {organizations.map(o => {
+            <tbody className='divide-y divide-slate-100 bg-white'>
+              {organizations.length === 0 ? (
+                <tr>
+                  <td colSpan='2' className='py-16 text-center'>
+                    <div className='flex flex-col items-center justify-center'>
+                      <div className='inline-flex items-center justify-center w-20 h-20 bg-slate-100 rounded-full mb-4'>
+                        <i className='fas fa-building text-3xl text-slate-400'></i>
+                      </div>
+                      <h3 className='text-xl font-semibold text-slate-700 mb-2'>No Organizations Found</h3>
+                      <p className='text-slate-500'>There are currently no organizations to verify.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                organizations.map(o => {
                 const overallStatus =
                   o.verificationStatus.finalReport || 'Not Received'
                 const displayStatus =
                   overallStatus === 'Not Received' ? 'Pending' : overallStatus
                 const statusColor =
                   overallStatus === 'Verified'
-                    ? 'text-green-600'
+                    ? 'text-emerald-600'
                     : overallStatus === 'Rejected'
                     ? 'text-red-600'
-                    : 'text-yellow-600'
+                    : 'text-amber-600'
 
                 return (
                   <React.Fragment key={o._id}>
                     <tr
-                      className='border-t border-b border-[#48BB78] hover:bg-green-100 cursor-pointer transition-colors duration-200'
+                      id={`org-row-${o._id}`}
+                      className='hover:bg-emerald-100/70 cursor-pointer transition-all duration-300 group border-b border-emerald-100'
                       onClick={() => toggleDocumentDetails(o.rowId)}
                     >
-                      <td className='py-4 px-6 flex items-center'>
-                        <i className={`fas fa-building text-lg mr-3 text-[#48BB78]`}></i>
-                        {o.org_name}
+                      <td className='py-3 px-8'>
+                        <div className='flex items-center'>
+                          <div className='p-3 bg-emerald-100 rounded-xl mr-4 group-hover:bg-emerald-200 transition-colors duration-200'>
+                            <i className='fas fa-building text-emerald-600 text-lg'></i>
+                          </div>
+                          <div>
+                            <div className='font-bold text-slate-800 text-lg'>{o.org_name}</div>
+                            <div className='text-sm text-slate-500'>Organization</div>
+                          </div>
+                        </div>
                       </td>
-                      <td className='py-4 px-6'>
-                        <i
-                          className={`fas fa-${STATUS_ICONS[overallStatus]} ${statusColor} mr-2`}
-                        ></i>
-                        <span className={`font-semibold ${statusColor}`}>
-                          {displayStatus}
-                        </span>
+                      <td className='py-3 px-8'>
+                        <div className='flex items-center'>
+                          <div className={`p-2 rounded-xl mr-3 ${
+                            overallStatus === 'Verified'
+                              ? 'bg-emerald-100'
+                              : overallStatus === 'Rejected'
+                              ? 'bg-red-100'
+                              : 'bg-amber-100'
+                          }`}>
+                            <i
+                              className={`fas fa-${STATUS_ICONS[overallStatus]} ${
+                                overallStatus === 'Verified'
+                                  ? 'text-emerald-600'
+                                  : overallStatus === 'Rejected'
+                                  ? 'text-red-600'
+                                  : 'text-amber-600'
+                              }`}
+                            ></i>
+                          </div>
+                          <span className={`font-bold text-lg ${statusColor}`}>
+                            {displayStatus}
+                          </span>
+                          <i className='fas fa-chevron-down text-slate-400 ml-auto group-hover:text-emerald-500 transition-colors duration-200'></i>
+                        </div>
                       </td>
                     </tr>
                     {expandedRow === o.rowId && (
                       <tr>
                         <td colSpan='2' className='p-0'>
-                          <div className='bg-gray-50 p-6'>
-                            <h3 className={`text-xl font-bold text-[#48BB78] mb-4 flex items-center`}>
-                              <i className='fas fa-folder-open mr-2'></i>
-                              Documents Submitted by {o.org_name}
-                            </h3>
-                            <div className='space-y-4'>
-                              {Object.keys(FIELD_MAP).map(field => {
-                                const status =
-                                  o.verificationStatus[field] ||
-                                  (field === 'finalReport'
-                                    ? 'Not Received'
-                                    : 'Not Uploaded')
-                                const fileExists =
-                                  o.fileData?.[field] &&
-                                  [
+                          <div className='bg-linear-to-r from-slate-50 to-emerald-50/30 p-8 border-t border-slate-200'>
+                            <div className='max-w-6xl mx-auto'>
+                              <div className='flex items-center mb-8'>
+                                <div className='p-3 bg-emerald-100 rounded-2xl mr-4'>
+                                  <i className='fas fa-folder-open text-emerald-600 text-xl'></i>
+                                </div>
+                                <div>
+                                  <h3 className='text-xl font-bold text-slate-800'>
+                                    Document Verification
+                                  </h3>
+                                  <p className='text-slate-600'>Review and verify documents for {o.org_name}</p>
+                                </div>
+                              </div>
+
+                              <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8'>
+                                {Object.keys(FIELD_MAP).map(field => {
+                                  const status =
+                                    o.verificationStatus[field] ||
+                                    (field === 'finalReport'
+                                      ? 'Not Received'
+                                      : 'Not Uploaded')
+                                  const fileExists = [
                                     'Received',
                                     'Pending',
                                     'Verified',
                                     'Rejected'
                                   ].includes(status)
-                                const fieldInfo = FIELD_MAP[field]
+                                  const fieldInfo = FIELD_MAP[field]
 
-                                return (
-                                  <div
-                                    key={field}
-                                    className='bg-white p-4 rounded-lg shadow-sm border border-gray-100'
-                                  >
-                                    <div className='flex items-center justify-between flex-wrap gap-2'>
-                                      {/* Document Name and Status */}
-                                      <div className='flex items-center min-w-[30%]'>
-                                        <i
-                                          className={`${fieldInfo.icon} text-[#1A4A40] text-xl mr-3`}
-                                        ></i>
-                                        <div>
-                                          <strong className='text-gray-800'>
-                                            {fieldInfo.name}
-                                          </strong>
+                                  return (
+                                    <div
+                                      key={field}
+                                      className='bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-200'
+                                    >
+                                      <div className='flex items-start justify-between mb-4'>
+                                        <div className='flex items-center'>
+                                          <div className={`p-3 rounded-xl mr-4 ${
+                                            status === 'Verified'
+                                              ? 'bg-emerald-100'
+                                              : status === 'Rejected'
+                                              ? 'bg-red-100'
+                                              : status === 'Received' || status === 'Pending'
+                                              ? 'bg-amber-100'
+                                              : 'bg-slate-100'
+                                          }`}>
+                                            <i
+                                              className={`${fieldInfo.icon} text-lg ${
+                                                status === 'Verified'
+                                                  ? 'text-emerald-600'
+                                                  : status === 'Rejected'
+                                                  ? 'text-red-600'
+                                                  : status === 'Received' || status === 'Pending'
+                                                  ? 'text-amber-600'
+                                                  : 'text-slate-500'
+                                              }`}
+                                            ></i>
+                                          </div>
+                                          <div>
+                                            <h4 className='font-bold text-slate-800 text-lg'>
+                                              {fieldInfo.name}
+                                            </h4>
+                                          </div>
                                         </div>
                                       </div>
 
-                                      {/* Actions and Status Tag */}
-                                      <div className='flex items-center gap-3'>
-                                        {/* File Actions (View/Download) */}
-                                        {fileExists ? (
-                                          <>
+                                      <div className='flex items-center justify-between'>
+                                        <span
+                                          className={`px-4 py-2 rounded-xl text-sm font-bold ${
+                                            status === 'Verified'
+                                              ? 'bg-emerald-100 text-emerald-800'
+                                              : status === 'Rejected'
+                                              ? 'bg-red-100 text-red-800'
+                                              : status === 'Received' || status === 'Pending'
+                                              ? 'bg-amber-100 text-amber-800'
+                                              : 'bg-slate-100 text-slate-800'
+                                          }`}
+                                        >
+                                          {status}
+                                        </span>
+
+                                        {fileExists && (
+                                          <div className='flex gap-2'>
                                             <button
-                                              className={`text-[#48BB78] hover:text-[#1A4A40] transition-colors duration-200 text-sm font-medium`}
+                                              className='p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all duration-200'
                                               onClick={e => {
                                                 e.preventDefault()
                                                 viewFile(o._id, field)
                                               }}
+                                              title='View Document'
                                             >
-                                              <i className='fas fa-eye mr-1'></i>{' '}
-                                              View
+                                              <i className='fas fa-eye'></i>
                                             </button>
                                             <button
-                                              className={`text-[#48BB78] hover:text-[#1A4A40] transition-colors duration-200 text-sm font-medium`}
+                                              className='p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all duration-200'
                                               onClick={e => {
                                                 e.preventDefault()
                                                 downloadFile(
@@ -444,123 +633,106 @@ const OrgVerify = () => {
                                                   fieldInfo.ext
                                                 )
                                               }}
+                                              title='Download Document'
                                             >
-                                              <i className='fas fa-download mr-1'></i>{' '}
-                                              Download
+                                              <i className='fas fa-download'></i>
                                             </button>
-                                          </>
-                                        ) : (
-                                          <span className='text-gray-500 text-sm'>
-                                            {status === 'Not Uploaded'
-                                              ? 'Not Uploaded'
-                                              : 'Not Received'}
-                                          </span>
+                                          </div>
                                         )}
-                                        
-                                        {/* Status Tag */}
-                                        <span
-                                          className={`px-3 py-1 rounded-full text-xs font-bold min-w-20 text-center ${
-                                            status === 'Verified'
-                                              ? 'bg-green-100 text-green-800'
-                                              : status === 'Rejected'
-                                              ? 'bg-red-100 text-red-800'
-                                              : status === 'Received' || status === 'Pending'
-                                              ? 'bg-yellow-100 text-yellow-800'
-                                              : 'bg-gray-100 text-gray-800'
-                                          }`}
-                                        >
-                                          {status}
-                                        </span>
-
-                                        {/* Verification Actions */}
-                                        {status === 'Received' &&
-                                          field !== 'finalReport' && (
-                                            <div className='flex gap-2 ml-4'>
-                                              <button
-                                                className={`bg-[#48BB78] text-white px-3 py-1 rounded-lg hover:bg-[#1A4A40] transition-colors duration-200 text-sm font-semibold shadow-md`}
-                                                onClick={() =>
-                                                  verifyDocument(o._id, field)
-                                                }
-                                              >
-                                                <i className='fas fa-check'></i> Verify
-                                              </button>
-                                              <button
-                                                className='bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors duration-200 text-sm font-semibold shadow-md'
-                                                onClick={() =>
-                                                  rejectDocument(o._id, field)
-                                                }
-                                              >
-                                                <i className='fas fa-times'></i> Reject
-                                              </button>
-                                            </div>
-                                          )}
                                       </div>
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
 
-                            {/* Upload Report */}
-                            <div className='mt-6 bg-white p-4 rounded-xl shadow-lg border border-green-100'>
-                              <h4 className={`text-lg font-bold text-[#48BB78] mb-3 flex items-center border-b pb-2`}>
-                                <i className='fas fa-upload mr-2'></i>
-                                Upload Final Verification Report (.pdf only)
-                              </h4>
-                              <p className='text-sm text-gray-500 mb-3'>
-                                Upload a detailed report before final approval or rejection.
+                                      {status === 'Pending' && field !== 'finalReport' && (
+                                        <div className='flex gap-3 mt-4'>
+                                          <button
+                                            className='flex-1 bg-linear-to-r from-emerald-500 to-teal-600 text-white py-2 px-4 rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-sm hover:shadow-md font-semibold'
+                                            onClick={() =>
+                                              verifyDocument(o._id, field)
+                                            }
+                                          >
+                                            <i className='fas fa-check mr-2'></i> Verify
+                                          </button>
+                                          <button
+                                            className='flex-1 bg-linear-to-r from-red-500 to-rose-600 text-white py-2 px-4 rounded-xl hover:from-red-600 hover:to-rose-700 transition-all duration-200 shadow-sm hover:shadow-md font-semibold'
+                                            onClick={() =>
+                                              rejectDocument(o._id, field)
+                                            }
+                                          >
+                                            <i className='fas fa-times mr-2'></i> Reject
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+
+                            {/* Modern Upload Report */}
+                            <div className='bg-white p-6 rounded-2xl shadow-lg border border-slate-200'>
+                              <div className='flex items-center mb-4'>
+                                <div className='p-3 bg-emerald-100 rounded-xl mr-4'>
+                                  <i className='fas fa-upload text-emerald-600 text-lg'></i>
+                                </div>
+                                <div>
+                                  <h4 className='text-xl font-bold text-slate-800'>
+                                    Upload Final Verification Report
+                                  </h4>
+                                  <p className='text-slate-600 text-sm'>PDF files only</p>
+                                </div>
+                              </div>
+                              <p className='text-slate-600 mb-6 leading-relaxed'>
+                                Upload a detailed report before final approval or rejection of this organization.
                               </p>
-                              <div className='flex flex-col sm:flex-row items-center gap-4'>
+                              <div className='relative'>
                                 <input
                                   type='file'
                                   accept='.pdf'
                                   onChange={e =>
                                     handleFileUpload(o._id, e.target.files[0])
                                   }
-                                  className='flex-1 p-2 w-full sm:w-auto border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#27AE60] text-gray-700 bg-gray-50'
+                                  className='w-full p-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-600 bg-slate-50 hover:bg-slate-100 hover:border-emerald-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100'
                                 />
+                                <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
+                                  <div className='text-center'>
+                                    <i className='fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2'></i>
+                                    <p className='text-slate-500 text-sm'>Drop PDF here or click to browse</p>
+                                  </div>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Final Approval */}
-                            <div className='mt-6 flex flex-col sm:flex-row gap-4'>
-                              <button
-                                className={`flex-1 bg-[#48BB78] text-white py-3 px-6 rounded-xl font-extrabold hover:bg-[#1A4A40] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg`}
-                                onClick={() => finalVerify(o._id)}
-                                disabled={
-                                  ![
-                                    'Received',
-                                    'Verified',
-                                    'Rejected'
-                                  ].includes(o.verificationStatus.finalReport)
-                                }
-                              >
-                                <i className='fas fa-check-circle mr-2'></i>{' '}
-                                Final Approve
-                              </button>
-                              <button
-                                className='flex-1 bg-red-500 text-white py-3 px-6 rounded-xl font-extrabold hover:bg-red-600 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg'
-                                onClick={() => finalReject(o._id)}
-                                disabled={
-                                  ![
-                                    'Received',
-                                    'Verified',
-                                    'Rejected'
-                                  ].includes(o.verificationStatus.finalReport)
-                                }
-                              >
-                                <i className='fas fa-times-circle mr-2'></i>{' '}
-                                Final Reject
-                              </button>
-                            </div>
-                          
-                            <div className='mt-4 text-center border-b border-[#48BB78] pb-4'>
-                              <button
-                                className='text-gray-500 hover:text-gray-700 transition-colors duration-200'
-                                onClick={() => toggleDocumentDetails(o.rowId)}
-                              >
-                                <i className='fas fa-times mr-1'></i> Close Details
-                              </button>
+                              <div className='flex flex-col sm:flex-row gap-4 mb-6'>
+                                <button
+                                  className={`flex-1 bg-linear-to-r from-emerald-500 to-teal-600 text-white py-4 px-6 rounded-2xl font-bold hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:bg-emerald-600`}
+                                  onClick={() => finalVerify(o._id)}
+                                  disabled={
+                                    ![
+                                      'Received',
+                                      'Verified',
+                                      'Rejected'
+                                    ].includes(o.verificationStatus.finalReport)
+                                  }
+                                >
+                                  <i className='fas fa-check-circle mr-2'></i>{' '}
+                                  Final Approve
+                                </button>
+                                <button
+                                  className='flex-1 bg-linear-to-r from-red-500 to-rose-600 text-white py-4 px-6 rounded-2xl font-bold hover:from-red-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                                  onClick={() => finalReject(o._id)}
+                                  disabled={
+                                    ![
+                                      'Received',
+                                      'Verified',
+                                      'Rejected'
+                                    ].includes(o.verificationStatus.finalReport)
+                                  }
+                                >
+                                  <i className='fas fa-times-circle mr-2'></i>{' '}
+                                  Final Reject
+                                </button>
+                              </div>
+
+                              {/* Full border separator */}
+                              <div className='border-t-2 border-emerald-200 pt-6 hover:border-emerald-300 transition-colors duration-300'></div>
                             </div>
                           </div>
                         </td>
@@ -568,22 +740,26 @@ const OrgVerify = () => {
                     )}
                   </React.Fragment>
                 )
-              })}
+              }))}
             </tbody>
           </table>
         </div>
 
-        {/* Footer */}
-        <div className='mt-8 text-center text-gray-600'>
-          <p className='text-sm'>
-            If you have any questions, please contact our support team at{' '}
+        {/* Modern Footer */}
+        <div className='mt-16 text-center'>
+          <div className='inline-flex items-center justify-center w-12 h-12 bg-linear-to-r from-emerald-500 to-teal-600 rounded-2xl mb-4'>
+            <i className='fas fa-question-circle text-white text-lg'></i>
+          </div>
+          <p className='text-slate-600 mb-2'>Need help with verification?</p>
+          <p className='text-sm text-slate-500'>
+            Contact our support team at{' '}
             <a
               href='mailto:support@orgverify.com'
-              className={`text-[#48BB78] hover:text-[#1A4A40] transition-colors duration-200 font-semibold`}
+              className='text-emerald-600 hover:text-emerald-700 font-semibold transition-colors duration-200 inline-flex items-center'
             >
-              <i className='fas fa-envelope mr-1'></i> support@orgverify.com
+              <i className='fas fa-envelope mr-2'></i>
+              support@orgverify.com
             </a>
-            .
           </p>
         </div>
       </div>

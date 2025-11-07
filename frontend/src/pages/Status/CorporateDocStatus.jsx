@@ -5,12 +5,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 // --- Configuration and Data ---
 
 const FIELD_MAP = {
-    partnershipAgreement: { name: 'Partnership Agreement', icon: 'fas fa-handshake' },
-    companyBrochure: { name: 'Company Brochure', icon: 'fas fa-building' },
     businessLicense: { name: 'Business License', icon: 'fas fa-id-card-alt' },
-    taxDocument: { name: 'Tax Document', icon: 'fas fa-file-invoice-dollar' },
+    taxIdDocument: { name: 'Tax ID Document', icon: 'fas fa-file-invoice-dollar' },
+    incorporationCertificate: { name: 'Incorporation Certificate', icon: 'fas fa-certificate' },
     authorizedRepId: { name: 'Authorized Representative ID', icon: 'fas fa-user-check' },
-    bankDocument: { name: 'Bank Document', icon: 'fas fa-university' },
+    bankAccountProof: { name: 'Bank Account Proof', icon: 'fas fa-university' },
+    financialAudit: { name: 'Financial Audit', icon: 'fas fa-chart-line' },
+    codeOfConduct: { name: 'Code of Conduct', icon: 'fas fa-gavel' },
     finalReport: { name: 'Final Verification Report', icon: 'fas fa-file-contract' }
 };
 
@@ -59,11 +60,19 @@ const CorporateDocStatus = () => {
         finalReport: null
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [showPdfViewer, setShowPdfViewer] = useState(false);
+    const [pdfDataUrl, setPdfDataUrl] = useState('');
 
     // Placeholder functions for file actions
     const handleViewReport = (base64, mime) => {
         const dataUrl = `data:${mime};base64,${base64}`;
-        window.open(dataUrl, '_blank');
+        setPdfDataUrl(dataUrl);
+        setShowPdfViewer(true);
+    };
+
+    const handleClosePdfViewer = () => {
+        setShowPdfViewer(false);
+        setPdfDataUrl('');
     };
 
     const handleDownloadReport = (base64, name) => {
@@ -75,35 +84,56 @@ const CorporateDocStatus = () => {
         document.body.removeChild(link);
     };
 
-    // Mock API call to fetch corporate data
+    // API call to fetch corporate data
     const fetchCorporateDetails = useCallback(async () => {
         setIsLoading(true);
-        // --- MOCK API DATA START ---
-        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        let corporateName = 'Loading...';
+        let documentData = {
+            verificationStatus: {},
+            finalReport: null
+        };
+        
+        try {
+            // Fetch corporate partner name and full status from combined API
+            const token = localStorage.getItem('authToken_corporatepartner');
+            if (!token) {
+                corporateName = 'No token found';
+            } else {
+                const statusResponse = await fetch('/api/status/corporatepartner-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-        const mockCorporate = {
-            name: 'Global Wellness Corp',
-            email: 'contact@globalwellness.com',
-            verificationStatus: {
-                partnershipAgreement: 'Verified',
-                companyBrochure: 'Received',
-                businessLicense: 'Pending',
-                taxDocument: 'Rejected',
-                authorizedRepId: 'Verified',
-                bankDocument: 'Not Uploaded',
-                finalReport: 'Verified' // Set to Verified/Rejected/Pending to test actions
-            },
-            // Mock final report data (Base64 is a placeholder)
-            finalReport: {
-                base64: 'JVBERi0xLjQKJc... [MOCK BASE64 DATA]',
-                mime: 'application/pdf',
-                name: 'Global_Wellness_Corp_Report'
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    corporateName = statusData.name;
+                    documentData = {
+                        verificationStatus: statusData.verificationStatus,
+                        finalReport: statusData.finalReport
+                    };
+                } else {
+                    corporateName = 'Failed to load data';
+                    console.error('Failed to fetch status');
+                }
             }
+        } catch (error) {
+            console.error('Error fetching corporate data:', error);
+            corporateName = 'Error loading data';
+        }
+
+        // Set the corporate data
+        const corporateData = {
+            name: corporateName,
+            email: '', // Not needed for this component
+            verificationStatus: documentData.verificationStatus,
+            finalReport: documentData.finalReport
         };
 
-        setCorporate(mockCorporate);
+        setCorporate(corporateData);
         setIsLoading(false);
-        // --- MOCK API DATA END ---
     }, []);
 
     useEffect(() => {
@@ -223,7 +253,7 @@ const CorporateDocStatus = () => {
     };
 
     return (
-        <div className={`${colors['background-light']} min-h-screen py-12 px-4 sm:px-6 md:px-8`}>
+        <div className={`${colors['background-light']} min-h-screen py-6 px-4 sm:px-6 md:px-8`}>
             <style>{`
                 @keyframes fadeInUp {
                     from {
@@ -242,6 +272,15 @@ const CorporateDocStatus = () => {
             `}</style>
 
             <div className="max-w-6xl mx-auto border-4 border-green-500 rounded-2xl p-6">
+                {/* Main Title */}
+                <div className="text-center mb-8 animate-fade-in-up">
+                    <h1 className="text-3xl font-bold" style={{ color: colors['dark-green'] }}>
+                        <i className="fas fa-shield-alt mr-3"></i>
+                        My Verification Status
+                    </h1>
+                    <p className={`${colors['text-light']} mt-2`}>Track your document verification progress</p>
+                </div>
+
                 {/* Profile Card */}
                 <div className={`${colors['card-bg']} rounded-2xl shadow-md p-6 mb-8 flex items-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in-up`}>
                     <div className="profile-icon w-16 h-16 flex items-center justify-center rounded-full text-white text-3xl shrink-0 mr-5">
@@ -265,6 +304,50 @@ const CorporateDocStatus = () => {
                     {renderFinalReportActions()}
                 </div>
             </div>
+
+            {/* PDF Viewer Modal */}
+            {showPdfViewer && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                            <div className="flex items-center">
+                                <div className="w-10 h-10 flex items-center justify-center rounded-lg mr-3" style={{ backgroundColor: 'rgba(39, 174, 96, 0.1)' }}>
+                                    <i className="fas fa-file-pdf text-xl" style={{ color: colors['primary-green'] }}></i>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                    Final Verification Report
+                                </h3>
+                            </div>
+                            <button
+                                onClick={handleClosePdfViewer}
+                                className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                            >
+                                <i className="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        {/* PDF Viewer */}
+                        <div className="flex-1 p-4">
+                            <iframe
+                                src={pdfDataUrl}
+                                className="w-full h-full border-0 rounded-lg"
+                                title="Final Verification Report"
+                            />
+                        </div>
+                        
+                        {/* Modal Footer */}
+                        <div className="flex justify-end gap-3 p-4 border-t border-gray-200">
+                            <button
+                                onClick={handleClosePdfViewer}
+                                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                            >
+                                <i className="fas fa-times mr-2"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

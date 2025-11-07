@@ -45,6 +45,33 @@ const DietitianSchema = new Schema({
     age: { type: Number, required: true, min: 18 },
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^DLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
+    interestedField: { type: String },
+    degreeType: { type: String },
+    licenseIssuer: { type: String },
+    idProofType: { type: String },
+    specializationDomain: { type: String },
+    files: {
+        resume: { type: Buffer },
+        degreeCertificate: { type: Buffer },
+        licenseDocument: { type: Buffer },
+        idProof: { type: Buffer },
+        experienceCertificates: { type: Buffer },
+        specializationCertifications: { type: Buffer },
+        internshipCertificate: { type: Buffer },
+        researchPapers: { type: Buffer },
+        finalReport: { type: Buffer }
+    },
+    verificationStatus: {
+        resume: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        degreeCertificate: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        licenseDocument: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        idProof: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        experienceCertificates: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        specializationCertifications: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        internshipCertificate: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        researchPapers: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        finalReport: { type: String, enum: ['Not Received', 'Received', 'Verified', 'Rejected'], default: 'Not Received' }
+    },
     documents: { type: Schema.Types.Mixed, default: {} }, // Store document metadata
     documentUploadStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
     lastDocumentUpdate: { type: Date, default: null },
@@ -58,6 +85,34 @@ const OrganizationSchema = new Schema({
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^OLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
     address: { type: String, required: true, maxlength: 200 },
+    legalDocumentType: { type: String },
+    taxDocumentType: { type: String },
+    businessLicenseType: { type: String },
+    authorizedRepIdType: { type: String },
+    addressProofType: { type: String },
+    bankDocumentType: { type: String },
+    files: {
+        orgLogo: { type: Buffer },
+        orgBrochure: { type: Buffer },
+        legalDocument: { type: Buffer },
+        taxDocument: { type: Buffer },
+        addressProof: { type: Buffer },
+        businessLicense: { type: Buffer },
+        authorizedRepId: { type: Buffer },
+        bankDocument: { type: Buffer },
+        finalReport: { type: Buffer }
+    },
+    verificationStatus: {
+        orgLogo: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        orgBrochure: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        legalDocument: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        taxDocument: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        addressProof: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        businessLicense: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        authorizedRepId: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        bankDocument: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        finalReport: { type: String, enum: ['Not Received', 'Received', 'Verified', 'Rejected'], default: 'Not Received' }
+    },
     documents: { type: Schema.Types.Mixed, default: {} }, // Store document metadata
     documentUploadStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
     lastDocumentUpdate: { type: Date, default: null },
@@ -71,6 +126,33 @@ const CorporatePartnerSchema = new Schema({
     phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
     licenseNumber: { type: String, required: true, unique: true, match: /^CLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
     address: { type: String, required: true, maxlength: 200 },
+    businessLicenseType: { type: String },
+    taxIdDocumentType: { type: String },
+    incorporationCertificateType: { type: String },
+    authorizedRepIdType: { type: String },
+    bankAccountProofType: { type: String },
+    financialAuditType: { type: String },
+    codeOfConductType: { type: String },
+    files: {
+        businessLicense: { type: Buffer },
+        taxIdDocument: { type: Buffer },
+        incorporationCertificate: { type: Buffer },
+        authorizedRepId: { type: Buffer },
+        bankAccountProof: { type: Buffer },
+        financialAudit: { type: Buffer },
+        codeOfConduct: { type: Buffer },
+        finalReport: { type: Buffer }
+    },
+    verificationStatus: {
+        businessLicense: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        taxIdDocument: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        incorporationCertificate: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        authorizedRepId: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        bankAccountProof: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        financialAudit: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        codeOfConduct: { type: String, enum: ['Not Uploaded', 'Pending', 'Verified', 'Rejected'], default: 'Not Uploaded' },
+        finalReport: { type: String, enum: ['Not Received', 'Received', 'Verified', 'Rejected'], default: 'Not Received' }
+    },
     documents: { type: Schema.Types.Mixed, default: {} }, // Store document metadata
     documentUploadStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
     lastDocumentUpdate: { type: Date, default: null },

@@ -339,12 +339,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
-    navigate('/');
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar - Placeholder for your Admin Sidebar component */}
@@ -452,30 +446,12 @@ const AdminDashboard = () => {
             Organization Verification Status
           </h3>
           <OrganizationTable organizations={organizations} />
-          <div className="mt-4 text-right">
-            <button
-              onClick={() => navigate("/verify_org")}
-              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-            >
-              View all for verification →
-            </button>
-          </div>
-        </div>
-
-        {/* 5. Quick Actions / Logout */}
-        <div className="mt-8 flex justify-end">
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 text-white font-semibold px-6 py-2.5 rounded-full hover:bg-red-700 transition shadow flex items-center gap-2"
-          >
-            <i className="fas fa-sign-out-alt"></i> Log Out
-          </button>
         </div>
 
         {/* Image Modal */}
         {showImageModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowImageModal(false)}
           >
             <div

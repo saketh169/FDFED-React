@@ -173,15 +173,6 @@ function ChatBotPage() {
       <div className="bg-white rounded-t-2xl px-6 py-4 shadow-md border-b-4 border-[#27AE60] shrink-0">
         <div className="flex justify-between items-center">
           <ChatBotHeader />
-          {/* Feature 1: Clear Chat Button */}
-          <button
-            onClick={handleClearChat}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg"
-            title="Clear Chat"
-          >
-            <span>🗑️</span>
-           
-          </button>
         </div>
       </div>
 
@@ -226,20 +217,33 @@ function ChatBotPage() {
       {/* Frequently Asked Questions Section - Fixed at Bottom */}
       {/* TODO: Fetch from backend API endpoint - Top 4 from Database */}
       <div className="bg-linear-to-r from-slate-50 to-green-50 px-6 py-3 border-t-2 border-gray-200 shrink-0">
-        <h2 className="text-sm font-bold text-[#1A4A40] mb-2 flex items-center">
-          <span className="mr-2">💬</span>
-          Quick Questions
-        </h2>
-        <div className="flex gap-2 flex-wrap">
-          {faqQuestions.map((question, index) => (
-            <button
-              key={index}
-              onClick={() => handleFAQClick(question)}
-              className="bg-[#27AE60] hover:bg-[#1E8449] text-white rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
-            >
-              {question}
-            </button>
-          ))}
+        <div className="flex justify-between items-center">
+          <div className="flex-1">
+            <h2 className="text-sm font-bold text-[#1A4A40] mb-2 flex items-center">
+              <span className="mr-2">💬</span>
+              Quick Questions
+            </h2>
+            <div className="flex gap-2 flex-wrap">
+              {faqQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleFAQClick(question)}
+                  className="bg-[#27AE60] hover:bg-[#1E8449] text-white rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Feature 1: Clear Chat Button */}
+          <button
+            onClick={handleClearChat}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg ml-4"
+            title="Clear Chat"
+          >
+            <span>🗑️</span>
+            
+          </button>
         </div>
       </div>
 
