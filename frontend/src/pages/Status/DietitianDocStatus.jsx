@@ -6,13 +6,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 
 const FIELD_MAP = {
     resume: { name: 'Professional Resume', icon: 'fas fa-file-alt' },
-    degree_certificate: { name: 'Degree Certificate', icon: 'fas fa-graduation-cap' },
-    license_document: { name: 'License Document', icon: 'fas fa-id-card' },
-    id_proof: { name: 'Government ID Proof', icon: 'fas fa-user-shield' },
-    experience_certificates: { name: 'Experience Certificates', icon: 'fas fa-briefcase' },
-    specialization_certifications: { name: 'Specialization Certifications', icon: 'fas fa-certificate' },
-    internship_certificate: { name: 'Internship Certificate', icon: 'fas fa-clipboard-check' },
-    research_papers: { name: 'Research Publications', icon: 'fas fa-book-open' },
+    degreeCertificate: { name: 'Degree Certificate', icon: 'fas fa-graduation-cap' },
+    licenseDocument: { name: 'License Document', icon: 'fas fa-id-card' },
+    idProof: { name: 'Government ID Proof', icon: 'fas fa-user-shield' },
+    experienceCertificates: { name: 'Experience Certificates', icon: 'fas fa-briefcase' },
+    specializationCertifications: { name: 'Specialization Certifications', icon: 'fas fa-certificate' },
+    internshipCertificate: { name: 'Internship Certificate', icon: 'fas fa-clipboard-check' },
+    researchPapers: { name: 'Research Publications', icon: 'fas fa-book-open' },
     finalReport: { name: 'Final Verification Report', icon: 'fas fa-file-contract' }
 };
 
@@ -61,11 +61,19 @@ const DietitianDocStatus = () => {
         finalReport: null
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [showPdfViewer, setShowPdfViewer] = useState(false);
+    const [pdfDataUrl, setPdfDataUrl] = useState('');
 
     // Placeholder functions for file actions
     const handleViewReport = (base64, mime) => {
         const dataUrl = `data:${mime};base64,${base64}`;
-        window.open(dataUrl, '_blank');
+        setPdfDataUrl(dataUrl);
+        setShowPdfViewer(true);
+    };
+
+    const handleClosePdfViewer = () => {
+        setShowPdfViewer(false);
+        setPdfDataUrl('');
     };
 
     const handleDownloadReport = (base64, name) => {
@@ -77,37 +85,56 @@ const DietitianDocStatus = () => {
         document.body.removeChild(link);
     };
 
-    // Mock API call to fetch dietitian data
+    // API call to fetch dietitian data
     const fetchDietitianDetails = useCallback(async () => {
         setIsLoading(true);
-        // --- MOCK API DATA START ---
-        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        let dietitianName = 'Loading...';
+        let documentData = {
+            verificationStatus: {},
+            finalReport: null
+        };
+        
+        try {
+            // Fetch dietitian name and full status from combined API
+            const token = localStorage.getItem('authToken_dietitian');
+            if (!token) {
+                dietitianName = 'No token found';
+            } else {
+                const statusResponse = await fetch('/api/status/dietitian-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-        const mockDietitian = {
-            name: 'Dr. Sarah Chen',
-            email: 'sarah.chen@example.com',
-            verificationStatus: {
-                resume: 'Verified',
-                degree_certificate: 'Pending',
-                license_document: 'Received',
-                id_proof: 'Rejected',
-                experience_certificates: 'Verified',
-                specialization_certifications: 'Not Uploaded',
-                internship_certificate: 'Pending',
-                research_papers: 'Not Uploaded',
-                finalReport: 'Verified' // Set to Verified/Rejected/Pending to test actions
-            },
-            // Mock final report data (Base64 is a placeholder)
-            finalReport: {
-                base64: 'JVBERi0xLjQKJc... [MOCK BASE64 DATA]',
-                mime: 'application/pdf',
-                name: 'Dr_Sarah_Chen_Report'
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    dietitianName = statusData.name;
+                    documentData = {
+                        verificationStatus: statusData.verificationStatus,
+                        finalReport: statusData.finalReport
+                    };
+                } else {
+                    dietitianName = 'Failed to load data';
+                    console.error('Failed to fetch status');
+                }
             }
+        } catch (error) {
+            console.error('Error fetching dietitian data:', error);
+            dietitianName = 'Error loading data';
+        }
+
+        // Set the dietitian data
+        const dietitianData = {
+            name: dietitianName,
+            email: '', // Not needed for this component
+            verificationStatus: documentData.verificationStatus,
+            finalReport: documentData.finalReport
         };
 
-        setDietitian(mockDietitian);
+        setDietitian(dietitianData);
         setIsLoading(false);
-        // --- MOCK API DATA END ---
     }, []);
 
     useEffect(() => {
@@ -203,7 +230,7 @@ const DietitianDocStatus = () => {
                 <div className="mt-4">
                     {actionsElement}
                     <a
-                        href="/doc_dietitian_upload"
+                        href="/upload-documents?role=dietitian"
                         className="inline-block mt-3 px-4 py-2 rounded-full text-white font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
                         style={{ backgroundColor: colors['dark-green'] }}
                         onMouseEnter={(e) => e.target.style.backgroundColor = colors['primary-green']}
@@ -227,7 +254,7 @@ const DietitianDocStatus = () => {
     };
 
     return (
-        <div className={`${colors['background-light']} min-h-screen py-12 px-4 sm:px-6 md:px-8`}>
+        <div className={`${colors['background-light']} min-h-screen py-6 px-4 sm:px-6 md:px-8`}>
             <style>{`
                 @keyframes fadeInUp {
                     from {
@@ -246,6 +273,15 @@ const DietitianDocStatus = () => {
             `}</style>
 
             <div className="max-w-6xl mx-auto border-4 border-green-500 rounded-2xl p-6">
+                {/* Main Title */}
+                <div className="text-center mb-8 animate-fade-in-up">
+                    <h1 className="text-3xl font-bold" style={{ color: colors['dark-green'] }}>
+                        <i className="fas fa-shield-alt mr-3"></i>
+                        My Verification Status
+                    </h1>
+                    <p className={`${colors['text-light']} mt-2`}>Track your document verification progress</p>
+                </div>
+
                 {/* Profile Card */}
                 <div className={`${colors['card-bg']} rounded-2xl shadow-md p-6 mb-8 flex items-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in-up`}>
                     <div className="profile-icon w-16 h-16 flex items-center justify-center rounded-full text-white text-3xl shrink-0 mr-5">
@@ -269,6 +305,50 @@ const DietitianDocStatus = () => {
                     {renderFinalReportActions()}
                 </div>
             </div>
+
+            {/* PDF Viewer Modal */}
+            {showPdfViewer && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                            <div className="flex items-center">
+                                <div className="w-10 h-10 flex items-center justify-center rounded-lg mr-3" style={{ backgroundColor: 'rgba(39, 174, 96, 0.1)' }}>
+                                    <i className="fas fa-file-pdf text-xl" style={{ color: colors['primary-green'] }}></i>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                    Final Verification Report
+                                </h3>
+                            </div>
+                            <button
+                                onClick={handleClosePdfViewer}
+                                className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                            >
+                                <i className="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        {/* PDF Viewer */}
+                        <div className="flex-1 p-4">
+                            <iframe
+                                src={pdfDataUrl}
+                                className="w-full h-full border-0 rounded-lg"
+                                title="Final Verification Report"
+                            />
+                        </div>
+                        
+                        {/* Modal Footer */}
+                        <div className="flex justify-end gap-3 p-4 border-t border-gray-200">
+                            <button
+                                onClick={handleClosePdfViewer}
+                                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                            >
+                                <i className="fas fa-times mr-2"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

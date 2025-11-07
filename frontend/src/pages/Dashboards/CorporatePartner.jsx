@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
-import Sidebar from "../../components/Sidebar/Sidebar"; 
+import Sidebar from "../../components/Sidebar/Sidebar";
+import Status from "../../middleware/Status"; // Import Status component 
 
 // --- Mock Data ---
 const mockPartner = {
@@ -277,53 +278,8 @@ const CorporateDashboard = () => {
             </span>
           </div>
 
-          {/* 2. Combined Licensing & Financial Status with Partnership Status */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600 flex flex-col">
-            <h3 className="text-xl font-bold text-teal-900 mb-3 text-center">Financial & Partnership Status</h3>
-
-            {/* Licensing Metrics */}
-            <div className="grid grid-cols-2 gap-2 mb-3 text-center">
-              <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-600">Total Licenses</p>
-                <p className="font-bold text-blue-700 text-sm">{partnerDetails.totalLicenses.toLocaleString()}</p>
-              </div>
-              <div className="p-2 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-xs text-gray-600">Active Users</p>
-                <p className="font-bold text-green-700 text-sm">{partnerDetails.activeUsers.toLocaleString()}</p>
-              </div>
-            </div>
-
-            {/* Partnership Status Section */}
-            <div className="border-t pt-3 space-y-2">
-              <div className="p-2 bg-purple-50 rounded-lg border border-purple-200">
-                <p className="text-xs text-gray-600">Commission Tier</p>
-                <p className="font-bold text-purple-700 text-sm">{partnerDetails.currentCommissionTier}</p>
-              </div>
-              
-              <div className="p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-xs text-gray-600">Days Remaining</p>
-                <p className="font-bold text-yellow-700 text-sm">{partnerDetails.duration}</p>
-              </div>
-
-              <div className="p-2 bg-orange-50 rounded-lg border border-orange-200">
-                <p className="text-xs text-gray-600">Program Name</p>
-                <p className="font-semibold text-orange-700 text-xs">{partnerDetails.programName}</p>
-              </div>
-            </div>
-
-            {/* Renewal Call to Action */}
-            <div className="mt-3 p-3 bg-red-50 border-l-4 border-red-400 rounded-lg text-center">
-                <p className="font-semibold text-red-800 mb-0.5 text-sm">Contract Renewal Due:</p>
-                <p className="font-bold text-red-900 text-sm">{partnerDetails.nextContractDate}</p>
-            </div>
-
-            <button
-              onClick={() => navigate("/contract_renewal")}
-              className="w-full bg-red-600 text-white font-semibold py-2 rounded-full hover:bg-red-700 transition shadow-md mt-3 text-sm"
-            >
-              <i className="fas fa-file-contract mr-2"></i> Start Renewal Process
-            </button>
-          </div>
+          {/* 2. Document Verification Status Card (Dynamic content) */}
+          <Status role="corporatepartner" />
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-amber-500">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Quick Actions</h3>
 
@@ -354,6 +310,53 @@ const CorporateDashboard = () => {
                 className="w-full bg-red-600 text-white font-semibold py-3 rounded-full hover:bg-red-700 transition shadow flex items-center justify-center gap-2 mt-4"
               >
                 <i className="fas fa-sign-out-alt"></i> Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Financial & Partnership Status - Complete Row Above Graph */}
+        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600">
+          <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Financial & Partnership Status</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Licensing Metrics */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
+              <p className="text-sm text-gray-600 mb-2">Total Licenses</p>
+              <p className="font-bold text-blue-700 text-xl">{partnerDetails.totalLicenses.toLocaleString()}</p>
+            </div>
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200 text-center">
+              <p className="text-sm text-gray-600 mb-2">Active Users</p>
+              <p className="font-bold text-green-700 text-xl">{partnerDetails.activeUsers.toLocaleString()}</p>
+            </div>
+
+            {/* Partnership Status */}
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 text-center">
+              <p className="text-sm text-gray-600 mb-2">Commission Tier</p>
+              <p className="font-bold text-purple-700 text-lg">{partnerDetails.currentCommissionTier}</p>
+            </div>
+            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-center">
+              <p className="text-sm text-gray-600 mb-2">Days Remaining</p>
+              <p className="font-bold text-yellow-700 text-lg">{partnerDetails.duration}</p>
+            </div>
+          </div>
+
+          {/* Program Name and Renewal CTA */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200 text-center">
+              <p className="text-sm text-gray-600 mb-2">Program Name</p>
+              <p className="font-semibold text-orange-700 text-lg">{partnerDetails.programName}</p>
+            </div>
+
+            {/* Renewal Call to Action */}
+            <div className="p-4 bg-red-50 border-l-4 border-red-400 rounded-lg text-center">
+              <p className="font-semibold text-red-800 mb-1">Contract Renewal Due:</p>
+              <p className="font-bold text-red-900 text-lg">{partnerDetails.nextContractDate}</p>
+              <button
+                onClick={() => navigate("/contract_renewal")}
+                className="mt-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-full hover:bg-red-700 transition shadow-md text-sm"
+              >
+                <i className="fas fa-file-contract mr-2"></i> Start Renewal Process
               </button>
             </div>
           </div>
@@ -424,7 +427,7 @@ const CorporateDashboard = () => {
         {/* Image Modal */}
         {showImageModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowImageModal(false)}
           >
             <div

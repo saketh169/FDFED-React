@@ -33,8 +33,7 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
     { name: 'Home', href: '/dietitian/home' },
     { name: 'My Clients', href: '/dietitian/consultations' },
     { name: 'Schedule', href: '/dietitian/schedule' },
-    { name: 'MealPlans', href: '/dietitian/assign-plans' },
-
+    { name: 'MealPlans', href: '/dietitian/add-plans' },
     { name: 'Blog', href: '/dietitian/blog' },
   
   ];
@@ -45,7 +44,6 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
     { name: 'Plans/Offers', href: '/corporatepartner/plans-offers' },
     { name: 'Renewal', href: '/corporatepartner/renewal' },
     { name: 'Bookings', href: '/corporatepartner/bookings' },
-
     { name: 'Chatbot', href: '/user/chatbot' },
 
   ];

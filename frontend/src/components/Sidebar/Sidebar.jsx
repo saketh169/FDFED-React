@@ -25,6 +25,7 @@ const Sidebar = () => {
     { name: 'Appointments', href: '/user/user-consultations', icon: 'fas fa-calendar' },
     { name: 'Schedule', href: '/user/user-schedule', icon: 'fas fa-calendar-check' },
     { name: 'Pricing', href: '/user/pricing', icon: 'fas fa-tag' },
+    { name: 'MealPlans', href: '/user/get-plans', icon: 'fas fa-utensils' },
     { name: 'Blog', href: '/user/blog', icon: 'fas fa-blog' },
     { name: 'Chatbot', href: '/user/chatbot', icon: 'fas fa-robot' },
   ];
@@ -34,7 +35,7 @@ const Sidebar = () => {
     { name: 'My Verification', href: '/dietitian/doc-status', icon: 'fas fa-handshake' },
     { name: 'My Clients', href: '/dietitian/dietitian-consultations', icon: 'fas fa-users' },
     { name: 'Schedule', href: '/dietitian/dietitian-schedule', icon: 'fas fa-calendar-check' },
-    { name: 'MealPlans', href: '/dietitian/assign-plans', icon: 'fas fa-utensils' },
+    { name: 'MealPlans', href: '/dietitian/add-plans', icon: 'fas fa-utensils' },
     { name: 'Blog', href: '/dietitian/blog', icon: 'fas fa-blog' },
   ];
 

@@ -255,26 +255,57 @@ exports.docUploadController = async (req, res) => {
 
         // Create document object from uploaded files with buffers
         const documents = {};
+        const filesUpdate = {};
+        const verificationStatusUpdate = {};
         
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
-                // Store buffer data directly in MongoDB
-                documents[file.fieldname] = {
-                    filename: file.originalname,
-                    mimetype: file.mimetype,
-                    size: file.size,
-                    data: file.buffer,  // Store actual file buffer
-                    uploadedAt: new Date()
-                };
+                const fieldName = file.fieldname;
+                
+                // For dietitian role, store files directly in the files object (Buffer)
+                if (role === 'dietitian') {
+                    filesUpdate[fieldName] = file.buffer;
+                    // Set verification status to "Pending" for uploaded files
+                    verificationStatusUpdate[fieldName] = 'Pending';
+                } else {
+                    // For other roles, use the old document structure
+                    documents[fieldName] = {
+                        filename: file.originalname,
+                        mimetype: file.mimetype,
+                        size: file.size,
+                        data: file.buffer,
+                        uploadedAt: new Date()
+                    };
+                }
             });
         }
 
-        // Update user profile with documents
-        userProfile.documents = {
-            ...userProfile.documents,
-            ...documents
-        };
-        userProfile.documentUploadStatus = 'pending'; // Can be 'pending', 'verified', 'rejected'
+        // Update user profile based on role
+        if (role === 'dietitian') {
+            // Update files and verificationStatus for dietitian
+            if (Object.keys(filesUpdate).length > 0) {
+                userProfile.files = userProfile.files || {};
+                Object.keys(filesUpdate).forEach(key => {
+                    userProfile.files[key] = filesUpdate[key];
+                });
+                
+                userProfile.verificationStatus = userProfile.verificationStatus || {};
+                Object.keys(verificationStatusUpdate).forEach(key => {
+                    userProfile.verificationStatus[key] = verificationStatusUpdate[key];
+                });
+                
+                // Set final report status to "Not Received" when new docs are uploaded
+                userProfile.verificationStatus.finalReport = 'Not Received';
+            }
+        } else {
+            // For other roles, use the documents object
+            userProfile.documents = {
+                ...userProfile.documents,
+                ...documents
+            };
+        }
+        
+        userProfile.documentUploadStatus = 'pending';
         userProfile.lastDocumentUpdate = new Date();
 
         await userProfile.save();
@@ -284,7 +315,8 @@ exports.docUploadController = async (req, res) => {
             data: {
                 userId,
                 role,
-                documents: Object.keys(documents),
+                documents: Object.keys(role === 'dietitian' ? filesUpdate : documents),
+                verificationStatus: role === 'dietitian' ? userProfile.verificationStatus : undefined,
                 uploadedAt: new Date()
             }
         });

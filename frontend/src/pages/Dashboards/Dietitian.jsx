@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
+import Status from "../../middleware/Status"; // Import Status component
 
 // Mock Data (Replace with actual API data)
 const mockDietitian = {
@@ -11,123 +12,6 @@ const mockDietitian = {
   profileImage:
     "https://img.freepik.com/free-photo/young-man-doctor-with-white-coat-stethoscope-smiles-portrait-hospital-clinic_1303-29477.jpg?w=1060&t=st=1701389000~exp=1701390000~hmac=a8c541c415324b91485c2c525f0a06c5b525d88665f8c6e2b8c569a9b1c7482f",
   // In a real app, profileImageBase64 would be fetched or null
-};
-
-// Mock API Call Function (Simulates the /dietitian-doc/check-status endpoint)
-const mockCheckVerificationStatus = async () => {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  // Possible statuses: 'Not Received', 'Received', 'Verified', 'Rejected'
-  const mockStatus = "Verified"; // Change this to test different states
-
-  return { success: true, finalReportStatus: mockStatus };
-};
-
-// --- Verification Status Component ---
-const VerificationStatusCard = () => {
-  const navigate = useNavigate();
-  const [status, setStatus] = useState("Checking"); // Initial status
-  const [report, setReport] = useState({});
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const data = await mockCheckVerificationStatus(); // Replace with actual API call
-        if (data.success) {
-          setStatus(data.finalReportStatus);
-          setReport(data);
-        } else {
-          setStatus("Error");
-          setReport({ message: data.message || "Unknown error" });
-        }
-      } catch (error) {
-        console.error("Error fetching verification status:", error);
-        setStatus("Error");
-        setReport({ message: "Network error occurred." });
-      }
-    };
-    checkStatus();
-  }, []);
-
-  const getStatusDisplay = () => {
-    switch (status) {
-      case "Verified":
-        return {
-          bg: "bg-green-100 text-green-800",
-          icon: "fas fa-check-circle",
-          message:
-            "Your documents have been verified by Nutri Connect. Proceed to complete your profile.",
-          button: (
-            <button
-              className="mt-3 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition shadow"
-              onClick={() => navigate("/dietitian/setup")}
-            >
-              <i className="fas fa-arrow-right"></i> Proceed to Setup
-            </button>
-          ),
-        };
-      case "Rejected":
-        return {
-          bg: "bg-red-100 text-red-800",
-          icon: "fas fa-times-circle",
-          message:
-            "Your application has been rejected. Please review and resubmit your documents.",
-          button: (
-            <button
-              className="mt-3 px-4 py-2 bg-red-600 text-white font-semibold rounded-full hover:bg-red-700 transition shadow"
-              onClick={() => navigate("/recieved_diet")}
-            >
-              <i className="fas fa-eye"></i> View Verification Status
-            </button>
-          ),
-        };
-      case "Not Received":
-      case "Received":
-        return {
-          bg: "bg-yellow-100 text-yellow-800",
-          icon: "fas fa-spinner fa-spin",
-          message: "Your documents are under review by Nutri Connect.",
-          button: null,
-        };
-      case "Checking":
-        return {
-          bg: "bg-gray-100 text-gray-700",
-          icon: "fas fa-spinner fa-spin",
-          message: "Checking verification status...",
-          button: null,
-        };
-      case "Error":
-      default:
-        return {
-          bg: "bg-red-200 text-red-900",
-          icon: "fas fa-exclamation-circle",
-          message: `Error: Failed to load status. ${report.message || ""}`,
-          button: null,
-        };
-    }
-  };
-
-  const display = getStatusDisplay();
-
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-emerald-600 h-full flex flex-col justify-between">
-      <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
-        Document Verification
-      </h3>
-      <div className="grow flex flex-col justify-center items-center text-center">
-        <div className={`p-3 rounded-lg w-full ${display.bg}`}>
-          <i className={`${display.icon} mr-2 text-lg`}></i>
-          <span className="font-bold text-base">{status}</span>
-        </div>
-        <p className="mt-3 text-gray-600">{display.message}</p>
-        <p className="text-sm text-gray-500 mb-2">
-          Final report status: <strong>{status}</strong>
-        </p>
-        {display.button}
-      </div>
-    </div>
-  );
 };
 
 // --- Main Dashboard Component ---
@@ -309,7 +193,7 @@ const DietitianDashboard = () => {
           </div>
 
           {/* 2. Document Verification Status Card (Dynamic content) */}
-          <VerificationStatusCard />
+          <Status role="dietitian" />
 
           {/* 3. Quick Actions */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600">
@@ -396,7 +280,7 @@ const DietitianDashboard = () => {
         {/* Image Modal */}
         {showImageModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowImageModal(false)}
           >
             <div

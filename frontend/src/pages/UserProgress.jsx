@@ -281,8 +281,15 @@ const UserProgress = () => {
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
+        <div className="relative mb-8">
+          <button
+            onClick={() => navigate('/user/profile')}
+            className="absolute left-0 top-0 px-4 py-2 bg-[#1E6F5C] text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:bg-[#28B463] font-semibold"
+            title="Back to Profile"
+          >
+            Back to Profile
+          </button>
+          <div className="text-center">
             <h1 className="text-4xl font-bold text-[#1E6F5C]">Your Progress Tracker</h1>
             <p className="text-gray-600 mt-2">Monitor your daily health metrics and goals</p>
           </div>
