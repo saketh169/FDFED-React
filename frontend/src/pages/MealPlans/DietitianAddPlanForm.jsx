@@ -554,11 +554,11 @@ const DietitianAddPlanForm = () => {
                 {/* Header */}
                 <div className="relative mb-8">
                     <button
-                        onClick={() => navigate('/dietitian/profile')}
+                        onClick={() => setView('CLIENT_LIST')}
                         className="absolute left-0 top-0 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:bg-emerald-700 font-semibold"
-                        title="Back to Profile"
+                        title="Back to Clients"
                     >
-                        Back to Profile
+                        Back to Clients
                     </button>
                     <div className="text-center">
                         <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">
@@ -766,14 +766,14 @@ const DietitianAddPlanForm = () => {
 
         return (
             <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50 to-teal-50 pb-12 px-4 sm:px-6 lg:px-8">
-                <div className="w-full max-w-4xl mx-auto pt-8">
+                <div className="w-[75%] mx-auto pt-8">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="relative mb-8">
                         <button
                             onClick={() => setView('CLIENT_DASHBOARD')}
-                            className="flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 text-slate-700 font-medium"
+                            className="absolute left-0 top-0 flex items-center px-4 py-2 bg-emerald-600 text-white rounded-xl shadow-lg hover:bg-emerald-700 transition-all duration-200 font-medium"
                         >
-                            <Icon name="ChevronLeft" className="mr-2" /> Back to Dashboard
+                            <Icon name="ChevronLeft" className="mr-2" /> Back
                         </button>
                         <div className="text-center">
                             <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">
@@ -781,7 +781,6 @@ const DietitianAddPlanForm = () => {
                             </h1>
                             <p className="text-sm text-slate-600 mt-1">For {selectedClient?.name}</p>
                         </div>
-                        <div></div>
                     </div>
 
                     <div className="space-y-6">
@@ -997,7 +996,7 @@ const DietitianAddPlanForm = () => {
                             onClick={() => setView('CLIENT_DASHBOARD')}
                             className="flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 text-slate-700 font-medium"
                         >
-                            <Icon name="ChevronLeft" className="mr-2" /> Back to Dashboard
+                            <Icon name="ChevronLeft" className="mr-2" /> Back
                         </button>
                         <div className="text-center">
                             <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-red-600 via-pink-600 to-red-600 bg-clip-text text-transparent">
@@ -1192,7 +1191,7 @@ const DietitianAddPlanForm = () => {
                             onClick={() => setView('CLIENT_DASHBOARD')}
                             className="flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 text-slate-700 font-medium"
                         >
-                            <Icon name="ChevronLeft" className="mr-2" /> Back to Dashboard
+                            <Icon name="ChevronLeft" className="mr-2" /> Back
                         </button>
                         <div className="text-center">
                             <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">

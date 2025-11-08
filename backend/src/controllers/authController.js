@@ -41,7 +41,7 @@ const checkGlobalConflict = async (field, value, errorMessage) => {
 
 exports.signupController = async (req, res) => {
     const role = req.params.role; 
-    const { email, password, licenseNumber, ...profileData } = req.body; 
+    const { email, password, licenseNumber, corporateType, ...profileData } = req.body; 
     
     const ProfileModel = PROFILE_MODELS[role];
     if (!ProfileModel) {
@@ -84,7 +84,13 @@ exports.signupController = async (req, res) => {
              return res.status(400).json({ message: 'License Number is required for this role.' });
         }
         
-        // 5. HASH PASSWORD AND SAVE
+        // 5. Handle Corporate Employee Type
+        if (corporateType === 'employee') {
+            profileData.corporateType = 'employee';
+            profileData.isCorporateEmployee = true;
+        }
+        
+        // 6. HASH PASSWORD AND SAVE
         const hashedPassword = await bcrypt.hash(password, 12);
 
         // Save the Role-Specific Profile with email
@@ -100,7 +106,7 @@ exports.signupController = async (req, res) => {
         });
         await authUser.save();
 
-        // 6. GENERATE JWT AND RESPOND
+        // 7. GENERATE JWT AND RESPOND
         const token = jwt.sign(
             { userId: authUser._id, role: authUser.role, roleId: authUser.roleId },
             JWT_SECRET,

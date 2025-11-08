@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // NOTE: Assumes Font Awesome CSS is imported globally.
 
@@ -53,6 +54,7 @@ const getStatusIcon = (status) => {
 // --- Main Component ---
 
 const CorporateDocStatus = () => {
+    const navigate = useNavigate();
     // Only state needed for core functionality (data and loading)
     const [corporate, setCorporate] = useState({
         name: 'Loading...',
@@ -272,6 +274,17 @@ const CorporateDocStatus = () => {
             `}</style>
 
             <div className="max-w-6xl mx-auto border-4 border-green-500 rounded-2xl p-6">
+                {/* Back to Profile Button */}
+                <div className="mb-6">
+                    <button
+                        onClick={() => navigate('/corporatepartner/profile')}
+                        className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+                    >
+                        <i className="fas fa-arrow-left mr-2"></i>
+                        Back to Profile
+                    </button>
+                </div>
+
                 {/* Main Title */}
                 <div className="text-center mb-8 animate-fade-in-up">
                     <h1 className="text-3xl font-bold" style={{ color: colors['dark-green'] }}>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import Sidebar from "../../components/Sidebar/Sidebar";
-import Status from "../../middleware/Status"; // Import Status component 
+import Status from "../../middleware/StatusBadge"; // Import Status component 
 
 // --- Mock Data ---
 const mockPartner = {

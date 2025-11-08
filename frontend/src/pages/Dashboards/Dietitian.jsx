@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
-import Status from "../../middleware/Status"; // Import Status component
+import Status from "../../middleware/StatusBadge"; // Import Status component
 
 // Mock Data (Replace with actual API data)
 const mockDietitian = {

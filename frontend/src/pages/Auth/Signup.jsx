@@ -168,14 +168,24 @@ const Signup = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [role, setRole] = useState('');
+    const [corporateType, setCorporateType] = useState('');
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Get role from URL on mount
+    // Get role and corporateType from URL on mount
     useEffect(() => {
         const roleFromUrl = searchParams.get('role');
+        const corporateTypeFromUrl = searchParams.get('corporateType');
+        
         if (roleFromUrl) {
-            setRole(roleFromUrl);
+            // If corporate employee, treat as user role
+            if (corporateTypeFromUrl === 'corporate_employee') {
+                setRole('user');
+                setCorporateType('corporate_employee');
+            } else {
+                setRole(roleFromUrl);
+                setCorporateType('');
+            }
         }
     }, [searchParams]);
 
@@ -216,6 +226,11 @@ const Signup = () => {
         if (formData.corporatepartnerLicenseNumber) {
             formData.licenseNumber = formData.corporatepartnerLicenseNumber;
             delete formData.corporatepartnerLicenseNumber;
+        }
+        
+        // Add corporate type information for corporate employees
+        if (corporateType === 'corporate_employee') {
+            formData.corporateType = 'employee';
         }
         
         // Add the role to the payload
@@ -595,7 +610,7 @@ const Signup = () => {
         <section className="flex items-center justify-center bg-gray-100 p-2 sm:p-3 min-h-[650px]">
             <div className="w-full max-w-7xl p-4 sm:p-5 mx-auto rounded-3xl shadow-2xl bg-white flex flex-col items-center justify-center animate-fade-in">
                 <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-4">
-                    SIGN UP AS A {role.toUpperCase() || 'NEW MEMBER'}
+                    SIGN UP AS A {corporateType === 'corporate_employee' ? 'CORPORATE EMPLOYEE' : (role.toUpperCase() || 'NEW MEMBER')}
                 </h2>
 
                 {/* Global Alert */}

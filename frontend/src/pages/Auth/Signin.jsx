@@ -112,12 +112,21 @@ const Signin = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [role, setRole] = useState('');
+    const [corporateType, setCorporateType] = useState('');
     const [message, setMessage] = useState('');
 
-    // Get role from URL on mount
+    // Get role and corporateType from URL on mount
     useEffect(() => {
         const roleFromUrl = searchParams.get('role') || 'user';
-        setRole(roleFromUrl);
+        const corporateTypeFromUrl = searchParams.get('corporateType');
+        
+        if (corporateTypeFromUrl === 'corporate_employee') {
+            setRole('user');
+            setCorporateType('corporate_employee');
+        } else {
+            setRole(roleFromUrl);
+            setCorporateType('');
+        }
     }, [searchParams]);
 
     // Define the Formik submission handler
@@ -270,7 +279,9 @@ const Signin = () => {
     return (
         <section className="flex items-center justify-center bg-gray-100 p-4 min-h-[600px]">
             <div className="w-full max-w-lg p-8 mx-auto rounded-3xl shadow-2xl bg-white animate-fade-in">
-                <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-6">LOG IN AS {role.toUpperCase()}</h2>
+                <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-6">
+                    LOG IN AS {corporateType === 'corporate_employee' ? 'CORPORATE EMPLOYEE' : role.toUpperCase()}
+                </h2>
 
                 {/* Global Alert */}
                 {message && (
@@ -317,7 +328,7 @@ const Signin = () => {
 
                             <p className="text-center text-sm mt-4">
                                 Don't have an account?{' '}
-                                <Link to={`/signup?role=${role}`} className={commonLinkClasses}>Sign Up</Link>
+                                <Link to={`/signup?role=${role}${corporateType === 'corporate_employee' ? '&corporateType=corporate_employee' : ''}`} className={commonLinkClasses}>Sign Up</Link>
                             </p>
                         </Form>
                     )}
