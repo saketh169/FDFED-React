@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Status = ({ role }) => {
+const StatusBadge = ({ role }) => {
   const [status, setStatus] = useState('loading');
   const navigate = useNavigate();
 
@@ -74,7 +74,7 @@ const Status = ({ role }) => {
               className="mt-3 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-full hover:bg-yellow-700 transition shadow"
               onClick={() => navigate(`/status/${role}`)}
             >
-              <i className="fas fa-eye"></i> View Status Details
+              <i className="fas fa-eye"></i> View StatusBadge Details
             </button>
           ),
         };
@@ -166,4 +166,4 @@ const Status = ({ role }) => {
   );
 };
 
-export default Status;
+export default StatusBadge;

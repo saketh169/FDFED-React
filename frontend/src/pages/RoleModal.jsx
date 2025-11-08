@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const RoleModal = () => {
   const navigate = useNavigate();
+  const [showCorporateSubRoles, setShowCorporateSubRoles] = useState(false);
 
   useEffect(() => {
     console.log('[RoleModal] Component mounted');
@@ -16,7 +17,26 @@ const RoleModal = () => {
     { name: 'User', icon: 'fas fa-user', description: 'Log in to manage your personalized nutrition plan.', slug: 'user', dashboardRoute: '/user/home' },
     { name: 'Dietitian', icon: 'fas fa-user-md', description: 'Access your professional dashboard and connect with clients.', slug: 'dietitian', dashboardRoute: '/dietitian/home' },
     { name: 'Certifying Organization', icon: 'fas fa-building', description: 'Manage dietitian certifications and access corporate insights.', slug: 'organization', dashboardRoute: '/organization/home' },
-    { name: 'Corporate Partner', icon: 'fas fa-building', description: 'Provide wellness solutions to your employees.', slug: 'corporatepartner', dashboardRoute: '/corporatepartner/home' },
+    { name: 'Corporate Partner', icon: 'fas fa-building', description: 'Provide wellness solutions to your employees.', slug: 'corporatepartner', dashboardRoute: '/corporatepartner/home', hasSubRoles: true },
+  ];
+
+  const corporateSubRoles = [
+    { 
+      name: 'Employee', 
+      icon: 'fas fa-user-tie', 
+      description: 'Access wellness services provided by your company.', 
+      slug: 'user', 
+      dashboardRoute: '/user/home',
+      type: 'corporate_employee'
+    },
+    { 
+      name: 'Administrator', 
+      icon: 'fas fa-crown', 
+      description: 'Manage your company\'s wellness program and employees.', 
+      slug: 'corporatepartner', 
+      dashboardRoute: '/corporatepartner/home',
+      type: 'corporate_admin'
+    },
   ];
 
   const verifyToken = async (token, role) => {
@@ -41,6 +61,11 @@ const RoleModal = () => {
   };
 
   const handleRoleClick = async (role) => {
+    if (role.hasSubRoles) {
+      setShowCorporateSubRoles(true);
+      return;
+    }
+
     const token = localStorage.getItem(`authToken_${role.slug}`);
     
     if (!token) {
@@ -53,15 +78,33 @@ const RoleModal = () => {
     }
   };
 
+  const handleCorporateSubRoleClick = (subRole) => {
+    const token = localStorage.getItem(`authToken_${subRole.slug}`);
+    
+    if (!token) {
+      // Pass the corporate type as a query parameter
+      navigate(`/signin?role=${subRole.slug}&corporateType=${subRole.type}`);
+      return;
+    }
+    
+    if (verifyToken(token, subRole)) {
+      navigate(subRole.dashboardRoute);
+    }
+  };
+
   const handleClose = () => {
-    navigate('/');
+    if (showCorporateSubRoles) {
+      setShowCorporateSubRoles(false);
+    } else {
+      navigate('/');
+    }
   };
 
   return (
     <>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
       <main className="flex-1 max-w-6xl mx-auto p-8 bg-cover bg-center min-h-screen">
-        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl mx-auto border-2 border-[#E8F5E9]">
+        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl mx-auto border-4 border-[#28B463]">
           <div className="flex justify-end">
             <button
               onClick={handleClose}
@@ -70,25 +113,48 @@ const RoleModal = () => {
               <i className="fas fa-times text-xl"></i>
             </button>
           </div>
-          <div className="text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1E6F5C] mb-4">Choose Your Role</h2>
-            <p className="text-gray-600 mb-8">Select the role that best describes you to continue.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {roles.map((role, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 p-6 rounded-lg border-2 border-[#E8F5E9] cursor-pointer hover:bg-green-100 hover:border-[#28B463] active:bg-gray-200 transition-all duration-300"
-                  onClick={() => handleRoleClick(role)}
-                >
-                  <div className="text-4xl text-[#28B463] mb-2">
-                    <i className={role.icon}></i>
+          
+          {showCorporateSubRoles ? (
+            <div className="text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-[#1E6F5C] mb-4">Corporate Partner</h2>
+              <p className="text-gray-600 mb-8">Are you an employee or administrator?</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {corporateSubRoles.map((subRole, index) => (
+                  <div
+                    key={index}
+                    className="bg-gray-50 p-6 rounded-lg border-2 border-[#28B463] cursor-pointer hover:bg-green-100 hover:border-[#28B463] active:bg-gray-200 transition-all duration-300"
+                    onClick={() => handleCorporateSubRoleClick(subRole)}
+                  >
+                    <div className="text-4xl text-[#28B463] mb-2">
+                      <i className={subRole.icon}></i>
+                    </div>
+                    <h3 className="text-lg font-semibold text-[#2C3E50]">{subRole.name}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{subRole.description}</p>
                   </div>
-                  <h3 className="text-lg font-semibold text-[#2C3E50]">{role.name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{role.description}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-[#1E6F5C] mb-4">Choose Your Role</h2>
+              <p className="text-gray-600 mb-8">Select the role that best describes you to continue.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {roles.map((role, index) => (
+                  <div
+                    key={index}
+                    className="bg-gray-50 p-6 rounded-lg border-2 border-[#28B463] cursor-pointer hover:bg-green-100 hover:border-[#28B463] active:bg-gray-200 transition-all duration-300"
+                    onClick={() => handleRoleClick(role)}
+                  >
+                    <div className="text-4xl text-[#28B463] mb-2">
+                      <i className={role.icon}></i>
+                    </div>
+                    <h3 className="text-lg font-semibold text-[#2C3E50]">{role.name}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{role.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </>

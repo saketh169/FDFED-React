@@ -20,14 +20,18 @@ export default function OrganizationRoutes() {
 
         {/* Protected Routes - Require Organization Authentication */}
         <Route path="home" element={<ProtectedRoute element={<OrganizationHome />} requiredRole="organization" />} />
+        <Route path="profile" element={<ProtectedRoute element={<OrganizationDashboard />} requiredRole="organization" />} />
+        <Route path="doc-status" element={<ProtectedRoute element={<OrgDocStatus />} requiredRole="organization" />} />
+        <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword />} requiredRole="organization" />} />
+        <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="organization" />} />
 
         {/* Verified Routes - Require Organization Authentication AND Verification */}
-        <Route path="profile" element={<VerifiedRoute element={<ProtectedRoute element={<OrganizationDashboard />} requiredRole="organization" />} requiredRole="organization" redirectTo="/organization/doc-status" />} />
-        <Route path="doc-status" element={<ProtectedRoute element={<OrgDocStatus />} requiredRole="organization" />} />
-        <Route path="verify-dietitian" element={<VerifiedRoute element={<ProtectedRoute element={<DietitianVerify />} requiredRole="organization" />} requiredRole="organization" redirectTo="/organization/doc-status" />} />
-        <Route path="verify-corporate" element={<VerifiedRoute element={<ProtectedRoute element={<CorporateVerify />} requiredRole="organization" />} requiredRole="organization" redirectTo="/organization/doc-status" />} />
-        <Route path="change-pass" element={<VerifiedRoute element={<ProtectedRoute element={<ChangePassword />} requiredRole="organization" />} requiredRole="organization" redirectTo="/organization/doc-status" />} />
-        <Route path="edit-profile" element={<VerifiedRoute element={<ProtectedRoute element={<EditProfile />} requiredRole="organization" />} requiredRole="organization" redirectTo="/organization/doc-status" />} />
+        <Route
+          path="verify-dietitian"
+          element={<VerifiedRoute element={<ProtectedRoute element={<DietitianVerify />} requiredRole="organization" />} requiredRole="organization" redirectTo="/organization/doc-status" />} />
+        <Route
+          path="verify-corporate"
+          element={<VerifiedRoute element={<ProtectedRoute element={<CorporateVerify />} requiredRole="organization" />} requiredRole="organization" redirectTo="/organization/doc-status" />} />
         
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>

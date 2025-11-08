@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // NOTE: Assumes Bootstrap and Font Awesome CSS/JS are included in the main application.
 
@@ -84,6 +85,7 @@ const mockOrganizationData = [
 // --- Main React Component ---
 
 const OrgVerify = () => {
+    const navigate = useNavigate();
     const [organizations, setOrganizations] = useState([]);
     const [expandedRow, setExpandedRow] = useState(null);
     const [notification, setNotification] = useState(null);
@@ -296,8 +298,15 @@ const OrgVerify = () => {
   return (
     <div className='min-h-screen bg-linear-to-br from-slate-50 via-emerald-50 to-teal-50 pb-12 px-4 sm:px-6 lg:px-8'>
       <div className='w-full max-w-7xl mx-auto'>
-        {/* Compact Header in Single Line */}
-        <div className='flex items-center justify-center gap-4 mb-4 pt-2 px-4' style={{ minHeight: '60px', maxHeight: '100px' }}>
+        {/* Header with Back Button and Title */}
+        <div className='flex items-center justify-between mb-6 pt-2 px-4' style={{ minHeight: '60px', maxHeight: '100px' }}>
+          <button
+            onClick={() => navigate('/admin/profile')}
+            className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 shadow-md hover:shadow-lg font-medium"
+          >
+            <i className="fas fa-chevron-left mr-2"></i> Back
+          </button>
+
           <div className='flex-1 text-center'>
             <div className='inline-flex items-center justify-center gap-3'>
               <div className='inline-flex items-center justify-center w-10 h-10 bg-linear-to-r from-emerald-500 to-teal-600 rounded-2xl shadow-lg'>
@@ -311,6 +320,8 @@ const OrgVerify = () => {
               Streamlined document verification system for organizations
             </p>
           </div>
+
+          <div className='w-20'></div> {/* Spacer for balance */}
         </div>
 
         {/* Modern Notification */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
+import Status from "../../middleware/StatusBadge"; // Import Status component
 
 // --- Mock Data & API Call Simulation ---
 const mockOrganization = {
@@ -18,15 +19,6 @@ const mockRecentDietitians = [
   { name: "Rajesh M.", verificationStatus: { finalReport: "Received" }, createdAt: '2025-10-23T10:00:00Z' },
 ];
 
-// Mock function to simulate fetching organization status
-const mockCheckOrganizationStatus = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  // Possible statuses: 'Not Received', 'Received', 'Verified', 'Rejected'
-  const mockStatus = "Verified"; // Change this to test different states
-
-  return { success: true, finalReportStatus: mockStatus };
-};
-
 // Mock function to simulate fetching recent dietitians (sorted by createdAt)
 const mockFetchRecentDietitians = async () => {
   await new Promise((resolve) => setTimeout(resolve, 500));
@@ -35,107 +27,6 @@ const mockFetchRecentDietitians = async () => {
 };
 
 // --- Sub-Components ---
-
-const VerificationStatusCard = () => {
-  const navigate = useNavigate();
-  const [status, setStatus] = useState("Checking");
-  const [report, setReport] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const data = await mockCheckOrganizationStatus(); // Replace with actual API call
-        if (data.success) {
-          setStatus(data.finalReportStatus);
-          setReport(data);
-        } else {
-          setStatus("Error");
-          setReport({ message: data.message || "Unknown error" });
-        }
-      } catch (error) {
-        setStatus(`${error}`);
-        setReport({ message: "Network error occurred." });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkStatus();
-  }, []);
-
-  const getStatusDisplay = () => {
-    switch (status) {
-      case "Verified":
-        return {
-          bg: "bg-green-100 text-green-800",
-          icon: "fas fa-check-circle",
-          message: "Your organization has been **verified** by NutriConnect. You can now verify dietitians.",
-          button: (
-            <button
-              className="mt-3 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition shadow"
-              onClick={() => navigate("/verify_diet")}
-            >
-              <i className="fas fa-file-signature"></i> Proceed to Verify Dietitian
-            </button>
-          ),
-        };
-      case "Rejected":
-        return {
-          bg: "bg-red-100 text-red-800",
-          icon: "fas fa-times-circle",
-          message: "Your application has been **rejected**. View the reason in the final report.",
-          button: (
-            <button
-              className="mt-3 px-4 py-2 bg-red-600 text-white font-semibold rounded-full hover:bg-red-700 transition shadow"
-              onClick={() => navigate("/recieved_org")}
-            >
-              <i className="fas fa-eye"></i> View Verification Status
-            </button>
-          ),
-        };
-      case "Not Received":
-      case "Received":
-        return {
-          bg: "bg-yellow-100 text-yellow-800",
-          icon: "fas fa-spinner fa-spin",
-          message: "Your documents are **under review** by NutriConnect.",
-          button: null,
-        };
-      case "Checking":
-      case "Error":
-      default:
-        return {
-          bg: "bg-gray-100 text-gray-700",
-          icon: "fas fa-exclamation-circle",
-          message: isLoading ? "Checking verification status..." : `Error: Failed to load status. ${report.message || ""}`,
-          button: null,
-        };
-    }
-  };
-
-  const display = getStatusDisplay();
-
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-emerald-600 h-full flex flex-col justify-center">
-      <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
-        Organization Verification
-      </h3>
-      <div className="grow flex flex-col justify-center items-center text-center">
-        <div className={`p-3 rounded-lg w-full max-w-sm ${display.bg}`}>
-          <i className={`${display.icon} mr-2 text-lg`}></i>
-          <span className="font-bold text-base">{status}</span>
-        </div>
-        <p className="mt-3 text-gray-600 font-medium max-w-xs" dangerouslySetInnerHTML={{ __html: display.message }} />
-        {status !== 'Checking' && (
-            <p className="text-sm text-gray-500 mb-2">
-                Final report status: <strong>{status}</strong>
-            </p>
-        )}
-        {display.button}
-      </div>
-    </div>
-  );
-};
 
 const RecentDietitiansTable = () => {
   const [dietitians, setDietitians] = useState([]);
@@ -413,8 +304,8 @@ const OrganizationDashboard = () => {
             </span>
           </div>
 
-          {/* 2. Verification Status Card (Dynamic content) */}
-          <VerificationStatusCard />
+          {/* 2. Document Verification Status Card (Dynamic content) */}
+          <Status role="organization" />
 
           {/* 3. Quick Actions */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600 h-full">
