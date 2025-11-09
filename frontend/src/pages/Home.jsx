@@ -1,10 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 
 const Home = () => {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState(null);
+  const [isDeveloperMode, setIsDeveloperMode] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Check for developer mode on component mount
+  useEffect(() => {
+    const developerMode = localStorage.getItem('developerMode') === 'true';
+    setIsDeveloperMode(developerMode);
+  }, []);
+
+  const toggleDeveloperMode = () => {
+    const newMode = !isDeveloperMode;
+    setIsDeveloperMode(newMode);
+    localStorage.setItem('developerMode', newMode.toString());
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   const Services = () => {
     const serviceItems = [
@@ -119,8 +137,65 @@ const Home = () => {
     window.scrollTo(0, 0); 
   };
 
+  // Get roles based on developer mode
+  const getRoles = () => {
+    if (isDeveloperMode) {
+      return [
+        { slug: 'admin', icon: 'fas fa-crown', title: 'Admin', text: 'Access administrative features and system management.' }
+      ];
+    }
+    return [
+      { slug: 'user', icon: 'fas fa-user', title: 'User', text: 'Looking for personalized nutrition plans? Start your journey here!' },
+      { slug: 'dietitian', icon: 'fas fa-user-md', title: 'Dietitian', text: 'Join our platform to help users achieve their health goals.' },
+      { slug: 'organization', icon: 'fas fa-building', title: 'Certifying Organization', text: 'Partner with us to certify dietitians and expand your reach.' },
+      { slug: 'corporatepartner', icon: 'fas fa-handshake', title: 'Corporate Partner', text: 'Provide comprehensive wellness and nutrition solutions to your employees with our corporate plans.' },
+    ];
+  };
+
   return (
-    <main className="flex-1 animate-fade-in">
+    <div className="relative">
+      {/* Developer Mode Sidebar */}
+      <div className={`fixed left-0 top-1/2 transform -translate-y-1/2 z-50 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="bg-gray-800 text-white p-4 rounded-r-lg shadow-lg relative">
+          <button
+            onClick={toggleSidebar}
+            className="absolute top-0 right-1 text-gray-400 hover:text-white transition-colors"
+          >
+            <i className="fas fa-times"></i>
+          </button>
+          <div className="text-sm mb-3">Developer Mode</div>
+          <div className="flex justify-center">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={isDeveloperMode}
+                onChange={toggleDeveloperMode}
+              />
+              <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+          
+          {isDeveloperMode && (
+            <div className="mt-4 text-xs text-gray-300">
+              <p>Admin role only visible</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sidebar Toggle Button */}
+      {!isSidebarOpen && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed left-0 top-1/2 transform -translate-y-1/2 z-40 bg-gray-800 text-white p-2 rounded-r-lg shadow-lg hover:bg-gray-700 transition-colors"
+          title="Developer Options"
+        >
+          <i className="fas fa-cog"></i>
+        </button>
+      )}
+
+      <main className="flex-1 animate-fade-in">
       <section id="home-intro" className="min-h-[650px] flex items-center justify-center text-center py-12 px-4 sm:px-6 md:px-8 relative bg-[url('/images/intro-image.jpg')] bg-cover bg-center bg-opacity-50 before:content-[''] before:absolute before:inset-0 before:bg-black before:opacity-50 animate-slide-up">
         <div className="max-w-7xl mx-auto relative z-10">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
@@ -145,14 +220,11 @@ const Home = () => {
       </section>
       <section id="roles" className="py-12 px-4 mt-[100px] sm:px-6 md:px-8 bg-white min-h-[600px] overflow-auto animate-fade-in-up animate-delay-[300ms]">
         <div className="max-w-6xl mx-auto flex flex-col justify-center text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-12">Choose Your Role</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { slug: 'user', icon: 'fas fa-user', title: 'User', text: 'Looking for personalized nutrition plans? Start your journey here!' },
-              { slug: 'dietitian', icon: 'fas fa-user-md', title: 'Dietitian', text: 'Join our platform to help users achieve their health goals.' },
-              { slug: 'organization', icon: 'fas fa-building', title: 'Certifying Organization', text: 'Partner with us to certify dietitians and expand your reach.' },
-              { slug: 'corporatepartner', icon: 'fas fa-handshake', title: 'Corporate Partner', text: 'Provide comprehensive wellness and nutrition solutions to your employees with our corporate plans.' },
-            ].map((role, index) => (
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-12">
+            {isDeveloperMode ? 'Admin Access' : 'Choose Your Role'}
+          </h2>
+          <div className={`grid gap-8 ${isDeveloperMode ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
+            {getRoles().map((role, index) => (
               <button
                 key={index}
                 type="button"
@@ -193,6 +265,7 @@ const Home = () => {
               opacity: 0;
             }
             to {
+              transform: translateY(0);
               opacity: 1;
             }
           }
@@ -222,6 +295,7 @@ const Home = () => {
         `}
       </style>
     </main>
+    </div>
   );
 };
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
+import axios from 'axios';
 
 // --- Validation Schema using Yup ---
 const contactSchema = Yup.object().shape({
@@ -20,6 +21,7 @@ const contactSchema = Yup.object().shape({
 
 const ContactPage = () => {
   const [submittedData, setSubmittedData] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   // --- React Hook Form Setup ---
   const {
@@ -38,18 +40,39 @@ const ContactPage = () => {
   });
 
   // --- Submission Handler ---
-  const onSubmit = (data) => {
-    // Simulate API call for submission
-    // In a real application, you would make an axios.post here
-    
-    // Set submitted data for display
-    setSubmittedData(data);
-    
-    // Reset the form after submission
-    reset();
-    
-    // Optionally scroll to the submitted message
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const onSubmit = async (data) => {
+    setSubmitError(null);
+    try {
+      const response = await axios.post('http://localhost:5000/api/contact/submit', data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.data.success) {
+        // Set submitted data for display
+        setSubmittedData(data);
+
+        // Reset the form after successful submission
+        reset();
+
+        // Scroll to the submitted message section
+        setTimeout(() => {
+          const submittedSection = document.getElementById('submitted-message');
+          if (submittedSection) {
+            submittedSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      } else {
+        setSubmitError(response.data.message || 'Failed to submit query');
+      }
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      setSubmitError(
+        error.response?.data?.message ||
+        'Failed to submit your query. Please try again later.'
+      );
+    }
   };
 
   // Helper for input classes with error styling
@@ -147,6 +170,17 @@ const ContactPage = () => {
               {isSubmitting ? 'Sending...' : 'Send Message'}
             </button>
           </form>
+
+          {/* Error Message */}
+          {submitError && (
+            <div className='mt-4 p-4 bg-red-50 border border-red-200 rounded-lg'>
+              <div className='flex items-center'>
+                <i className='fas fa-exclamation-triangle text-red-500 mr-2'></i>
+                <p className='text-red-700 font-medium'>Error</p>
+              </div>
+              <p className='text-red-600 mt-1'>{submitError}</p>
+            </div>
+          )}
         </div>
         {/* Contact Details Box */}
         <div className='bg-white p-8 rounded-2xl shadow-lg border-t-4 border-[#28B463] flex flex-col justify-between'>
@@ -216,7 +250,7 @@ const ContactPage = () => {
 
       {/* Submitted Message Box - Full Width */}
       {submittedData && (
-        <div className='max-w-6xl mx-auto mt-12 bg-white p-8 rounded-2xl shadow-lg border-t-4 border-[#28B463]'>
+        <div id="submitted-message" className='max-w-6xl mx-auto mt-12 bg-white p-8 rounded-2xl shadow-lg border-t-4 border-[#28B463]'>
           <h2 className='text-2xl font-bold text-[#2C3E50] mb-6 text-center'>
             Your Message Has Been Sent! 🎉
           </h2>

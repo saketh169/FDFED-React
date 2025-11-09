@@ -5,7 +5,7 @@ import VerifiedRoute from '../middleware/VerifiedRoute';
 import CorporateHome from '../pages/HomePages/CorporateHome';
 import CorporateDashboard from '../pages/Dashboards/CorporatePartner';
 import CorporateDocStatus from '../pages/Status/CorporateDocStatus';    
-import CorporatePlansOffers from '../pages/CorporatePlansOffers';
+//import CorporatePlansOffers from '../pages/CorporatePlansOffers';
 import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
 
@@ -23,7 +23,7 @@ export default function CorporateRoutes() {
         <Route path="home" element={<ProtectedRoute element={<CorporateHome />} requiredRole="corporatepartner" />} />
         <Route path="profile" element={<ProtectedRoute element={<CorporateDashboard />} requiredRole="corporatepartner" />} />
         <Route path="doc-status" element={<ProtectedRoute element={<CorporateDocStatus/>} requiredRole="corporatepartner" />} />
-        <Route path="plans-offers" element={<ProtectedRoute element={<CorporatePlansOffers />} requiredRole="corporatepartner" />} />
+      
         <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword />} requiredRole="corporatepartner" />} />
         <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="corporatepartner" />} />
 

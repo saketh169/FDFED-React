@@ -1,31 +1,86 @@
+const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const { Dietitian, Organization, CorporatePartner } = require('../models/userModel');
+//const { Dietitian, Organization, CorporatePartner } = require('../models/userModel');
+
+// JWT authentication helper
+function authenticateJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    req.user = user;
+    next();
+  });
+}
 
 // Middleware for dietitian-only access
 function ensureDietitianAuthenticated(req, res, next) {
-  console.log('Session check (ensureDietitianAuthenticated):', req.session);
-  if (req.session.dietitian && mongoose.isValidObjectId(req.session.dietitian.id)) {
-    return next();
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
   }
-  return res.status(401).json({ success: false, message: 'Unauthorized: Dietitian access required' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    if (user.role !== 'dietitian') {
+      return res.status(403).json({ success: false, message: 'Dietitian access required' });
+    }
+    req.user = user;
+    next();
+  });
 }
 
 // Middleware for organization-only access
 function ensureOrganizationAuthenticated(req, res, next) {
-  console.log('Session check (ensureOrganizationAuthenticated):', req.session);
-  if (req.session.organization && mongoose.isValidObjectId(req.session.organization.id)) {
-    return next();
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
   }
-  return res.status(401).json({ success: false, message: 'Unauthorized: Organization access required' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    if (user.role !== 'organization') {
+      return res.status(403).json({ success: false, message: 'Organization access required' });
+    }
+    req.user = user;
+    next();
+  });
 }
 
 // Middleware for corporate partner-only access
 function ensureCorporatePartnerAuthenticated(req, res, next) {
-  console.log('Session check (ensureCorporatePartnerAuthenticated):', req.session);
-  if (req.session.corporatePartner && mongoose.isValidObjectId(req.session.corporatePartner.id)) {
-    return next();
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
   }
-  return res.status(401).json({ success: false, message: 'Unauthorized: Corporate Partner access required' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    if (user.role !== 'corporatepartner') {
+      return res.status(403).json({ success: false, message: 'Corporate Partner access required' });
+    }
+    req.user = user;
+    next();
+  });
 }
 
 // Middleware to validate MongoDB ObjectId for dietitian
@@ -86,6 +141,7 @@ function handleMulterError(err, req, res, next) {
 }
 
 module.exports = {
+    authenticateJWT,
     ensureDietitianAuthenticated,
     ensureOrganizationAuthenticated,
     ensureCorporatePartnerAuthenticated,

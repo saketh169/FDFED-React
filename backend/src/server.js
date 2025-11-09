@@ -7,6 +7,7 @@ const chatbotRoutes = require('./routes/chatbotRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const verifyRoutes = require('./routes/verifyRoutes');
 const statusRoutes = require('./routes/statusRoutes');
+const contactusRoutes = require('./routes/contactusRoutes');
 
 // Load environment variables from .env file
 require('dotenv').config();
@@ -42,6 +43,9 @@ app.use('/api/verify', verifyRoutes);
 
 // Status routes mounted at '/api/status'
 app.use('/api/status', statusRoutes);
+
+// Contact us routes mounted at '/api/contact'
+app.use('/api/contact', contactusRoutes);
 
 // Simple test route (kept from your original code)
 app.get('/', (req, res) => {

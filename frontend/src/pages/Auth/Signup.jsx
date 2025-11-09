@@ -608,7 +608,14 @@ const Signup = () => {
 
     return (
         <section className="flex items-center justify-center bg-gray-100 p-2 sm:p-3 min-h-[650px]">
-            <div className="w-full max-w-7xl p-4 sm:p-5 mx-auto rounded-3xl shadow-2xl bg-white flex flex-col items-center justify-center animate-fade-in">
+            <div className="w-full max-w-7xl p-4 sm:p-5 mx-auto rounded-3xl shadow-2xl bg-white flex flex-col items-center justify-center animate-fade-in relative">
+                <button
+                    onClick={() => navigate('/role')}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors z-10"
+                    title="Back to Role Selection"
+                >
+                    <i className="fas fa-times text-xl"></i>
+                </button>
                 <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-4">
                     SIGN UP AS A {corporateType === 'corporate_employee' ? 'CORPORATE EMPLOYEE' : (role.toUpperCase() || 'NEW MEMBER')}
                 </h2>
