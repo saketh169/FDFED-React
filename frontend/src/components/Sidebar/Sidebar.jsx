@@ -62,7 +62,8 @@ const Sidebar = () => {
     { name: 'My Verification', href: '/organization/doc-status', icon: 'fas fa-handshake' },
     { name: 'Verify Dietitians', href: '/organization/verify-dietitian', icon: 'fas fa-user-md' },
     { name: 'Verify Corps', href: '/organization/verify-corporate', icon: 'fas fa-building' },
-   
+    { name: 'Blog Moderation', href: '/organization/blog-moderation', icon: 'fas fa-flag' },
+    { name: 'Blogs', href: '/organization/blogs', icon: 'fas fa-blog' },
   ];
 
   // --- Function to Select Links based on Path ---

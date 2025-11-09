@@ -11,6 +11,9 @@ import CorporateVerify from '../pages/Verify/CorporateVerify';
 
 import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
+import BlogModeration from '../pages/Blog/BlogModeration';
+import Blog from '../pages/Blog';
+import BlogPost from '../pages/Blog/BlogPost';
 
 export default function OrganizationRoutes() {
   return (
@@ -32,6 +35,11 @@ export default function OrganizationRoutes() {
         <Route
           path="verify-corporate"
           element={<VerifiedRoute element={<ProtectedRoute element={<CorporateVerify />} requiredRole="organization" />} requiredRole="organization" redirectTo="/organization/doc-status" />} />
+        
+        {/* Blog Moderation Routes */}
+        <Route path="blog-moderation" element={<ProtectedRoute element={<BlogModeration />} requiredRole="organization" />} />
+        <Route path="blogs" element={<Blog/>} />
+        <Route path="blog/:id" element={<ProtectedRoute element={<BlogPost />} requiredRole="organization" />} />
         
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>

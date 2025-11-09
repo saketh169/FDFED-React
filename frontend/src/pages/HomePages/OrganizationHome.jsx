@@ -6,17 +6,17 @@ const OrganizationHome = () => {
 
   // === 1. Organization Duties Data (Focus on Governance & Oversight) ===
   const dutyItems = [
-    { title: 'Verify Dietitians', icon: 'fas fa-user-check', text: 'Review and approve credentials for new dietitian registrations to maintain platform trust.', slug: 'verification_dietitian' },
-    { title: 'Govern Partnerships', icon: 'fas fa-building-flag', text: 'Verify legitimacy and integration requests from new corporate partners.', slug: 'verification_corporate' },
-    { title: 'Manage Blog Content', icon: 'fas fa-blog', text: 'Moderate and approve community-submitted blogs; remove inappropriate or low-quality content.', slug: 'content_blogs' },
-    { title: 'Audit Diet Plans', icon: 'fas fa-trash-can', text: 'Review reported or expired diet plans and remove/edit non-compliant content.', slug: 'content_plans' },
+    { title: 'Verify Dietitians', icon: 'fas fa-user-check', text: 'Review and approve credentials for new dietitian registrations to maintain platform trust.', slug: 'verification_dietitian', route: '/organization/verify-dietitian' },
+    { title: 'Govern Partnerships', icon: 'fas fa-building-flag', text: 'Verify legitimacy and integration requests from new corporate partners.', slug: 'verification_corporate', route: '/organization/verify-corporate' },
+    { title: 'Manage Blog Content', icon: 'fas fa-blog', text: 'Moderate and approve community-submitted blogs; remove inappropriate or low-quality content.', slug: 'content_blogs', route: '/organization/blog-moderation' },
+    { title: 'Audit Diet Plans', icon: 'fas fa-trash-can', text: 'Review reported or expired diet plans and remove/edit non-compliant content.', slug: 'content_plans', route: '/organization/profile' },
   ];
 
   // === 2. Verification/Action Queues Mock Data ===
   const dashboardQueues = [
-    { title: 'Pending Dietitian Verifications', count: 14, icon: 'fas fa-clipboard-list', color: 'text-yellow-600', link: '/org_dash?view=dietitian' },
-    { title: 'New Corporate Partner Requests', count: 3, icon: 'fas fa-handshake', color: 'text-indigo-600', link: '/org_dash?view=partner' },
-    { title: 'Pending Blog Posts for Review', count: 7, icon: 'fas fa-file-pen', color: 'text-red-600', link: '/org_dash?view=blogs' },
+    { title: 'Pending Dietitian Verifications', count: 14, icon: 'fas fa-clipboard-list', color: 'text-yellow-600', link: '/organization/verify-dietitian' },
+    { title: 'New Corporate Partner Requests', count: 3, icon: 'fas fa-handshake', color: 'text-indigo-600', link: '/organization/verify-corporate' },
+    { title: 'Pending Blog Posts for Review', count: 7, icon: 'fas fa-file-pen', color: 'text-red-600', link: '/organization/blog-moderation' },
   ];
 
   // === 3. FAQ State and Logic ===
@@ -60,7 +60,7 @@ const OrganizationHome = () => {
             {/* Action Buttons */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button
-                onClick={() => navigate('/organization_dash')}
+                onClick={() => navigate('/organization/profile')}
                 className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
               >
                 Go to Dashboard
@@ -110,7 +110,7 @@ const OrganizationHome = () => {
           </div>
 
           <button
-            onClick={() => navigate('/organization_dash')}
+            onClick={() => navigate('/organization/profile')}
             className="mt-10 bg-[#1A4A40] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#38b44a] transition-colors"
           >
             Go to Verification Center
@@ -130,7 +130,7 @@ const OrganizationHome = () => {
             {dutyItems.map((item, index) => (
               <div
                 key={index}
-                onClick={() => navigate(`/org_dash?action=${item.slug}`)}
+                onClick={() => navigate(item.route)}
                 className={`bg-white p-6 rounded-xl shadow-md border-b-4 border-[${primaryGreen}] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer`}
               >
                 <div className={`text-5xl text-[${primaryGreen}] mb-4`}>

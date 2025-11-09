@@ -13,6 +13,8 @@ import DietitianAddPlanForm from '../pages/MealPlans/DietitianAddPlanForm';
 
 import Blog from '../pages/Blog';
 import Contact from '../pages/Contactus';
+import CreateBlog from '../pages/Blog/CreateBlog';
+import BlogPost from '../pages/Blog/BlogPost';
 
 
 
@@ -37,6 +39,12 @@ export default function DietitianRoutes() {
         <Route
           path="add-plans"
           element={<VerifiedRoute element={<ProtectedRoute element={<DietitianAddPlanForm/>} requiredRole="dietitian" />} requiredRole="dietitian" redirectTo="/dietitian/doc-status" />} />
+
+        {/* Blog Routes */}
+        <Route path="blogs" element={<Blog/>} />
+        <Route path="blog/:id" element={<ProtectedRoute element={<BlogPost />} requiredRole="dietitian" />} />
+        <Route path="create-blog" element={<ProtectedRoute element={<CreateBlog />} requiredRole="dietitian" />} />
+        <Route path="edit-blog/:id" element={<ProtectedRoute element={<CreateBlog />} requiredRole="dietitian" />} />
 
         {/* Optional: Public pages */}
          <Route path="blog" element={<Blog/>} />
