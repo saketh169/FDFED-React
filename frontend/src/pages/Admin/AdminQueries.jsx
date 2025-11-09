@@ -77,7 +77,7 @@ const AdminQueries = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:5000/api/contact/queries-list', {
+      const response = await axios.get('/api/contact/queries-list', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -147,14 +147,9 @@ const AdminQueries = () => {
   };
 
   // Handle reply submission
-  const handleSendReply = async (queryId, userEmail, userName, userQuery) => {
+  const handleSendReply = async (queryId) => {
     if (!replyText.trim()) {
       alert('Please enter a reply.');
-      return;
-    }
-
-    if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
-      alert('Cannot send reply: Invalid or missing email address.');
       return;
     }
 
@@ -167,9 +162,9 @@ const AdminQueries = () => {
         return;
       }
 
-      const response = await axios.put(
-        `http://localhost:5000/api/contact/queries-list/${queryId}/reply`,
-        { admin_reply: replyText },
+      const response = await axios.post(
+        '/api/contact/reply',
+        { queryId, replyMessage: replyText },
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -193,23 +188,7 @@ const AdminQueries = () => {
           )
         );
 
-        // Construct mailto link
-        const subject = encodeURIComponent('Response to Your Query - NutriConnect');
-        const body = encodeURIComponent(
-          `Dear ${userName},\n\n` +
-          `Thank you for your patience. We have reviewed your query and here is our response:\n\n` +
-          `Your Query: ${userQuery}\n\n` +
-          `Our Response: ${replyText}\n\n` +
-          `If you have any further questions, feel free to contact us at nutriconnect6@gmail.com.\n\n` +
-          `Best regards,\n` +
-          `The NutriConnect Team`
-        );
-        const mailtoLink = `mailto:${userEmail}?subject=${subject}&body=${body}`;
-
-        // Open email client
-        window.location.href = mailtoLink;
-
-        alert('Reply submitted successfully! Your email client has been opened to send the reply.');
+        alert('Reply sent successfully! The user has been notified via email.');
         setReplyText('');
         setReplyingTo(null);
         setActiveTab('replied');
@@ -394,7 +373,7 @@ const AdminQueries = () => {
                         />
                         <div className="flex gap-3 mt-3">
                           <button
-                            onClick={() => handleSendReply(query._id, query.email, query.name, query.query)}
+                            onClick={() => handleSendReply(query._id)}
                             disabled={isSending || !replyText.trim()}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                           >
