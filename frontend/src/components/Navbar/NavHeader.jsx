@@ -52,8 +52,8 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
     { name: 'Home', href: '/organization/home' },
     { name: 'Verify Dietitians', href: '/organization/verify-dietitian' },
     { name: 'Verify Corps', href: '/organization/verify-corporate' },
-    { name: 'Monitoring', href: '/organization/Monitoring' },
-    
+    { name: 'Blog Moderation', href: '/organization/blog-moderation' },
+    { name: 'Blogs', href: '/organization/blogs' },
   ];
 
   const adminNavLinks = [

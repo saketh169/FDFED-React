@@ -14,6 +14,8 @@ import UserGetPlanForm from '../pages/MealPlans/UserGetPlanForm';
 import Chatbot from '../pages/Chatbot';
 import Blog from '../pages/Blog';
 import Contact from '../pages/Contactus';
+import CreateBlog from '../pages/Blog/CreateBlog';
+import BlogPost from '../pages/Blog/BlogPost';
 
 
 
@@ -32,6 +34,12 @@ export default function UserRoutes() {
 
         <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword />} requiredRole="user" />} />
         <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="user" />} />
+        
+        {/* Blog Routes */}
+        <Route path="blogs" element={<Blog/>} />
+        <Route path="blog/:id" element={<ProtectedRoute element={<BlogPost />} requiredRole="user" />} />
+        <Route path="create-blog" element={<ProtectedRoute element={<CreateBlog />} requiredRole="user" />} />
+        <Route path="edit-blog/:id" element={<ProtectedRoute element={<CreateBlog />} requiredRole="user" />} />
         
         {/* Optional: Chatbot, Blog, Contact (can be public or protected) */}
         <Route path="blog" element={<Blog/>} />

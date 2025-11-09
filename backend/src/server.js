@@ -7,6 +7,7 @@ const chatbotRoutes = require('./routes/chatbotRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const verifyRoutes = require('./routes/verifyRoutes');
 const statusRoutes = require('./routes/statusRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 const contactusRoutes = require('./routes/contactusRoutes');
 
 // Load environment variables from .env file
@@ -43,6 +44,9 @@ app.use('/api/verify', verifyRoutes);
 
 // Status routes mounted at '/api/status'
 app.use('/api/status', statusRoutes);
+
+// Blog routes mounted at '/api/blogs'
+app.use('/api/blogs', blogRoutes);
 
 // Contact us routes mounted at '/api/contact'
 app.use('/api/contact', contactusRoutes);

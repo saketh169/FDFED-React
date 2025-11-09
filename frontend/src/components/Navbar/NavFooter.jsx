@@ -54,7 +54,8 @@ const NavFooter = ({ handleScrollToTop }) => {
     { name: 'Home', href: '/organization/home' },
     { name: 'Verify Dietitians', href: '/organization/verify-dietitian' },
     { name: 'Verify Corps', href: '/organization/verify-corporate' },
-    { name: 'Documents', href: '/organization/documents' },
+    { name: 'Blog Moderation', href: '/organization/blog-moderation' },
+    { name: 'Blogs', href: '/organization/blogs' },
   ];
 
   // 6. Links for the 'corporatepartner' role (matching corporatePartnerNavLinks from NavHeader)
