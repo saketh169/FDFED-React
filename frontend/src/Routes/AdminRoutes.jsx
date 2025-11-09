@@ -3,9 +3,10 @@ import ProtectedRoute from '../middleware/ProtectedRoute';
 
 import AdminHome from '../pages/HomePages/AdminHome';
 import AdminDashboard from '../pages/Dashboards/Admin';
-import AdminManagement from '../pages/AdminManagement';
+import AdminManagement from '../pages/Admin/AdminManagement';
 import OrgVerify from '../pages/Verify/OrgVeify'; 
-import Analytics from '../pages/Analytics';
+import Analytics from '../pages/Admin/Analytics';
+import AdminQueries from '../pages/Admin/AdminQueries';
 
 import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
@@ -23,6 +24,7 @@ export default function AdminRoutes() {
         <Route path="users" element={<ProtectedRoute element={<AdminManagement />} requiredRole="admin" />} />
         <Route path="analytics" element={<ProtectedRoute element={<Analytics/>} requiredRole="admin" />} />
         <Route path="verify-organizations" element={<ProtectedRoute element={<OrgVerify />} requiredRole="admin" />} /> 
+        <Route path="queries" element={<ProtectedRoute element={<AdminQueries />} requiredRole="admin" />} />
         
         <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword />} requiredRole="admin" />} />
         <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="admin" />} />

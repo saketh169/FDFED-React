@@ -298,24 +298,24 @@ const UserDashboard = () => {
 
             <div className="space-y-3">
               <button
-                onClick={() => navigate("/dietitian-profiles")}
+                onClick={() => navigate("/user/schedule")}
                 className="w-full bg-amber-500 text-white font-semibold py-3 rounded-full hover:bg-amber-600 transition shadow flex items-center justify-center gap-2"
               >
                 <i className="fas fa-calendar-alt"></i> Book Consultation
               </button>
 
               <button
-                onClick={() => navigate("/user-consultations")}
+                onClick={() => navigate("/user/progress")}
                 className="w-full bg-blue-600 text-white font-semibold py-3 rounded-full hover:bg-blue-700 transition shadow flex items-center justify-center gap-2"
               >
-                <i className="fas fa-user-md"></i> My Dietitians
+                <i className="fas fa-chart-line"></i> My Progress
               </button>
 
               <button
-                onClick={() => navigate("/user-meal-plans")}
+                onClick={() => navigate("/user/get-plans")}
                 className="w-full bg-emerald-600 text-white font-semibold py-3 rounded-full hover:bg-emerald-700 transition shadow flex items-center justify-center gap-2"
               >
-                <i className="fas fa-utensils"></i> View Diet Plan
+                <i className="fas fa-utensils"></i> Get Diet Plan
               </button>
 
               <button

@@ -203,21 +203,21 @@ const DietitianDashboard = () => {
 
             <div className="space-y-3">
               <button
-                onClick={() => navigate("/recieved_diet")}
+                onClick={() => navigate("/dietitian/doc-status")}
                 className="w-full bg-blue-600 text-white font-semibold py-3 rounded-full hover:bg-blue-700 transition shadow flex items-center justify-center gap-2"
               >
                 <i className="fas fa-shield-check"></i> View Verification Status
               </button>
 
               <button
-                onClick={() => navigate("/dietitian-consultations")}
+                onClick={() => navigate("/dietitian/schedule")}
                 className="w-full bg-amber-500 text-white font-semibold py-3 rounded-full hover:bg-amber-600 transition shadow flex items-center justify-center gap-2"
               >
-                <i className="fas fa-users"></i> My Clients
+                <i className="fas fa-calendar-alt"></i> Manage Schedule
               </button>
 
               <button
-                onClick={() => navigate("/dietitian-meal-plans")}
+                onClick={() => navigate("/dietitian/add-plans")}
                 className="w-full bg-green-600 text-white font-semibold py-3 rounded-full hover:bg-green-700 transition shadow flex items-center justify-center gap-2"
               >
                 <i className="fas fa-utensils"></i> Create Meal Plan

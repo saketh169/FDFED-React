@@ -315,17 +315,24 @@ const OrganizationDashboard = () => {
 
             <div className="space-y-3">
               <button
-                onClick={() => navigate("/recieved_org")}
+                onClick={() => navigate("/organization/doc-status")}
                 className="w-full bg-blue-600 text-white font-semibold py-3 rounded-full hover:bg-blue-700 transition shadow flex items-center justify-center gap-2"
               >
                 <i className="fas fa-shield-check"></i> View My Verification Status
               </button>
 
               <button
-                onClick={() => navigate("/verify_diet")}
+                onClick={() => navigate("/organization/verify-dietitian")}
                 className="w-full bg-amber-500 text-white font-semibold py-3 rounded-full hover:bg-amber-600 transition shadow flex items-center justify-center gap-2"
               >
                 <i className="fas fa-file-signature"></i> Verify Dietitian
+              </button>
+
+              <button
+                onClick={() => navigate("/organization/verify-corporate")}
+                className="w-full bg-purple-600 text-white font-semibold py-3 rounded-full hover:bg-purple-700 transition shadow flex items-center justify-center gap-2"
+              >
+                <i className="fas fa-building"></i> Verify Corporate Partner
               </button>
 
               <button

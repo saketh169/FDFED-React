@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const RoleModal = () => {
   const navigate = useNavigate();
   const [showCorporateSubRoles, setShowCorporateSubRoles] = useState(false);
+  const [isDeveloperMode, setIsDeveloperMode] = useState(false);
 
   useEffect(() => {
     console.log('[RoleModal] Component mounted');
@@ -11,6 +12,10 @@ const RoleModal = () => {
     const roles = ['user', 'dietitian', 'admin', 'organization', 'corporatepartner'];
     const hasAnyToken = roles.some(role => localStorage.getItem(`authToken_${role}`));
     console.log('[RoleModal] Existing token found:', hasAnyToken);
+    
+    // Check for developer mode
+    const developerMode = localStorage.getItem('developerMode') === 'true';
+    setIsDeveloperMode(developerMode);
   }, []);
 
   const roles = [
@@ -19,6 +24,16 @@ const RoleModal = () => {
     { name: 'Certifying Organization', icon: 'fas fa-building', description: 'Manage dietitian certifications and access corporate insights.', slug: 'organization', dashboardRoute: '/organization/home' },
     { name: 'Corporate Partner', icon: 'fas fa-building', description: 'Provide wellness solutions to your employees.', slug: 'corporatepartner', dashboardRoute: '/corporatepartner/home', hasSubRoles: true },
   ];
+
+  // Get roles based on developer mode
+  const getRoles = () => {
+    if (isDeveloperMode) {
+      return [
+        { name: 'Admin', icon: 'fas fa-crown', description: 'Access administrative features and system management.', slug: 'admin', dashboardRoute: '/admin/home' }
+      ];
+    }
+    return roles;
+  };
 
   const corporateSubRoles = [
     { 
@@ -136,10 +151,10 @@ const RoleModal = () => {
             </div>
           ) : (
             <div className="text-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-[#1E6F5C] mb-4">Choose Your Role</h2>
-              <p className="text-gray-600 mb-8">Select the role that best describes you to continue.</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {roles.map((role, index) => (
+              <h2 className="text-2xl md:text-3xl font-bold text-[#1E6F5C] mb-4">{isDeveloperMode ? 'Admin Access' : 'Choose Your Role'}</h2>
+              <p className="text-gray-600 mb-8">{isDeveloperMode ? 'Access administrative features and system management.' : 'Select the role that best describes you to continue.'}</p>
+              <div className={`grid gap-4 ${isDeveloperMode ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-2'}`}>
+                {getRoles().map((role, index) => (
                   <div
                     key={index}
                     className="bg-gray-50 p-6 rounded-lg border-2 border-[#28B463] cursor-pointer hover:bg-green-100 hover:border-[#28B463] active:bg-gray-200 transition-all duration-300"

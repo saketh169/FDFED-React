@@ -27,23 +27,29 @@ const ProtectedRoute = ({
     console.warn(`[ProtectedRoute] User not authenticated for role: ${requiredRole}`);
     
     return (
-      <div className="flex items-center justify-center min-h-screen bg-linear-to-b from-red-50 to-white">
-        <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md text-center border-l-4 border-red-500">
-          <div className="text-6xl mb-4 text-red-500">
-            <i className="fas fa-lock"></i>
+      <>
+        {/* Backdrop with blur */}
+        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm"></div>
+        
+        {/* Alert Modal */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md text-center border-l-4 border-red-500 relative">
+            <div className="text-6xl mb-4 text-red-500">
+              <i className="fas fa-lock"></i>
+            </div>
+            <h2 className="text-2xl font-bold text-red-600 mb-3">Not Authenticated</h2>
+            <p className="text-gray-600 mb-6">
+              You need to sign in to access this page. Your session has expired or you haven't logged in yet.
+            </p>
+            <a 
+              href={`/signin?role=${requiredRole}`}
+              className="inline-block bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-300"
+            >
+              Go to Sign In
+            </a>
           </div>
-          <h2 className="text-2xl font-bold text-red-600 mb-3">Not Authenticated</h2>
-          <p className="text-gray-600 mb-6">
-            You need to sign in to access this page. Your session has expired or you haven't logged in yet.
-          </p>
-          <a 
-            href={`/signin?role=${requiredRole}`}
-            className="inline-block bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-300"
-          >
-            Go to Sign In
-          </a>
         </div>
-      </div>
+      </>
     );
   }
 

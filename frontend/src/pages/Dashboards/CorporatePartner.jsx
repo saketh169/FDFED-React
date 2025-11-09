@@ -285,24 +285,24 @@ const CorporateDashboard = () => {
 
             <div className="space-y-3">
               <button
-                onClick={() => navigate("/partner_licensing_management")}
-                className="w-full bg-emerald-600 text-white font-semibold py-3 rounded-full hover:bg-emerald-700 transition shadow flex items-center justify-center gap-2"
-              >
-                <i className="fas fa-box"></i> Manage Bulk Licenses
-              </button>
-
-              <button
-                onClick={() => navigate("/partner_payouts")}
-                className="w-full bg-amber-500 text-white font-semibold py-3 rounded-full hover:bg-amber-600 transition shadow flex items-center justify-center gap-2"
-              >
-                <i className="fas fa-money-check-alt"></i> View Commissions
-              </button>
-
-              <button
-                onClick={() => navigate("/program_reports")}
+                onClick={() => navigate("/corporatepartner/doc-status")}
                 className="w-full bg-blue-600 text-white font-semibold py-3 rounded-full hover:bg-blue-700 transition shadow flex items-center justify-center gap-2"
               >
-                <i className="fas fa-chart-bar"></i> Download ROI Report
+                <i className="fas fa-shield-check"></i> View Verification Status
+              </button>
+
+              <button
+                onClick={() => navigate("/corporatepartner/blog")}
+                className="w-full bg-amber-500 text-white font-semibold py-3 rounded-full hover:bg-amber-600 transition shadow flex items-center justify-center gap-2"
+              >
+                <i className="fas fa-blog"></i> Read Blog
+              </button>
+
+              <button
+                onClick={() => navigate("/corporatepartner/contact-us")}
+                className="w-full bg-green-600 text-white font-semibold py-3 rounded-full hover:bg-green-700 transition shadow flex items-center justify-center gap-2"
+              >
+                <i className="fas fa-envelope"></i> Contact Support
               </button>
 
               <button
@@ -353,10 +353,10 @@ const CorporateDashboard = () => {
               <p className="font-semibold text-red-800 mb-1">Contract Renewal Due:</p>
               <p className="font-bold text-red-900 text-lg">{partnerDetails.nextContractDate}</p>
               <button
-                onClick={() => navigate("/contract_renewal")}
+                onClick={() => navigate("/corporatepartner/contact-us")}
                 className="mt-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-full hover:bg-red-700 transition shadow-md text-sm"
               >
-                <i className="fas fa-file-contract mr-2"></i> Start Renewal Process
+                <i className="fas fa-envelope mr-2"></i> Contact Support
               </button>
             </div>
           </div>
@@ -372,10 +372,10 @@ const CorporateDashboard = () => {
 
           <div className="text-center mt-5">
             <button
-              onClick={() => navigate("/partner_analytics")}
+              onClick={() => navigate("/corporatepartner/profile")}
               className="text-blue-600 hover:text-blue-800 font-medium text-sm"
             >
-              View Detailed Analytics →
+              View Profile Details →
             </button>
           </div>
         </div>

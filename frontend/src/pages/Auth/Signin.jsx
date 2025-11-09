@@ -278,7 +278,14 @@ const Signin = () => {
     // Main Render with Formik Wrapper
     return (
         <section className="flex items-center justify-center bg-gray-100 p-4 min-h-[600px]">
-            <div className="w-full max-w-lg p-8 mx-auto rounded-3xl shadow-2xl bg-white animate-fade-in">
+            <div className="w-full max-w-lg p-8 mx-auto rounded-3xl shadow-2xl bg-white animate-fade-in relative">
+                <button
+                    onClick={() => navigate('/role')}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors"
+                    title="Back to Role Selection"
+                >
+                    <i className="fas fa-times text-xl"></i>
+                </button>
                 <h2 className="text-center text-3xl font-bold text-[#1E6F5C] mb-6">
                     LOG IN AS {corporateType === 'corporate_employee' ? 'CORPORATE EMPLOYEE' : role.toUpperCase()}
                 </h2>

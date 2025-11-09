@@ -140,9 +140,9 @@ const OrganizationTable = ({ organizations }) => {
     return status === "Not Received" ? "Pending" : status;
   };
 
-  const handleRowClick = (orgName) => {
-    // Navigate to a detail page for verification
-    navigate(`/verify_org/${encodeURIComponent(orgName)}`);
+  const handleRowClick = () => {
+    // Navigate to organization verification page
+    navigate('/admin/verify-organizations');
   };
 
   return (
@@ -175,7 +175,7 @@ const OrganizationTable = ({ organizations }) => {
                 <tr
                   key={index}
                   className="hover:bg-green-50 transition duration-150 cursor-pointer"
-                  onClick={() => handleRowClick(org.org_name)}
+                  onClick={() => handleRowClick()}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {org.org_name || "Unknown Organization"}
