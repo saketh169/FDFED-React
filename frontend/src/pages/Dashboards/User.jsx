@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import Sidebar from "../../components/Sidebar/Sidebar";
+import { AuthProvider } from "../../contexts/AuthContext";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 // Mock Data
 const mockUser = {
@@ -85,51 +87,19 @@ const ProgressChart = ({ data }) => {
 // Main Dashboard
 const UserDashboard = () => {
   const navigate = useNavigate();
+  const { user, token, logout } = useAuthContext();
   const [profileImage, setProfileImage] = useState(mockUser.profileImage);
-  const [userDetails, setUserDetails] = useState(mockUser); // Store fetched user details
   const [isUploading, setIsUploading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   // Ensures 'latest' is safely accessed for metrics
   const latest = mockProgressData[0] || {};
 
-  // Fetch profile details from backend on component mount
+  // Set profile image from user data when available
   useEffect(() => {
-    const fetchProfileDetails = async () => {
-      try {
-        const token = localStorage.getItem('authToken_user');
-        if (!token) return;
-
-        const response = await fetch('/api/getuserdetails', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Update user details from API response
-          setUserDetails({
-            name: data.name || mockUser.name,
-            email: data.email || mockUser.email,
-            phone: data.phone || mockUser.phone,
-            age: data.age || mockUser.age,
-            address: data.address || mockUser.address
-          });
-          
-          // Update profile image
-          if (data.profileImage) {
-            setProfileImage(data.profileImage);
-            localStorage.setItem('profileImage', data.profileImage);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching profile details:', error);
-      }
-    };
-
-    fetchProfileDetails();
-  }, []);
+    if (user && user.profileImage) {
+      setProfileImage(user.profileImage);
+    }
+  }, [user]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -150,9 +120,7 @@ const UserDashboard = () => {
       const formData = new FormData();
       formData.append('profileImage', file);
 
-      // Get token from localStorage (key: 'authToken_user' set during signin)
-      const token = localStorage.getItem('authToken_user');
-      
+      // Get token from context
       if (!token) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=user');
@@ -183,7 +151,7 @@ const UserDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
+    logout(); // Use context logout method
     navigate("/");
   };
 
@@ -195,7 +163,7 @@ const UserDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-2 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-teal-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome , {userDetails.name}! 
+          Welcome , {user?.name || mockUser.name}! 
         </h1>
 
         {/* Grid Layout (3 columns for large screens) */}
@@ -234,10 +202,10 @@ const UserDashboard = () => {
               {isUploading ? "Uploading..." : "Click camera to update photo"}
             </p>
 
-            <p className="font-semibold text-lg text-gray-800">{userDetails.name}</p>
-            <p className="text-sm text-gray-600">Age: {userDetails.age} • Phone: {userDetails.phone}</p>
-            <p className="text-sm text-gray-600">{userDetails.email}</p>
-            <p className="text-sm text-gray-600 mb-4">{userDetails.address}</p>
+            <p className="font-semibold text-lg text-gray-800">{user?.name || mockUser.name}</p>
+            <p className="text-sm text-gray-600">Age: {user?.age || mockUser.age} • Phone: {user?.phone || mockUser.phone}</p>
+            <p className="text-sm text-gray-600">{user?.email || mockUser.email}</p>
+            <p className="text-sm text-gray-600 mb-4">{user?.address || mockUser.address}</p>
 
             <div className="mt-5 flex gap-2 flex-wrap justify-center">
               <button
@@ -412,8 +380,8 @@ const UserDashboard = () => {
 
               {/* Footer with user info */}
               <div className="bg-white p-6 border-t border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{mockUser.name}</h2>
-                <p className="text-gray-600 mb-4">{mockUser.email}</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.name || mockUser.name}</h2>
+                <p className="text-gray-600 mb-4">{user?.email || mockUser.email}</p>
                 <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => {
@@ -440,4 +408,11 @@ const UserDashboard = () => {
   );
 };
 
-export default UserDashboard;
+// Wrap the component with AuthProvider for user role
+const UserDashboardWithAuth = () => (
+  <AuthProvider currentRole="user">
+    <UserDashboard />
+  </AuthProvider>
+);
+
+export default UserDashboardWithAuth;

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
 import Status from "../../middleware/StatusBadge"; // Import Status component
+import { AuthProvider } from "../../contexts/AuthContext";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 // --- Mock Data & API Call Simulation ---
 const mockOrganization = {
@@ -127,48 +129,17 @@ const RecentDietitiansTable = () => {
 // --- Main Dashboard Component ---
 const OrganizationDashboard = () => {
   const navigate = useNavigate();
+  const { user, token, logout } = useAuthContext();
   const [profileImage, setProfileImage] = useState(mockOrganization.profileImage);
-  const [organizationDetails, setOrganizationDetails] = useState(mockOrganization); // Store fetched organization details
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Fetch profile details from backend on component mount
+  // Set profile image from user data when available
   useEffect(() => {
-    const fetchProfileDetails = async () => {
-      try {
-        const token = localStorage.getItem('authToken_organization');
-        if (!token) return;
-
-        const response = await fetch('/api/getorganizationdetails', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Update organization details from API response
-          setOrganizationDetails({
-            org_name: data.org_name || mockOrganization.org_name,
-            email: data.email || mockOrganization.email,
-            phone: data.phone || mockOrganization.phone,
-            address: data.address || mockOrganization.address
-          });
-          
-          // Update profile image
-          if (data.profileImage) {
-            setProfileImage(data.profileImage);
-            localStorage.setItem('profileImage', data.profileImage);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching profile details:', error);
-      }
-    };
-
-    fetchProfileDetails();
-  }, []);
+    if (user && user.profileImage) {
+      setProfileImage(user.profileImage);
+    }
+  }, [user]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -198,9 +169,7 @@ const OrganizationDashboard = () => {
     formData.append("profileImage", file);
 
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('authToken_organization');
-      
+      // Get token from context
       if (!token) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=organization');
@@ -230,7 +199,7 @@ const OrganizationDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("organizationAuthToken"); 
+    logout(); // Use context logout method
     navigate("/");
   };
 
@@ -242,7 +211,7 @@ const OrganizationDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome, {organizationDetails.org_name}! 
+          Welcome, {user?.org_name || user?.name || mockOrganization.org_name}! 
         </h1>
 
         {/* Grid Layout */}
@@ -256,7 +225,7 @@ const OrganizationDashboard = () => {
             <div className="relative mb-4">
               <img
                 src={profileImage}
-                alt={`${organizationDetails.org_name} Logo`}
+                alt={`${user?.org_name || user?.name || mockOrganization.org_name} Logo`}
                 className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer hover:opacity-80 transition"
                 onClick={() => setShowImageModal(true)}
                 onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=Org'}
@@ -279,10 +248,10 @@ const OrganizationDashboard = () => {
 
             <p className="text-xs text-gray-500 mb-4">Click camera to update photo</p>
 
-            <h5 className="font-semibold text-lg text-gray-800 text-center">{organizationDetails.org_name}</h5>
-            <p className="text-sm text-gray-600">Email: {organizationDetails.email}</p>
-            <p className="text-sm text-gray-600">Phone: {organizationDetails.phone}</p>
-            <p className="text-sm text-gray-600 mb-4 text-center">{organizationDetails.address}</p>
+            <h5 className="font-semibold text-lg text-gray-800 text-center">{user?.org_name || user?.name || mockOrganization.org_name}</h5>
+            <p className="text-sm text-gray-600">Email: {user?.email || mockOrganization.email}</p>
+            <p className="text-sm text-gray-600">Phone: {user?.phone || mockOrganization.phone}</p>
+            <p className="text-sm text-gray-600 mb-4 text-center">{user?.address || mockOrganization.address}</p>
 
             <div className="flex gap-2 flex-wrap justify-center mt-auto">
               <button
@@ -384,8 +353,8 @@ const OrganizationDashboard = () => {
 
               {/* Footer with org info */}
               <div className="bg-white p-6 border-t border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{mockOrganization.org_name}</h2>
-                <p className="text-gray-600 mb-4">{mockOrganization.email}</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.org_name || mockOrganization.org_name}</h2>
+                <p className="text-gray-600 mb-4">{user?.email || mockOrganization.email}</p>
                 <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => {
@@ -412,4 +381,11 @@ const OrganizationDashboard = () => {
   );
 };
 
-export default OrganizationDashboard;
+// Wrap the component with AuthProvider for organization role
+const OrganizationDashboardWithAuth = () => (
+  <AuthProvider currentRole="organization">
+    <OrganizationDashboard />
+  </AuthProvider>
+);
+
+export default OrganizationDashboardWithAuth;

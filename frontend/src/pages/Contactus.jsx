@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
+import { AuthProvider } from '../contexts/AuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 
 // --- Validation Schema using Yup ---
 const contactSchema = Yup.object().shape({
@@ -22,12 +25,14 @@ const contactSchema = Yup.object().shape({
 const ContactPage = () => {
   const [submittedData, setSubmittedData] = useState(null);
   const [submitError, setSubmitError] = useState(null);
+  const { user, role, isAuthenticated } = useAuthContext();
 
   // --- React Hook Form Setup ---
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(contactSchema),
@@ -39,11 +44,35 @@ const ContactPage = () => {
     },
   });
 
+  // Autofill form fields if user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Set name if available
+      if (user.name) {
+        setValue('name', user.name);
+      }
+      // Set email if available
+      if (user.email) {
+        setValue('email', user.email);
+      }
+      // Set role if available - map to contact form role values
+      if (role) {
+        const roleMap = {
+          'user': 'User',
+          'dietitian': 'Dietitian',
+          'organization': 'Certifying Organization',
+          'corporatepartner': 'Corporate Partner'
+        };
+        setValue('role', roleMap[role] || '');
+      }
+    }
+  }, [isAuthenticated, user, role, setValue]);
+
   // --- Submission Handler ---
   const onSubmit = async (data) => {
     setSubmitError(null);
     try {
-      const response = await axios.post('http://localhost:5000/api/contact/submit', data, {
+      const response = await axios.post('/api/contact/submit', data, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -295,4 +324,28 @@ const ContactPage = () => {
   );
 };
 
-export default ContactPage;
+// Wrap the component with AuthProvider
+const ContactPageWithAuth = () => {
+  const location = useLocation();
+  
+  // Determine current role from path
+  const getCurrentRole = () => {
+    const path = location.pathname;
+    if (path.startsWith('/admin')) return 'admin';
+    if (path.startsWith('/organization')) return 'organization';
+    if (path.startsWith('/corporatepartner')) return 'corporatepartner';
+    if (path.startsWith('/dietitian')) return 'dietitian';
+    if (path.startsWith('/user')) return 'user';
+    return null;
+  };
+
+  const currentRole = getCurrentRole();
+
+  return (
+    <AuthProvider currentRole={currentRole}>
+      <ContactPage />
+    </AuthProvider>
+  );
+};
+
+export default ContactPageWithAuth;

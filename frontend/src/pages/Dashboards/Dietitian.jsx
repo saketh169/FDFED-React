@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
 import Status from "../../middleware/StatusBadge"; // Import Status component
+import { AuthProvider } from "../../contexts/AuthContext"; // Import AuthProvider
+import { useAuthContext } from "../../hooks/useAuthContext"; // Import useAuthContext hook
 
 // Mock Data (Replace with actual API data)
 const mockDietitian = {
@@ -17,50 +19,17 @@ const mockDietitian = {
 // --- Main Dashboard Component ---
 const DietitianDashboard = () => {
   const navigate = useNavigate();
+  const { user, token, logout } = useAuthContext();
   const [profileImage, setProfileImage] = useState(mockDietitian.profileImage);
-  const [dietitianDetails, setDietitianDetails] = useState(mockDietitian); // Store fetched dietitian details
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = React.useRef(null);
 
-  // Fetch profile details from backend on component mount
+  // Set profile image from user data when available
   useEffect(() => {
-    const fetchProfileDetails = async () => {
-      try {
-        const token = localStorage.getItem('authToken_dietitian');
-        if (!token) return;
-
-        const response = await fetch('/api/getdietitiandetails', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Update dietitian details from API response
-          setDietitianDetails({
-            name: data.name || mockDietitian.name,
-            email: data.email || mockDietitian.email,
-            phone: data.phone || mockDietitian.phone,
-            age: data.age || mockDietitian.age,
-            specialization: data.specialization || mockDietitian.specialization,
-            experience: data.experience || mockDietitian.experience
-          });
-          
-          // Update profile image
-          if (data.profileImage) {
-            setProfileImage(data.profileImage);
-            localStorage.setItem('profileImage', data.profileImage);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching profile details:', error);
-      }
-    };
-
-    fetchProfileDetails();
-  }, []);
+    if (user && user.profileImage) {
+      setProfileImage(user.profileImage);
+    }
+  }, [user]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -80,9 +49,7 @@ const DietitianDashboard = () => {
     formData.append("profileImage", file);
 
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('authToken_dietitian');
-      
+      // Get token from context
       if (!token) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=dietitian');
@@ -113,7 +80,7 @@ const DietitianDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("dietitianAuthToken"); // Use a distinct key
+    logout(); // Use context logout method
     navigate("/");
   };
 
@@ -125,7 +92,7 @@ const DietitianDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome, {dietitianDetails.name}! 
+          Welcome, {user?.name || mockDietitian.name}! 
         </h1>
 
         {/* Grid Layout */}
@@ -139,7 +106,7 @@ const DietitianDashboard = () => {
             <div className="relative mb-4">
               <img
                 src={profileImage}
-                alt={`${dietitianDetails.name}'s Profile`}
+                alt={`${user?.name || mockDietitian.name}'s Profile`}
                 className="w-32 h-32 rounded-full object-cover border-4 border-green-600 cursor-pointer hover:opacity-80 transition"
                 onClick={() => setShowImageModal(true)}
               />
@@ -164,12 +131,12 @@ const DietitianDashboard = () => {
             </p>
 
             <h5 className="font-semibold text-lg text-gray-800">
-              {dietitianDetails.name}
+              {user?.name || mockDietitian.name}
             </h5>
-            <p className="text-sm text-gray-600">Age: {dietitianDetails.age}</p>
-            <p className="text-sm text-gray-600">{dietitianDetails.email}</p>
+            <p className="text-sm text-gray-600">Age: {user?.age || mockDietitian.age}</p>
+            <p className="text-sm text-gray-600">{user?.email || mockDietitian.email}</p>
             <p className="text-sm text-gray-600 mb-3">
-              Contact: {dietitianDetails.phone}
+              Contact: {user?.phone || mockDietitian.phone}
             </p>
 
             <div className="flex gap-2 flex-wrap justify-center mt-auto">
@@ -308,8 +275,8 @@ const DietitianDashboard = () => {
 
               {/* Footer with user info */}
               <div className="bg-white p-6 border-t border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{mockDietitian.name}</h2>
-                <p className="text-gray-600 mb-4">{mockDietitian.email}</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.name || mockDietitian.name}</h2>
+                <p className="text-gray-600 mb-4">{user?.email || mockDietitian.email}</p>
                 <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => {
@@ -336,4 +303,11 @@ const DietitianDashboard = () => {
   );
 };
 
-export default DietitianDashboard;
+// Wrap the component with AuthProvider for dietitian role
+const DietitianDashboardWithAuth = () => (
+  <AuthProvider currentRole="dietitian">
+    <DietitianDashboard />
+  </AuthProvider>
+);
+
+export default DietitianDashboardWithAuth;
