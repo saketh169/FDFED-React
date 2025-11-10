@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { Routes, Route } from 'react-router-dom';
 import { ProtectedProvider } from './contexts/ProtectedContext';
+import { ProfileProvider } from './contexts/ProfileContext';
 import UserLayout from './Routes/UserRoutes.jsx';
 import AdminLayout from './Routes/AdminRoutes.jsx';
 import OrganizationLayout from './Routes/OrganizationRoutes.jsx';
@@ -9,14 +10,15 @@ import DietitianLayout from './Routes/DietitianRoutes.jsx';
 
 export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <main className="flex-1">
-        <Routes>
-          <Route path="/user/*" element={
-            <ProtectedProvider requiredRole="user">
-              <UserLayout />
-            </ProtectedProvider>
-          } />
+    <ProfileProvider>
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <main className="flex-1">
+          <Routes>
+            <Route path="/user/*" element={
+              <ProtectedProvider requiredRole="user">
+                <UserLayout />
+              </ProtectedProvider>
+            } />
           <Route path="/admin/*" element={
             <ProtectedProvider requiredRole="admin">
               <AdminLayout />
@@ -41,5 +43,6 @@ export default function Layout() {
         </Routes>
       </main>
     </div>
+    </ProfileProvider>
   );
 }

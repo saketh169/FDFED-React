@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
-import axios from 'axios';
+import { useProfile } from '../contexts/ProfileContext';
 
 // Validation Schema for Change Password
 const changePasswordSchema = Yup.object().shape({
@@ -19,62 +19,24 @@ const changePasswordSchema = Yup.object().shape({
     .oneOf([Yup.ref('newPassword')], 'Passwords must match.')
 });
 
-// Role configurations
-const roleConfig = {
-  user: {
-    tokenKey: 'authToken_user',
-    signinPath: '/signin?role=user',
-    dashboardPath: '/user/profile',
-    roleLabel: 'User'
-  },
-  dietitian: {
-    tokenKey: 'authToken_dietitian',
-    signinPath: '/signin?role=dietitian',
-    dashboardPath: '/dietitian/profile',
-    roleLabel: 'Dietitian'
-  },
-  organization: {
-    tokenKey: 'authToken_organization',
-    signinPath: '/signin?role=organization',
-    dashboardPath: '/organization/profile',
-    roleLabel: 'Organization'
-  },
-  admin: {
-    tokenKey: 'authToken_admin',
-    signinPath: '/signin?role=admin',
-    dashboardPath: '/admin/profile',
-    roleLabel: 'Admin'
-  },
-  corporatepartner: {
-    tokenKey: 'authToken_corporatepartner',
-    signinPath: '/signin?role=corporatepartner',
-    dashboardPath: '/corporatepartner/profile',
-    roleLabel: 'Corporate Partner'
-  }
-};
-
 const ChangePassword = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    isLoading,
+    message,
+    config,
+    changePassword,
+    initializeRole
+  } = useProfile();
+
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Detect role from current path
-  const detectRole = () => {
-    const path = location.pathname;
-    if (path.includes('/user/')) return 'user';
-    if (path.includes('/dietitian/')) return 'dietitian';
-    if (path.includes('/organization/')) return 'organization';
-    if (path.includes('/admin/')) return 'admin';
-    if (path.includes('/corporatepartner/')) return 'corporatepartner';
-    return 'user'; // default
-  };
-
-  const currentRole = detectRole();
-  const config = roleConfig[currentRole];
+  // Initialize role and config
+  useEffect(() => {
+    initializeRole();
+  }, [initializeRole]);
 
   // React Hook Form setup
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
@@ -83,41 +45,22 @@ const ChangePassword = () => {
   });
 
   const onSubmit = async (data) => {
-    setMessage('');
-    setIsLoading(true);
-
-    try {
-      const token = localStorage.getItem(config.tokenKey);
-      if (!token) {
-        setMessage('Session expired. Please login again.');
-        setTimeout(() => navigate(config.signinPath), 2000);
-        return;
-      }
-
-      const response = await axios.post('/api/change-password', {
-        oldPassword: data.oldPassword,
-        newPassword: data.newPassword
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.data.success) {
-        setMessage('Password changed successfully! Redirecting to dashboard...');
-        reset();
-        setTimeout(() => {
-          navigate(config.dashboardPath);
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Change password error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to change password. Please try again.';
-      setMessage(`Error: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
+    const result = await changePassword(data.oldPassword, data.newPassword);
+    if (result.success) {
+      reset();
     }
   };
+
+  if (!config) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <i className="fas fa-spinner fa-spin text-4xl text-emerald-600 mb-4"></i>
+          <p className="text-gray-600">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
