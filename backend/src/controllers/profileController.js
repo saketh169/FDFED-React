@@ -487,11 +487,9 @@ async function getUserDetailsGeneric(req, res) {
         const response = {
             success: true,
             role: userRole,
-            name: user.name ||'User', // Handle organization name
+            name: user.name || 'User',
             email: user.email,
             phone: user.phone || 'N/A',
-            dob: user.dob || null,
-            age: calculateAge(user.dob),
         };
 
         // Add profile image if available, convert buffer to base64
@@ -502,22 +500,25 @@ async function getUserDetailsGeneric(req, res) {
 
         // Add additional fields based on role
         if (userRole.toLowerCase() === 'user') {
+            response.age = calculateAge(user.dob);
             response.address = user.address;
             response.gender = user.gender;
         } else if (userRole.toLowerCase() === 'admin') {
+            response.age = calculateAge(user.dob);
             response.address = user.address;
             response.gender = user.gender;
         } else if (userRole.toLowerCase() === 'dietitian') {
+            response.age = calculateAge(user.dob);
             response.specialization = user.specialization;
             response.experience = user.experience;
             response.licenseNumber = user.licenseNumber;
         } else if (userRole.toLowerCase() === 'organization') {
-            response.org_name =  user.name; // Return org_name (alias name field)
+            response.org_name = user.name; // Primary identifier for organizations
             response.address = user.address;
             response.licenseNumber = user.licenseNumber;
         } else if (userRole.toLowerCase() === 'corporatepartner') {
-            response.company_name = user.name;
-            response.program_name = user.programName;
+            response.company_name = user.name; // Primary identifier for corporate partners
+            response.programName = user.programName;
             response.address = user.address;
             response.licenseNumber = user.licenseNumber;
         }

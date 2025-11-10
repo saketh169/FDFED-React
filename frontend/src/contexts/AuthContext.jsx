@@ -110,7 +110,7 @@ export const AuthProvider = ({ children, currentRole }) => {
           org_name: response.data.org_name,
           // Corporate Partner-specific fields
           company_name: response.data.company_name,
-          programName: response.data.program_name,
+          programName: response.data.programName,
           // Dietitian-specific fields
           specialization: response.data.specialization,
           experience: response.data.experience,

@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import ProtectedRoute from '../middleware/ProtectedRoute';
-import VerifiedRoute from '../middleware/VerifiedRoute';
+import { VerifyProvider } from '../contexts/VerifyContext';
 
 import DietitianHome from '../pages/HomePages/DietitianHome';
 import DietitianDashboard from '../pages/Dashboards/Dietitian';
@@ -24,32 +23,40 @@ export default function DietitianRoutes() {
       <Routes>
         <Route index element={<Navigate to="home" replace />} />
 
-        {/* Protected Routes - Require Dietitian Authentication */}
-        <Route path="home" element={<ProtectedRoute element={<DietitianHome />} requiredRole="dietitian" />} />
-        <Route path="profile" element={<ProtectedRoute element={<DietitianDashboard />} requiredRole="dietitian" />} />
-        <Route path="setup" element={<ProtectedRoute element={<DietitianSetup/>} requiredRole="dietitian" />} />
-        <Route path="doc-status" element={<ProtectedRoute element={<DietitianDocStatus/>} requiredRole="dietitian" />} />
-        <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword/>} requiredRole="dietitian" />} />
-        <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="dietitian" />} />
+        {/* All routes are automatically protected by ProtectedProvider in Layout.jsx */}
+        <Route path="home" element={<DietitianHome />} />
+        <Route path="profile" element={<DietitianDashboard />} />
+        <Route path="setup" element={<DietitianSetup/>} />
+        <Route path="doc-status" element={<DietitianDocStatus/>} />
+        <Route path="change-pass" element={<ChangePassword/>} />
+        <Route path="edit-profile" element={<EditProfile />} />
 
-        {/* Verified Routes - Require Dietitian Authentication AND Verification */}
+        {/* Verified Routes - Require Dietitian Verification */}
         <Route
           path="schedule"
-          element={<VerifiedRoute element={<ProtectedRoute element={<DietitianSchedule/>} requiredRole="dietitian" />} requiredRole="dietitian" redirectTo="/dietitian/doc-status" />} />
+          element={
+            <VerifyProvider requiredRole="dietitian" redirectTo="/dietitian/doc-status">
+              <DietitianSchedule/>
+            </VerifyProvider>
+          } />
         <Route
           path="add-plans"
-          element={<VerifiedRoute element={<ProtectedRoute element={<DietitianAddPlanForm/>} requiredRole="dietitian" />} requiredRole="dietitian" redirectTo="/dietitian/doc-status" />} />
+          element={
+            <VerifyProvider requiredRole="dietitian" redirectTo="/dietitian/doc-status">
+              <DietitianAddPlanForm/>
+            </VerifyProvider>
+          } />
 
         {/* Blog Routes */}
         <Route path="blogs" element={<Blog/>} />
-        <Route path="blog/:id" element={<ProtectedRoute element={<BlogPost />} requiredRole="dietitian" />} />
-        <Route path="create-blog" element={<ProtectedRoute element={<CreateBlog />} requiredRole="dietitian" />} />
-        <Route path="edit-blog/:id" element={<ProtectedRoute element={<CreateBlog />} requiredRole="dietitian" />} />
+        <Route path="blog/:id" element={<BlogPost />} />
+        <Route path="create-blog" element={<CreateBlog />} />
+        <Route path="edit-blog/:id" element={<CreateBlog />} />
 
         {/* Optional: Public pages */}
          <Route path="blog" element={<Blog/>} />
          <Route path="contact-us" element={<Contact/>} />
-        
+
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>
     </div>

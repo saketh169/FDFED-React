@@ -130,19 +130,15 @@ const DietitianDashboard = () => {
               Click camera to update photo
             </p>
 
-            <h5 className="font-semibold text-lg text-gray-800">
-              {user?.name || mockDietitian.name}
-            </h5>
+            <p className="font-semibold text-lg text-gray-800">{user?.name || mockDietitian.name}</p>
             <p className="text-sm text-gray-600">Age: {user?.age || mockDietitian.age}</p>
-            <p className="text-sm text-gray-600">{user?.email || mockDietitian.email}</p>
-            <p className="text-sm text-gray-600 mb-3">
-              Contact: {user?.phone || mockDietitian.phone}
-            </p>
+            <p className="text-sm text-gray-600">Email: {user?.email || mockDietitian.email}</p>
+            <p className="text-sm text-gray-600 mb-4">Phone: {user?.phone || mockDietitian.phone}</p>
 
             <div className="flex gap-2 flex-wrap justify-center mt-auto">
               <button
                 onClick={() => navigate("/dietitian/edit-profile")}
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-600 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-600 hover:text-white transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-600 hover:text-white transition"
               >
                 <i className="fas fa-user-edit"></i> Edit Profile
               </button>

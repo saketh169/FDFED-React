@@ -20,10 +20,10 @@ const DietitianHome = () => {
   // === 1. Ad Slider State and Logic (NEW) ===
   const [currentAd, setCurrentAd] = useState(0);
   const ads = [
-    { title: 'Boost Your Visibility!', text: 'Upgrade to a Premium Profile for 2x client reach.', cta: 'Upgrade Now', link: '/pricing' },
-    { title: 'New Telehealth Feature', text: 'Seamless HD video calls integrated into your schedule.', cta: 'See Demo', link: '/guide' },
-    { title: 'Client Progress Tracking Tips', text: 'Master the analytics dashboard to provide better feedback.', cta: 'Read Article', link: '/blog' },
-    { title: 'Certifying Organization Discounts', text: 'Partner with us and get a free team license.', cta: 'Learn More', link: '/partner' },
+    { title: 'Boost Your Visibility!', text: 'Upgrade to a Premium Profile for 2x client reach.', cta: 'Upgrade Now', link: '/dietitian/profile' },
+    { title: 'New Telehealth Feature', text: 'Seamless HD video calls integrated into your schedule.', cta: 'See Demo', link: '/dietitian/schedule' },
+    { title: 'Client Progress Tracking Tips', text: 'Master the analytics dashboard to provide better feedback.', cta: 'Read Article', link: '/dietitian/blog' },
+    { title: 'Certifying Organization Discounts', text: 'Partner with us and get a free team license.', cta: 'Learn More', link: '/dietitian/contact-us' },
   ];
 
   useEffect(() => {
@@ -90,13 +90,13 @@ const DietitianHome = () => {
             {/* Action Buttons */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button
-                onClick={() => navigate('/dietitian_dash')}
+                onClick={() => navigate('/dietitian/profile')}
                 className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
               >
                 Go to Dashboard
               </button>
               <button
-                onClick={() => navigate('/dietitian-consultations')}
+                onClick={() => navigate('/dietitian/schedule')}
                 className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
               >
                 View My Clients
@@ -183,7 +183,7 @@ const DietitianHome = () => {
             
             <div className="button-container text-center md:text-left mt-6">
               <button 
-                onClick={() => navigate('/dietitian-schedule')}
+                onClick={() => navigate('/dietitian/schedule')}
                 className="py-3 px-8 bg-[#1A4A40] text-white font-bold rounded-full shadow-md hover:bg-[#27AE60] transition-colors"
               >
                 View Full Schedule
@@ -222,7 +222,7 @@ const DietitianHome = () => {
             </p>
             <div className="button-container text-center md:text-left">
               <button 
-                onClick={() => navigate('/dietitian-consultations')}
+                onClick={() => navigate('/dietitian/schedule')}
                 className="py-3 px-8 bg-[#27AE60] text-white font-bold rounded-full shadow-md hover:bg-[#1E6F5C] transition-colors"
               >
                 View All Clients
@@ -260,7 +260,7 @@ const DietitianHome = () => {
                 {/* View/Like Button Group (Matches User Home Style) */}
                 <div className="flex justify-center gap-4 mt-2">
                   <button 
-                    onClick={() => navigate(`/blog/${post.id}`)}
+                    onClick={() => navigate(`/dietitian/blog/${post.id}`)}
                     className="flex items-center gap-2 text-[#27AE60] hover:text-[#1A4A40] transition-colors duration-300">
                     <i className="fas fa-eye"></i> View Post
                   </button>
@@ -274,7 +274,7 @@ const DietitianHome = () => {
 
           <div className="flex justify-center mt-12">
             <a
-              href="/blog"
+              href="/dietitian/blog"
               className="inline-block bg-[#27AE60] text-white font-bold py-2 px-6 rounded-full shadow-md hover:bg-[#1A4A40] transition-colors duration-300"
             >
               All Blogs
@@ -309,10 +309,10 @@ const DietitianHome = () => {
               <li className="flex items-start gap-2"><i className="fas fa-check-circle mt-1 text-[#4CAF50]"></i> Advanced tools for analyzing client data and trends.</li>
             </ul>
             <button 
-              onClick={() => navigate('/dietitian-guide')}
+              onClick={() => navigate('/dietitian/contact-us')}
               className="py-3 px-8 bg-[#4CAF50] text-white font-bold rounded-full shadow-md hover:bg-[#388e3c] transition-colors"
             >
-              Go to Dietitian Guide
+              Contact Support
             </button>
           </div>
         </div>

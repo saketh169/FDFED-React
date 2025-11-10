@@ -7,10 +7,10 @@ const UserHome = () => {
   // === 1. Ad Slider State and Logic ===
   const [currentAd, setCurrentAd] = useState(0);
   const ads = [
-    { title: 'Unlock Premium Features!', text: 'Get 2 months free on yearly plans.', cta: 'Explore Plans', link: '/pricing' },
-    { title: 'Connect with a New Dietitian', text: '50% off your first video consultation.', cta: 'Book Now', link: '/dietitian-profiles' },
-    { title: 'New Healthy Recipes Posted!', text: 'Check out our latest 15-minute meal ideas.', cta: 'Read Blog', link: '/blog' },
-    { title: 'Need Help? Use Our Chatbot', text: 'Instant answers to all your nutrition queries.', cta: 'Ask AI', link: '/chatbot' },
+    { title: 'Unlock Premium Features!', text: 'Get 2 months free on yearly plans.', cta: 'Explore Plans', link: '/user/get-plans' },
+    { title: 'Connect with a New Dietitian', text: '50% off your first video consultation.', cta: 'Book Now', link: '/user/schedule' },
+    { title: 'New Healthy Recipes Posted!', text: 'Check out our latest 15-minute meal ideas.', cta: 'Read Blog', link: '/user/blog' },
+    { title: 'Need Help? Use Our Chatbot', text: 'Instant answers to all your nutrition queries.', cta: 'Ask AI', link: '/user/chatbot' },
   ];
 
   useEffect(() => {
@@ -79,13 +79,13 @@ const UserHome = () => {
             {/* Action Buttons (UPDATED COLORS HERE) */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
                 <button
-                onClick={() => navigate('/user_dash')}
+                onClick={() => navigate('/user/profile')}
                 className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
                 >
                 Go to Dashboard
                 </button>
                 <button
-                onClick={() => navigate('/dietitian-profiles')}
+                onClick={() => navigate('/user/schedule')}
                 className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
                 >
                 Find a Dietitian
@@ -233,8 +233,8 @@ const UserHome = () => {
               <li className="flex items-center gap-2"><i className="fas fa-file-upload text-[#27AE60]"></i> Securely manage medical reports and notes.</li>
             </ul>
             <button
-              onClick={() => navigate('/user-consultations')}
-              className="bg-[#27AE60] text-white font-bold py-2 px-6 rounded-full shadow-md hover:bg-[#1A4A40] transition-all"
+              onClick={() => navigate('/user/schedule')}
+              className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-[#1A4A40] transition-all"
             >
               View Appointments
             </button>
@@ -267,7 +267,7 @@ const UserHome = () => {
                 
                 <div className="flex justify-center gap-4 mt-2">
                   <button 
-                    onClick={() => navigate(`/blog/${post.id}`)}
+                    onClick={() => navigate(`/user/blog/${post.id}`)}
                     className="flex items-center gap-2 text-[#27AE60] hover:text-[#1A4A40] transition-colors duration-300">
                     <i className="fas fa-eye"></i> View Post
                   </button>
@@ -280,7 +280,7 @@ const UserHome = () => {
           </div>
           <div className="flex justify-center mt-12">
             <a
-              href="/blog"
+              href="/user/blog"
               className="inline-block bg-[#27AE60] text-white font-bold py-2 px-6 rounded-full shadow-md hover:bg-[#1A4A40] transition-colors duration-300"
             >
               All Blogs
@@ -303,7 +303,7 @@ const UserHome = () => {
               Unlock premium features like advanced tracking, priority support, and exclusive content with our flexible subscription models. Choose from Basic, Premium, or Ultimate.
             </p>
             <button
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate('/user/get-plans')}
               className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all"
             >
               Explore All Plans
