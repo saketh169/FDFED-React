@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
-import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
+import Sidebar from "../../components/Sidebar/Sidebar";
+import { AuthProvider } from "../../contexts/AuthContext";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 // --- Mock Data & API Call Simulation ---
 const mockAdmin = {
@@ -200,9 +202,9 @@ const OrganizationTable = ({ organizations }) => {
 // --- Main Admin Dashboard Component ---
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { user, token } = useAuthContext();
   const [stats, setStats] = useState({ clients: 0, dietitians: 0, activePlans: 0 });
   const [organizations, setOrganizations] = useState([]);
-  const [adminDetails, setAdminDetails] = useState(mockAdmin); // Store fetched admin details
   const [profileImage, setProfileImage] = useState(mockAdmin.profileImage);
   const [isUploading, setIsUploading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -225,71 +227,12 @@ const AdminDashboard = () => {
     loadData();
   }, []);
 
-  // Fetch profile details from backend on component mount
+  // Set profile image from user data when available
   useEffect(() => {
-    const fetchProfileDetails = async () => {
-      try {
-        const token = localStorage.getItem('authToken_admin');
-        if (!token) return;
-
-        const response = await fetch('/api/getadmindetails', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Update admin details from API response
-          setAdminDetails({
-            name: data.name || mockAdmin.name,
-            email: data.email || mockAdmin.email,
-            phone: data.phone || mockAdmin.phone,
-          });
-          
-          // Update localStorage with latest profile data
-          if (data.profileImage) {
-            localStorage.setItem('profileImage', data.profileImage);
-          }
-          if (data.name) {
-            localStorage.setItem('userName', data.name);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching profile details:', error);
-      }
-    };
-
-    fetchProfileDetails();
-  }, []);
-
-  // Fetch profile image on component mount
-  useEffect(() => {
-    const fetchProfileImage = async () => {
-      try {
-        const token = localStorage.getItem('authToken_admin');
-        if (!token) return;
-
-        const response = await fetch('/api/getadmin', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const data = await response.json();
-        if (data.success && data.profileImage) {
-          setProfileImage(data.profileImage);
-          localStorage.setItem('profileImage', data.profileImage);
-        }
-      } catch (error) {
-        console.error('Error fetching profile image:', error);
-      }
-    };
-
-    fetchProfileImage();
-  }, []);
+    if (user && user.profileImage) {
+      setProfileImage(user.profileImage);
+    }
+  }, [user]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -309,7 +252,6 @@ const AdminDashboard = () => {
 
     try {
       setIsUploading(true);
-      const token = localStorage.getItem('authToken_admin');
       
       if (!token) {
         alert('Session expired. Please login again.');
@@ -347,7 +289,7 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome, {adminDetails.name}! 👑
+          Welcome, {user?.name || mockAdmin.name}! 👑
         </h1>
 
         {/* Admin Info & Quick Stats */}
@@ -386,9 +328,9 @@ const AdminDashboard = () => {
               {isUploading ? "Uploading..." : "Click camera to update photo"}
             </p>
             
-            <p className="font-semibold text-lg text-gray-800">{adminDetails.name}</p>
-            <p className="text-sm text-gray-600">Email: {adminDetails.email}</p>
-            <p className="text-sm text-gray-600 mb-4">Phone: {adminDetails.phone}</p>
+            <p className="font-semibold text-lg text-gray-800">{user?.name || mockAdmin.name}</p>
+            <p className="text-sm text-gray-600">Email: {user?.email || mockAdmin.email}</p>
+            <p className="text-sm text-gray-600 mb-4">Phone: {user?.phone || mockAdmin.phone}</p>
 
             <div className="mt-5 flex gap-2 flex-wrap justify-center">
               <button
@@ -479,8 +421,8 @@ const AdminDashboard = () => {
 
               {/* Footer with user info */}
               <div className="bg-white p-6 border-t border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{adminDetails.name}</h2>
-                <p className="text-gray-600 mb-4">{adminDetails.email}</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.name || mockAdmin.name}</h2>
+                <p className="text-gray-600 mb-4">{user?.email || mockAdmin.email}</p>
                 <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => {
@@ -530,4 +472,11 @@ const RevenueBox = ({ title, value, isTotal = false }) => (
   </div>
 );
 
-export default AdminDashboard;
+// Wrap the component with AuthProvider for admin role
+const AdminDashboardWithAuth = () => (
+  <AuthProvider currentRole="admin">
+    <AdminDashboard />
+  </AuthProvider>
+);
+
+export default AdminDashboardWithAuth;

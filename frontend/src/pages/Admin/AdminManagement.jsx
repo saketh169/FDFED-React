@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // --- Global Constants ---
@@ -45,26 +45,12 @@ const mockAllUsers = {
     'corporatepartner': [
         { _id: 'c1', name: 'Tech Health', email: 'hr@techhealth.com', phone: '8883334444', licenseNumber: 'CLN999888', address: 'Tech Park' },
     ],
-    'admin': [
-        { _id: 'a1', name: 'System Admin', email: 'admin@system.com', phone: '0000000000' },
-    ],
 };
 
 const mockRemovedAccounts = [
     { id: 'r1', name: 'Zoe Deleted', email: 'zoe@old.com', phone: '1112223333', accountType: 'User', removedOn: '2024-10-01' },
     { id: 'r2', name: 'Dr. Removed', email: 'removed@old.com', phone: '4445556666', accountType: 'Dietitian', removedOn: '2024-10-15' },
 ];
-
-const API_ROUTES = {
-    // Active User Endpoints
-    fetch: (role) => `/${role}-list`,
-    search: (role, query) => `/${role}-list/search?q=${query}`,
-    remove: (role, id) => `/${role}-list/${id}`, // DELETE
-    
-    // Removed Accounts Endpoints
-    fetchRemoved: (query = '') => `/removed-accounts${query ? `/search?q=${query}` : ''}`,
-    restore: (id) => `/removed-accounts/${id}/restore`, // POST
-};
 
 // --- Helper Functions ---
 
@@ -77,26 +63,76 @@ const handleAlert = (message) => {
 // --- UI Components ---
 
 // Component for rendering a single table row's actions
-const UserActions = ({ id, type, onView, onShowRemove }) => (
-    <td className="text-end space-x-2">
-        <button className="btn btn-info bg-success-subtle hover:bg-success text-success-emphasis border border-success-emphasis" onClick={() => onView(id, type)}>
-            <i className="fas fa-eye text-lg"></i>
-        </button>
-        <button className="btn text-white bg-danger-subtle hover:bg-danger text-danger-emphasis border border-danger-emphasis" onClick={() => onShowRemove(id, type)}>
-            <i className="fas fa-trash-alt text-lg"></i>
-        </button>
+const UserActions = ({ id, type, onView, onShowRemove, onSoftDelete }) => (
+    <td className="text-center px-4">
+        <div className="flex items-center justify-center space-x-2">
+            {/* View Button */}
+            <button
+                className="group relative p-2 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={() => onView(id, type)}
+                title="View Details"
+            >
+                <i className="fas fa-eye text-green-600 group-hover:text-green-700 text-sm"></i>
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    View Details
+                </div>
+            </button>
+
+            {/* Soft Delete Button */}
+            <button
+                className="group relative p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={() => onSoftDelete(id, type)}
+                title="Soft Delete"
+            >
+                <i className="fas fa-archive text-emerald-600 group-hover:text-emerald-700 text-sm"></i>
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Soft Delete
+                </div>
+            </button>
+
+            {/* Remove Button */}
+            <button
+                className="group relative p-2 mr-2 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={() => onShowRemove(id, type)}
+                title="Remove Account"
+            >
+                <i className="fas fa-trash-alt text-red-600 group-hover:text-red-700 text-sm"></i>
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Remove Account
+                </div>
+            </button>
+        </div>
     </td>
 );
 
 // Component for rendering a removed account's actions
 const RemovedActions = ({ id, type, onView, onShowRestore }) => (
-    <td className="text-end space-x-2">
-        <button className="btn btn-info text-success-emphasis" onClick={() => onView(id, type)}>
-            <i className="fas fa-eye text-lg"></i>
-        </button>
-        <button className="btn text-dark bg-warning hover:bg-yellow-600" onClick={() => onShowRestore(id, type)}>
-            <i className="fas fa-undo text-lg"></i> Restore
-        </button>
+    <td className="text-center px-4">
+        <div className="flex items-center justify-center space-x-2">
+            {/* View Button */}
+            <button
+                className="group relative p-2 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={() => onView(id, type)}
+                title="View Details"
+            >
+                <i className="fas fa-eye text-green-600 group-hover:text-green-700 text-sm"></i>
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    View Details
+                </div>
+            </button>
+
+            {/* Restore Button */}
+            <button
+                className="group relative p-2 rounded-lg bg-teal-50 hover:bg-teal-100 border border-teal-200 hover:border-teal-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={() => onShowRestore(id, type)}
+                title="Restore Account"
+            >
+                <i className="fas fa-undo text-teal-600 group-hover:text-teal-700 text-sm"></i>
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Restore Account
+                </div>
+            </button>
+        </div>
     </td>
 );
 
@@ -111,67 +147,161 @@ const AdminManagement = () => {
     const [removedAccounts, setRemovedAccounts] = useState([]);
     const [expandedDetails, setExpandedDetails] = useState(null); // { id, type }
     const [confirmAction, setConfirmAction] = useState(null); // { id, type, action: 'remove' | 'restore' }
+    const [softDeleteDropdown, setSoftDeleteDropdown] = useState(null); // { id, type }
     const [isLoading, setIsLoading] = useState(true);
 
-    const activeRolesList = useMemo(() => ['user', 'dietitian', 'admin', 'organization', 'corporatepartner'], []);
-    const removedRolesList = useMemo(() => ['user', 'dietitian', 'admin', 'organization', 'corporatepartner'], []);
+    const activeRolesList = useMemo(() => ['user', 'dietitian', 'organization', 'corporatepartner'], []);
+    const removedRolesList = useMemo(() => ['user', 'dietitian', 'organization', 'corporatepartner'], []);
     
-    // --- API Handlers (Simplified for Browser Environment) ---
+    // --- API Handlers ---
 
-    // Generic fetch handler with error logging and status check - can be used for real API calls
-    // const fetchData = async (url) => {
-    //     // Mock token for API authorization (replace with actual token retrieval)
-    //     const token = localStorage.getItem('adminAuthToken') || 'MOCK_ADMIN_TOKEN'; 
-    //     
-    //     try {
-    //         const response = await fetch(url, {
-    //             method: 'GET',
-    //             headers: { 
-    //                 'Authorization': `Bearer ${token}`,
-    //                 'Content-Type': 'application/json' 
-    //             },
-    //             credentials: 'include'
-    //         });
-    //
-    //         const data = await response.json();
-    //         if (!response.ok) {
-    //             if (response.status === 401) {
-    //                 handleAlert('Unauthorized. Redirecting to login.');
-    //                 // navigate('/roles_signin'); // Uncomment in real app
-    //                 return;
-    //             }
-    //             throw new Error(data.message || `API Error: ${response.status}`);
-    //         }
-    //         return data.data || data; // Assuming API returns { data: [...] }
-    //     } catch (error) {
-    //         console.error("Fetch Error:", error);
-    //         handleAlert(`Error fetching data: ${error.message}`);
-    //         return [];
-    //     }
-    // };
+    // Generic fetch handler with error logging and status check
+    const fetchData = useCallback(async (url, options = {}) => {
+        const token = localStorage.getItem('authToken_admin');
+        if (!token) {
+            handleAlert('Admin authentication required. Please login again.');
+            return [];
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                ...options
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                if (response.status === 401) {
+                    handleAlert('Unauthorized. Redirecting to login.');
+                    // navigate('/admin/login'); // Uncomment in real app
+                    return [];
+                }
+                throw new Error(data.message || `API Error: ${response.status}`);
+            }
+            return data.data || data;
+        } catch (error) {
+            console.error("Fetch Error:", error);
+            handleAlert(`Error fetching data: ${error.message}`);
+            return [];
+        }
+    }, []);
+
+    // Fetch all active users by role
+    const fetchUsersByRole = useCallback(async (role) => {
+        const endpoint = `/api/${role}-list`;
+        return await fetchData(endpoint);
+    }, [fetchData]);
+
+    // Search users by role
+    const searchUsersByRole = useCallback(async (role, query) => {
+        const endpoint = `/api/${role}-list/search?q=${encodeURIComponent(query)}`;
+        return await fetchData(endpoint);
+    }, [fetchData]);
+
+    // Fetch removed accounts
+    const fetchRemovedAccountsData = useCallback(async (query = '') => {
+        const endpoint = query ? `/api/removed-accounts/search?q=${encodeURIComponent(query)}` : '/api/removed-accounts';
+        return await fetchData(endpoint);
+    }, [fetchData]);
+
+    // Remove a user
+    const removeUserAPI = async (role, id) => {
+        const token = localStorage.getItem('authToken_admin');
+        try {
+            const response = await fetch(`/api/${role}-list/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || `API Error: ${response.status}`);
+            }
+            return data;
+        } catch (error) {
+            console.error("Remove User Error:", error);
+            throw error;
+        }
+    };
+
+    // Restore a removed account
+    const restoreAccountAPI = async (id) => {
+        const token = localStorage.getItem('authToken_admin');
+        try {
+            const response = await fetch(`/api/removed-accounts/${id}/restore`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || `API Error: ${response.status}`);
+            }
+            return data;
+        } catch (error) {
+            console.error("Restore Account Error:", error);
+            throw error;
+        }
+    };
 
     // --- Data Fetching Logic ---
 
-    // Fetch all active users (mocked for visualization)
-    const fetchAllActiveUsers = async () => {
+    // Fetch all active users (real API calls)
+    const fetchAllActiveUsers = useCallback(async () => {
         setIsLoading(true);
-        // In a real app, you'd fetch data for each role via their respective endpoints.
-        // For demonstration, we use mock data.
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
-        setUsers(mockAllUsers); 
-        setIsLoading(false);
-    };
+        try {
+            const userData = await fetchUsersByRole('user');
+            const dietitianData = await fetchUsersByRole('dietitian');
+            const organizationData = await fetchUsersByRole('organization');
+            const corporatePartnerData = await fetchUsersByRole('corporatepartner');
 
-    // Fetch removed accounts (mocked)
-    const fetchRemovedAccounts = async () => {
-        await new Promise(resolve => setTimeout(resolve, 500)); 
-        setRemovedAccounts(mockRemovedAccounts);
-    };
+            setUsers({
+                user: userData,
+                dietitian: dietitianData,
+                organization: organizationData,
+                corporatepartner: corporatePartnerData,
+                _isSearchResult: false // Clear search flag for fresh data
+            });
+        } catch (error) {
+            console.error('Error fetching active users:', error);
+            handleAlert('Failed to load active users. Using sample data.');
+            // Fallback to mock data if API fails
+            setUsers(mockAllUsers);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [fetchUsersByRole]);
+
+    // Fetch removed accounts (real API call)
+    const fetchRemovedAccounts = useCallback(async () => {
+        try {
+            const removedData = await fetchRemovedAccountsData();
+            setRemovedAccounts(removedData);
+        } catch (error) {
+            console.error('Error fetching removed accounts:', error);
+            handleAlert('Failed to load removed accounts. Using sample data.');
+            // Fallback to mock data
+            setRemovedAccounts(mockRemovedAccounts);
+        }
+    }, [fetchRemovedAccountsData]);
 
     useEffect(() => {
         fetchAllActiveUsers();
         fetchRemovedAccounts();
-    }, []);
+    }, [fetchAllActiveUsers, fetchRemovedAccounts]);
 
     // --- Action Handlers ---
 
@@ -183,17 +313,28 @@ const AdminManagement = () => {
     const handleActionExecute = async () => {
         if (!confirmAction) return;
 
-        const { action, type } = confirmAction;
+        const { action, type, id } = confirmAction;
         let successMessage = '';
         
         if (action === 'remove') {
-            // const endpoint = API_ROUTES.remove(type, id);
-            // const method = 'DELETE';
-            successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} removed successfully!`;
+            try {
+                await removeUserAPI(type, id);
+                successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} removed successfully!`;
+            } catch (error) {
+                handleAlert(`Failed to remove ${type}: ${error.message}`);
+                return;
+            }
         } else if (action === 'restore') {
-            // const endpoint = API_ROUTES.restore(id);
-            // const method = 'POST';
-            successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} restored successfully!`;
+            try {
+                const result = await restoreAccountAPI(id);
+                const passwordMsg = result.data.passwordRestored 
+                    ? ' Original password has been restored.' 
+                    : ' A temporary password has been set.';
+                successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} restored successfully!${passwordMsg}`;
+            } catch (error) {
+                handleAlert(`Failed to restore ${type}: ${error.message}`);
+                return;
+            }
         } else {
             return;
         }
@@ -201,19 +342,13 @@ const AdminManagement = () => {
         handleActionCancel(); // Close confirmation dialogue
 
         try {
-            // Mock API call simulation
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // In a real application:
-            // const response = await fetch(endpoint, { method, credentials: 'include' });
-            // await handleResponse(response);
-            
             handleAlert(successMessage);
-            // Refresh data sets
+            // Clear search terms and refresh data sets to ensure fresh data
+            setSearchTerm('');
+            setRemovedSearchTerm('');
             await Promise.all([fetchAllActiveUsers(), fetchRemovedAccounts()]);
-
         } catch (err) {
-            handleAlert(`Operation failed: ${err.message}`);
+            handleAlert(`Operation completed but failed to refresh data: ${err.message}`);
         }
     };
 
@@ -222,38 +357,66 @@ const AdminManagement = () => {
     };
 
     const handleViewDetails = (id, type) => {
-        const key = `${type}-${id}`;
+        // Handle removed accounts specially
+        const key = type.startsWith('removed-') ? `removed-${id}` : `${type}-${id}`;
         setExpandedDetails(expandedDetails === key ? null : key);
         setConfirmAction(null); // Close any active confirmation dialogues
     };
 
+    const handleSoftDelete = (id, type) => {
+        // Actually perform soft delete instead of showing dropdown
+        handleActionConfirm(id, type, 'remove');
+    };
+
+    const handleCloseSoftDeleteDropdown = () => {
+        setSoftDeleteDropdown(null);
+    };
+
     // --- Search and Filter Logic ---
 
-    const filteredActiveUsers = useMemo(() => {
-        if (!searchTerm) return users;
-        const lowerSearch = searchTerm.toLowerCase();
-        
-        // Filter users data based on role and search term
-        const filtered = {};
-        for (const roleKey of activeRolesList) {
-            if (users[roleKey]) {
-                filtered[roleKey] = users[roleKey].filter(user => 
-                    user.name.toLowerCase().includes(lowerSearch) ||
-                    user.email.toLowerCase().includes(lowerSearch)
-                );
-            }
+    // Handle search for active users
+    const handleActiveSearch = async () => {
+        if (!searchTerm.trim()) {
+            await fetchAllActiveUsers(); // Reload all data if search is empty
+            return;
         }
-        return filtered;
-    }, [users, searchTerm, activeRolesList]);
 
-    const filteredRemovedAccounts = useMemo(() => {
-        if (!removedSearchTerm) return removedAccounts;
-        const lowerSearch = removedSearchTerm.toLowerCase();
-        return removedAccounts.filter(account => 
-            account.name.toLowerCase().includes(lowerSearch) ||
-            account.email.toLowerCase().includes(lowerSearch)
-        );
-    }, [removedAccounts, removedSearchTerm]);
+        setIsLoading(true);
+        try {
+            const userData = searchTerm ? await searchUsersByRole('user', searchTerm) : await fetchUsersByRole('user');
+            const dietitianData = searchTerm ? await searchUsersByRole('dietitian', searchTerm) : await fetchUsersByRole('dietitian');
+            const organizationData = searchTerm ? await searchUsersByRole('organization', searchTerm) : await fetchUsersByRole('organization');
+            const corporatePartnerData = searchTerm ? await searchUsersByRole('corporatepartner', searchTerm) : await fetchUsersByRole('corporatepartner');
+
+            // Store search results separately to avoid conflicts with full data refresh
+            setUsers({
+                user: userData,
+                dietitian: dietitianData,
+                organization: organizationData,
+                corporatepartner: corporatePartnerData,
+                _isSearchResult: true // Flag to indicate this is search results
+            });
+        } catch (error) {
+            console.error('Error searching active users:', error);
+            handleAlert('Failed to search users. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Handle search for removed accounts
+    const handleRemovedSearch = async () => {
+        try {
+            const removedData = await fetchRemovedAccountsData(removedSearchTerm);
+            setRemovedAccounts(removedData);
+        } catch (error) {
+            console.error('Error searching removed accounts:', error);
+            handleAlert('Failed to search removed accounts. Please try again.');
+        }
+    };
+
+    const filteredActiveUsers = users; // Now handled by API calls
+    const filteredRemovedAccounts = removedAccounts; // Now handled by API calls
 
 
     // --- UI Renderers ---
@@ -267,16 +430,16 @@ const AdminManagement = () => {
                 {type !== 'user' && <><p><strong>Age:</strong> {user.age || 'N/A'}</p></>}
                 {type === 'dietitian' && <p><strong>License:</strong> {user.licenseNumber}</p>}
                 {(type === 'organization' || type === 'corporatepartner') && <p><strong>License:</strong> {user.licenseNumber}</p>}
-                {(type === 'organization' || type === 'corporatepartner' || type === 'admin') && <p><strong>Address:</strong> {user.address || 'N/A'}</p>}
+                {(type === 'organization' || type === 'corporatepartner') && <p><strong>Address:</strong> {user.address || 'N/A'}</p>}
             </div>
         );
 
         return (
-            <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden border-collapse">
                 <thead style={{ backgroundColor: THEME.primary }} className="text-white">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Name / ID</th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-32">Actions</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-r border-gray-300">Name / ID</th>
+                        <th className="pl-2 pr-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-48">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -289,12 +452,13 @@ const AdminManagement = () => {
                             return (
                                 <React.Fragment key={user._id}>
                                     <tr className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">{user.name}</td>
                                         <UserActions 
                                             id={user._id} 
                                             type={type} 
                                             onView={handleViewDetails} 
                                             onShowRemove={(id, type) => handleActionConfirm(id, type, 'remove')}
+                                            onSoftDelete={handleSoftDelete}
                                         />
                                     </tr>
                                     {isExpanded && (
@@ -303,11 +467,80 @@ const AdminManagement = () => {
                                     {isConfirm && (
                                         <tr>
                                             <td colSpan="2" className="px-6 py-2">
-                                                <div className="flex justify-between items-center bg-red-50 border border-red-200 p-3 rounded-lg">
-                                                    <p className="text-red-700 text-sm">Are you sure you want to remove this account?</p>
-                                                    <div className="space-x-2">
-                                                        <button onClick={handleActionExecute} className="text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-full text-xs">Yes, Remove</button>
-                                                        <button onClick={handleActionCancel} className="text-gray-700 bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-full text-xs">Cancel</button>
+                                                <div className="bg-red-50 border border-red-200 p-4 rounded-lg shadow-sm">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center">
+                                                            <i className="fas fa-exclamation-triangle text-red-500 mr-3 text-lg"></i>
+                                                            <p className="text-red-700 text-sm font-medium">Are you sure you want to remove this account?</p>
+                                                        </div>
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={handleActionCancel}
+                                                                className="px-3 py-1.5 text-gray-600 bg-white hover:bg-gray-50 border border-gray-300 rounded-md text-xs font-medium transition-colors duration-200"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                onClick={handleActionExecute}
+                                                                className="px-3 py-1.5 text-white bg-red-600 hover:bg-red-700 rounded-md text-xs font-medium transition-colors duration-200"
+                                                            >
+                                                                <i className="fas fa-trash-alt mr-1"></i>
+                                                                Remove
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {softDeleteDropdown === `${type}-${user._id}` && (
+                                        <tr>
+                                            <td colSpan="2" className="px-6 py-2">
+                                                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg shadow-sm">
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center mb-3">
+                                                                <i className="fas fa-archive text-emerald-600 mr-3 text-lg"></i>
+                                                                <h4 className="text-sm font-semibold text-gray-900">Soft Delete Account</h4>
+                                                            </div>
+                                                            <p className="text-gray-600 text-sm mb-3">
+                                                                Are you sure you want to soft delete this account? The account will be moved to removed accounts and can be restored later.
+                                                            </p>
+                                                            <div className="bg-white p-3 rounded-md border border-emerald-100">
+                                                                <div className="grid grid-cols-1 gap-1 text-sm">
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-500">Name:</span>
+                                                                        <span className="font-medium text-gray-900">{user.name}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-500">Email:</span>
+                                                                        <span className="font-medium text-gray-900">{user.email}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-gray-500">Type:</span>
+                                                                        <span className="font-medium text-gray-900">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col space-y-2 ml-4">
+                                                            <button
+                                                                onClick={handleCloseSoftDeleteDropdown}
+                                                                className="px-3 py-1.5 text-gray-600 bg-white hover:bg-gray-50 border border-gray-300 rounded-md text-xs font-medium transition-colors duration-200"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleCloseSoftDeleteDropdown();
+                                                                    handleActionConfirm(user._id, type, 'remove');
+                                                                }}
+                                                                className="px-3 py-1.5 text-white bg-emerald-600 hover:bg-emerald-700 rounded-md text-xs font-medium transition-colors duration-200"
+                                                            >
+                                                                <i className="fas fa-archive mr-1"></i>
+                                                                Soft Delete
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -323,21 +556,33 @@ const AdminManagement = () => {
     };
     
     const renderRemovedTable = (data, type) => {
-        const TypeDetails = ({ account }) => (
-            <div className="p-3 text-sm text-gray-700 bg-red-50 rounded-lg border border-red-200">
-                <p><strong>Email:</strong> {account.email}</p>
-                <p><strong>Phone:</strong> {account.phone || 'N/A'}</p>
-                <p><strong>Type:</strong> {account.accountType}</p>
-            </div>
-        );
+        const TypeDetails = ({ account }) => {
+            // Use originalData if available, otherwise fall back to account data
+            const originalData = account.originalData || account;
+            
+            return (
+                <div className="p-3 text-sm text-gray-700 bg-red-50 rounded-lg border border-red-200">
+                    <p><strong>Email:</strong> {account.email}</p>
+                    <p><strong>Phone:</strong> {account.phone || 'N/A'}</p>
+                    {type === 'user' && originalData.dob && <p><strong>DOB:</strong> {originalData.dob ? originalData.dob.split('T')[0] : 'N/A'}</p>}
+                    {type === 'user' && originalData.gender && <p><strong>Gender:</strong> {originalData.gender || 'N/A'}</p>}
+                    {type !== 'user' && originalData.age && <p><strong>Age:</strong> {originalData.age || 'N/A'}</p>}
+                    {type === 'dietitian' && originalData.licenseNumber && <p><strong>License:</strong> {originalData.licenseNumber}</p>}
+                    {(type === 'organization' || type === 'corporatepartner') && originalData.licenseNumber && <p><strong>License:</strong> {originalData.licenseNumber}</p>}
+                    {(type === 'organization' || type === 'corporatepartner') && originalData.address && <p><strong>Address:</strong> {originalData.address || 'N/A'}</p>}
+                    <p><strong>Removed On:</strong> {account.removedOn}</p>
+                    <p><strong>Account Type:</strong> {account.accountType}</p>
+                </div>
+            );
+        };
 
         return (
-            <table className="min-w-full divide-y divide-red-200 shadow-md rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-red-200 shadow-md rounded-lg overflow-hidden border-collapse">
                 <thead style={{ backgroundColor: THEME.danger }} className="text-white">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-32">Removed On</th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-32">Actions</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-r border-gray-300">Name</th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-32 border-r border-gray-300">Removed On</th>
+                        <th className="pl-2 pr-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-48">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-red-200">
@@ -345,17 +590,17 @@ const AdminManagement = () => {
                         <tr><td colSpan="3" className="px-6 py-4 text-center text-gray-500">No removed {type} accounts found.</td></tr>
                     ) : (
                         data.filter(a => a.accountType.toLowerCase() === type).map((account) => {
-                            const isExpanded = expandedDetails === `removed-${account.id}`;
-                            const isConfirm = confirmAction && confirmAction.id === account.id && confirmAction.type === type;
+                            const isExpanded = expandedDetails === `removed-${account._id}`;
+                            const isConfirm = confirmAction && confirmAction.id === account._id && confirmAction.type === type;
                             return (
-                                <React.Fragment key={account.id}>
+                                <React.Fragment key={account._id}>
                                     <tr className="hover:bg-red-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{account.name}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{account.removedOn}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">{account.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center border-r border-gray-200">{account.removedOn}</td>
                                         <RemovedActions 
-                                            id={account.id} 
+                                            id={account._id} 
                                             type={type} 
-                                            onView={(id, type) => handleViewDetails(`removed-${id}`, type)}
+                                            onView={(id, type) => handleViewDetails(id, `removed-${type}`)}
                                             onShowRestore={(id, type) => handleActionConfirm(id, type, 'restore')}
                                         />
                                     </tr>
@@ -365,11 +610,27 @@ const AdminManagement = () => {
                                     {isConfirm && (
                                         <tr>
                                             <td colSpan="3" className="px-6 py-2">
-                                                <div className="flex justify-between items-center bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-                                                    <p className="text-yellow-700 text-sm">Are you sure you want to restore this account?</p>
-                                                    <div className="space-x-2">
-                                                        <button onClick={handleActionExecute} className="text-dark bg-yellow-400 hover:bg-yellow-500 px-3 py-1 rounded-full text-xs">Yes, Restore</button>
-                                                        <button onClick={handleActionCancel} className="text-gray-700 bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-full text-xs">Cancel</button>
+                                                <div className="bg-lime-50 border border-lime-200 p-4 rounded-lg shadow-sm">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center">
+                                                            <i className="fas fa-undo text-lime-600 mr-3 text-lg"></i>
+                                                            <p className="text-lime-700 text-sm font-medium">Are you sure you want to restore this account?</p>
+                                                        </div>
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={handleActionCancel}
+                                                                className="px-3 py-1.5 text-gray-600 bg-white hover:bg-gray-50 border border-gray-300 rounded-md text-xs font-medium transition-colors duration-200"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                onClick={handleActionExecute}
+                                                                className="px-3 py-1.5 text-white bg-lime-600 hover:bg-lime-700 rounded-md text-xs font-medium transition-colors duration-200"
+                                                            >
+                                                                <i className="fas fa-undo mr-1"></i>
+                                                                Restore
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -393,7 +654,7 @@ const AdminManagement = () => {
             </div>
             
             <div style={{ maxWidth: '100%', margin: '0 auto' }}>
-                <h1 className="text-4xl font-extrabold text-center text-gray-800 mb-8">Admin User Management</h1>
+                <h1 className="text-4xl font-extrabold text-center text-green-700 mb-8">Admin User Management</h1>
 
                 {/* --- 1. Active Users Container --- */}
                 <div style={{ borderTopColor: THEME.primary }} className="bg-white p-6 rounded-xl shadow-2xl border-t-4 mb-8">
@@ -409,12 +670,23 @@ const AdminManagement = () => {
                             className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors"
                         />
                         <button 
-                            onClick={() => setSearchTerm(searchTerm)} 
+                            onClick={handleActiveSearch} 
                             style={{ backgroundColor: THEME.primary }}
                             className="text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold"
                         >
                             <i className="fas fa-search"></i> Search
                         </button>
+                        {users._isSearchResult && searchTerm && (
+                            <button 
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    fetchAllActiveUsers();
+                                }}
+                                className="text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-lg transition-colors font-semibold"
+                            >
+                                <i className="fas fa-times"></i> Clear
+                            </button>
+                        )}
                     </div>
 
                     {/* Active Role Button Group */}
@@ -422,7 +694,11 @@ const AdminManagement = () => {
                         {activeRolesList.map(role => (
                             <button
                                 key={role}
-                                onClick={() => { setActiveRole(role); setSearchTerm(''); }}
+                                onClick={() => { 
+                                    setActiveRole(role); 
+                                    setSearchTerm(''); // Clear search term when switching roles
+                                    fetchAllActiveUsers(); // Reload data when switching roles
+                                }}
                                 style={activeRole === role ? {
                                     backgroundColor: THEME.primary,
                                     color: 'white',
@@ -447,6 +723,9 @@ const AdminManagement = () => {
                                 <span className="font-bold text-gray-900 ml-1">
                                     {filteredActiveUsers[role]?.length || users[role]?.length || 0}
                                 </span>
+                                {users._isSearchResult && searchTerm && (
+                                    <span className="text-sm text-blue-600 ml-1">(filtered)</span>
+                                )}
                             </span>
                         ))}
                     </div>
@@ -475,12 +754,23 @@ const AdminManagement = () => {
                             className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-colors"
                         />
                         <button 
-                            onClick={() => setRemovedSearchTerm(removedSearchTerm)} 
+                            onClick={handleRemovedSearch} 
                             style={{ backgroundColor: THEME.danger }}
                             className="text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold"
                         >
                             <i className="fas fa-search"></i> Search
                         </button>
+                        {removedSearchTerm && (
+                            <button 
+                                onClick={() => {
+                                    setRemovedSearchTerm('');
+                                    fetchRemovedAccounts();
+                                }}
+                                className="text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-lg transition-colors font-semibold"
+                            >
+                                <i className="fas fa-times"></i> Clear
+                            </button>
+                        )}
                     </div>
 
                     {/* Removed Role Button Group */}
@@ -488,7 +778,11 @@ const AdminManagement = () => {
                         {removedRolesList.map(role => (
                             <button
                                 key={`removed-${role}`}
-                                onClick={() => setRemovedRole(role)}
+                                onClick={() => { 
+                                    setRemovedRole(role); 
+                                    setRemovedSearchTerm(''); // Clear search term when switching roles
+                                    fetchRemovedAccounts(); // Reload data when switching roles
+                                }}
                                 style={removedRole === role ? {
                                     backgroundColor: THEME.danger,
                                     color: 'white',

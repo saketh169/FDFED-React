@@ -9,6 +9,7 @@ const verifyRoutes = require('./routes/verifyRoutes');
 const statusRoutes = require('./routes/statusRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const contactusRoutes = require('./routes/contactusRoutes');
+const crudRoutes = require('./routes/crudRoutes');
 
 // Load environment variables from .env file
 require('dotenv').config();
@@ -50,6 +51,9 @@ app.use('/api/blogs', blogRoutes);
 
 // Contact us routes mounted at '/api/contact'
 app.use('/api/contact', contactusRoutes);
+
+// CRUD routes mounted at '/api' for admin user management
+app.use('/api', crudRoutes);
 
 // Simple test route (kept from your original code)
 app.get('/', (req, res) => {

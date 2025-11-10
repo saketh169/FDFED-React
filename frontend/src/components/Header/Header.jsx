@@ -283,7 +283,8 @@ const Header = () => {
       </header>
 
       {/* Show floating Contact Us button for role-specific pages (top-right below header) */}
-      {isLoggedInArea && ( // Using isLoggedInArea is more semantically accurate for this check
+      {/* Hide floating Contact Us button for admin */}
+      {isLoggedInArea && !currentPath.startsWith('/admin') && (
         <FloatingContactButton 
           handleScrollToTop={handleScrollToTop} 
           // **PASSING the dynamic contact path to the FloatingContactButton**

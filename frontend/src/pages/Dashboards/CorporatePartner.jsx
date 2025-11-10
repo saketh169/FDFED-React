@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import Status from "../../middleware/StatusBadge"; // Import Status component 
+import { AuthProvider } from "../../contexts/AuthContext";
+import { useAuthContext } from "../../hooks/useAuthContext"; 
 
 // --- Mock Data ---
 const mockPartner = {
@@ -99,54 +101,17 @@ const EngagementChart = ({ data }) => {
 // --- Main Corporate Dashboard Component ---
 const CorporateDashboard = () => {
   const navigate = useNavigate();
+  const { user, token, logout } = useAuthContext();
   const [partnerLogo, setPartnerLogo] = useState(mockPartner.logoImage);
-  const [partnerDetails, setPartnerDetails] = useState(mockPartner); // Store fetched partner details
   const [isUploading, setIsUploading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
 
-  // Fetch profile details from backend on component mount
+  // Set profile image from user data when available
   useEffect(() => {
-    const fetchProfileDetails = async () => {
-      try {
-        const token = localStorage.getItem('authToken_corporatepartner');
-        if (!token) return;
-
-        const response = await fetch('/api/getcorporatepartnerdetails', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Update partner details from API response
-          setPartnerDetails({
-            name: data.name || mockPartner.name,
-            programName: data.programName || mockPartner.programName,
-            contact: data.contact || mockPartner.contact,
-            duration: data.duration || mockPartner.duration,
-            totalLicenses: data.totalLicenses || mockPartner.totalLicenses,
-            activeUsers: data.activeUsers || mockPartner.activeUsers,
-            enrollmentRate: data.enrollmentRate || mockPartner.enrollmentRate,
-            currentCommissionTier: data.currentCommissionTier || mockPartner.currentCommissionTier,
-            lastPayout: data.lastPayout || mockPartner.lastPayout,
-            nextContractDate: data.nextContractDate || mockPartner.nextContractDate
-          });
-          
-          // Update partner logo
-          if (data.profileImage) {
-            setPartnerLogo(data.profileImage);
-            localStorage.setItem('profileImage', data.profileImage);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching profile details:', error);
-      }
-    };
-
-    fetchProfileDetails();
-  }, []);
+    if (user && user.profileImage) {
+      setPartnerLogo(user.profileImage);
+    }
+  }, [user]);
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
@@ -167,9 +132,7 @@ const CorporateDashboard = () => {
       const formData = new FormData();
       formData.append('profileImage', file);
 
-      // Get token from localStorage (key: 'authToken_corporatepartner' set during signin)
-      const token = localStorage.getItem('authToken_corporatepartner');
-      
+      // Get token from context
       if (!token) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=corporatepartner');
@@ -200,7 +163,7 @@ const CorporateDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("corporateAuthToken");
+    logout(); // Use context logout method
     navigate("/");
   };
 
@@ -211,7 +174,7 @@ const CorporateDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-teal-900 mb-6 border-b border-gray-200 pb-4">
-           Welcome, {partnerDetails.name}!
+           Welcome, {user?.company_name || user?.name || mockPartner.name}!
         </h1>
 
       
@@ -227,7 +190,7 @@ const CorporateDashboard = () => {
             <div className="relative mb-4">
               <img
                 src={partnerLogo}
-                alt={`${partnerDetails.name} Logo`}
+                alt={`${user?.company_name || user?.name || mockPartner.name} Logo`}
                 className="w-32 h-32 rounded-full object-cover border-4 border-emerald-600 cursor-pointer hover:opacity-80 transition"
                 onClick={() => setShowImageModal(true)}
                 onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/128?text=Logo'}
@@ -253,9 +216,9 @@ const CorporateDashboard = () => {
               {isUploading ? "Uploading..." : "Click camera to update logo"}
             </p>
 
-            <p className="font-semibold text-lg text-gray-800 text-center">{partnerDetails.name}</p>
-            <p className="text-sm text-gray-600 mb-2">Program: {partnerDetails.programName}</p>
-            <p className="text-sm text-gray-600">Email: {partnerDetails.contact}</p>
+            <p className="font-semibold text-lg text-gray-800 text-center">{user?.company_name || user?.name || mockPartner.name}</p>
+            <p className="text-sm text-gray-600 mb-2">Program: {user?.programName || mockPartner.programName}</p>
+            <p className="text-sm text-gray-600">Email: {user?.email || mockPartner.contact}</p>
           
 
             <div className="mt-5 flex gap-2 flex-wrap justify-center">
@@ -323,21 +286,21 @@ const CorporateDashboard = () => {
             {/* Licensing Metrics */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
               <p className="text-sm text-gray-600 mb-2">Total Licenses</p>
-              <p className="font-bold text-blue-700 text-xl">{partnerDetails.totalLicenses.toLocaleString()}</p>
+              <p className="font-bold text-blue-700 text-xl">{user?.totalLicenses || mockPartner.totalLicenses.toLocaleString()}</p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg border border-green-200 text-center">
               <p className="text-sm text-gray-600 mb-2">Active Users</p>
-              <p className="font-bold text-green-700 text-xl">{partnerDetails.activeUsers.toLocaleString()}</p>
+              <p className="font-bold text-green-700 text-xl">{user?.activeUsers || mockPartner.activeUsers.toLocaleString()}</p>
             </div>
 
             {/* Partnership Status */}
             <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 text-center">
               <p className="text-sm text-gray-600 mb-2">Commission Tier</p>
-              <p className="font-bold text-purple-700 text-lg">{partnerDetails.currentCommissionTier}</p>
+              <p className="font-bold text-purple-700 text-lg">{user?.currentCommissionTier || mockPartner.currentCommissionTier}</p>
             </div>
             <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-center">
               <p className="text-sm text-gray-600 mb-2">Days Remaining</p>
-              <p className="font-bold text-yellow-700 text-lg">{partnerDetails.duration}</p>
+              <p className="font-bold text-yellow-700 text-lg">{user?.duration || mockPartner.duration}</p>
             </div>
           </div>
 
@@ -345,13 +308,13 @@ const CorporateDashboard = () => {
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-orange-50 rounded-lg border border-orange-200 text-center">
               <p className="text-sm text-gray-600 mb-2">Program Name</p>
-              <p className="font-semibold text-orange-700 text-lg">{partnerDetails.programName}</p>
+              <p className="font-semibold text-orange-700 text-lg">{user?.programName || mockPartner.programName}</p>
             </div>
 
             {/* Renewal Call to Action */}
             <div className="p-4 bg-red-50 border-l-4 border-red-400 rounded-lg text-center">
               <p className="font-semibold text-red-800 mb-1">Contract Renewal Due:</p>
-              <p className="font-bold text-red-900 text-lg">{partnerDetails.nextContractDate}</p>
+              <p className="font-bold text-red-900 text-lg">{user?.nextContractDate || mockPartner.nextContractDate}</p>
               <button
                 onClick={() => navigate("/corporatepartner/contact-us")}
                 className="mt-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-full hover:bg-red-700 transition shadow-md text-sm"
@@ -455,8 +418,8 @@ const CorporateDashboard = () => {
 
               {/* Footer with partner info */}
               <div className="bg-white p-6 border-t border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{partnerDetails.name}</h2>
-                <p className="text-gray-600 mb-4">{partnerDetails.contact}</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.company_name || user?.name || mockPartner.name}</h2>
+                <p className="text-gray-600 mb-4">{user?.email || mockPartner.contact}</p>
                 <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => {
@@ -483,4 +446,11 @@ const CorporateDashboard = () => {
   );
 };
 
-export default CorporateDashboard;
+// Wrap the component with AuthProvider for corporatepartner role
+const CorporateDashboardWithAuth = () => (
+  <AuthProvider currentRole="corporatepartner">
+    <CorporateDashboard />
+  </AuthProvider>
+);
+
+export default CorporateDashboardWithAuth;
