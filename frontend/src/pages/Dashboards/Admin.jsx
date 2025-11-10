@@ -289,7 +289,7 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome, {user?.name || mockAdmin.name}! 👑
+          Welcome, {user?.name || mockAdmin.name}! 
         </h1>
 
         {/* Admin Info & Quick Stats */}
@@ -329,10 +329,11 @@ const AdminDashboard = () => {
             </p>
             
             <p className="font-semibold text-lg text-gray-800">{user?.name || mockAdmin.name}</p>
+            {user?.age && <p className="text-sm text-gray-600">Age: {user.age}</p>}
             <p className="text-sm text-gray-600">Email: {user?.email || mockAdmin.email}</p>
             <p className="text-sm text-gray-600 mb-4">Phone: {user?.phone || mockAdmin.phone}</p>
 
-            <div className="mt-5 flex gap-2 flex-wrap justify-center">
+            <div className="flex gap-2 flex-wrap justify-center">
               <button
                 onClick={() => navigate("/admin/edit-profile")}
                 className="flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-600 hover:text-white transition"

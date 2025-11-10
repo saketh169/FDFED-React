@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import ProtectedRoute from '../middleware/ProtectedRoute';
 
 import UserHome from '../pages/HomePages/UserHome';
 import UserSchedule from '../pages/Schedules/UserSchedule';
@@ -25,21 +24,21 @@ export default function UserRoutes() {
       <Routes>
         <Route index element={<Navigate to="home" replace />} />
 
-        {/* Protected Routes - Require User Authentication */}
-        <Route path="home" element={<ProtectedRoute element={<UserHome />} requiredRole="user" />} />
-        <Route path="profile" element={<ProtectedRoute element={<UserDashboard />} requiredRole="user" />} />
-        <Route path="schedule" element={<ProtectedRoute element={<UserSchedule />} requiredRole="user" />} />
-        <Route path="progress" element={<ProtectedRoute element={<UserProgress />} requiredRole="user" />} />  
-        <Route path="get-plans" element={<ProtectedRoute element={<UserGetPlanForm />} requiredRole="user" />} />   
+        {/* All routes are automatically protected by ProtectedProvider in Layout.jsx */}
+        <Route path="home" element={<UserHome />} />
+        <Route path="profile" element={<UserDashboard />} />
+        <Route path="schedule" element={<UserSchedule />} />
+        <Route path="progress" element={<UserProgress />} />  
+        <Route path="get-plans" element={<UserGetPlanForm />} />   
 
-        <Route path="change-pass" element={<ProtectedRoute element={<ChangePassword />} requiredRole="user" />} />
-        <Route path="edit-profile" element={<ProtectedRoute element={<EditProfile />} requiredRole="user" />} />
+        <Route path="change-pass" element={<ChangePassword />} />
+        <Route path="edit-profile" element={<EditProfile />} />
         
         {/* Blog Routes */}
         <Route path="blogs" element={<Blog/>} />
-        <Route path="blog/:id" element={<ProtectedRoute element={<BlogPost />} requiredRole="user" />} />
-        <Route path="create-blog" element={<ProtectedRoute element={<CreateBlog />} requiredRole="user" />} />
-        <Route path="edit-blog/:id" element={<ProtectedRoute element={<CreateBlog />} requiredRole="user" />} />
+        <Route path="blog/:id" element={<BlogPost />} />
+        <Route path="create-blog" element={<CreateBlog />} />
+        <Route path="edit-blog/:id" element={<CreateBlog />} />
         
         {/* Optional: Chatbot, Blog, Contact (can be public or protected) */}
         <Route path="blog" element={<Blog/>} />

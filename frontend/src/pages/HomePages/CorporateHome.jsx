@@ -69,13 +69,13 @@ const CorporateHome = () => {
             {/* Action Buttons (Added second button) */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button
-                onClick={() => navigate('/partner_dash')}
+                onClick={() => navigate('/corporatepartner/profile')}
                 className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
               >
                 Go to Dashboard
               </button>
               <button
-                onClick={() => navigate('/partner_onboarding')}
+                onClick={() => navigate('/corporatepartner/profile')}
                 className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
               >
                  Onboarding
@@ -154,7 +154,7 @@ const CorporateHome = () => {
           </div>
 
           <button
-            onClick={() => navigate('/partner_dash#features')}
+            onClick={() => navigate('/corporatepartner/profile')}
             className="mt-10 bg-[#1A4A40] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#27AE60] transition-colors"
           >
             Manage Integration
@@ -181,7 +181,7 @@ const CorporateHome = () => {
               The Partner Dashboard provides a powerful interface to seamlessly **add, remove, and manage licenses** for your entire user base. Get an overview of enrollment status and activation keys.
             </p>
             <button
-              onClick={() => navigate('/partner_onboarding')}
+              onClick={() => navigate('/corporatepartner/profile')}
               className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-[#1E6F5C] transition-all"
             >
               Start Bulk Onboarding
@@ -201,7 +201,7 @@ const CorporateHome = () => {
               Monitor key metrics like **user sign-up rates, consultation frequency, and satisfaction**. View your current commission tier and scheduled payouts in one secure location.
             </p>
             <button
-              onClick={() => navigate('/partner_analytics')}
+              onClick={() => navigate('/corporatepartner/profile')}
               className="bg-[#1A4A40] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#27AE60] transition-all"
             >
               View Analytics & Payouts

@@ -6,18 +6,18 @@ const AdminHome = () => {
 
   // === 1. Admin Duties Data (Focus on Governance & Oversight) ===
   const dutyItems = [
-    { title: 'Manage All Users & Roles', icon: 'fas fa-users-slash', text: 'Ability to remove/suspend any User, Dietitian, or Organization from the platform.', slug: 'user_management' },
-    { title: 'Deep System Analytics', icon: 'fas fa-chart-pie', text: 'View statistics on consultations, membership growth, and platform brokerage earnings.', slug: 'view_analytics' },
-    { title: 'Monitor Platform Activity', icon: 'fas fa-eye', text: 'Track detailed logs: user additions, dietitian verifications, content moderation, and more.', slug: 'activity_logs' },
-    { title: 'Verify Partner Organizations', icon: 'fas fa-shield-halved', text: 'Oversee and verify all Certifying Organizations to ensure compliance and minimize fraud.', slug: 'verify_orgs' },
+    { title: 'Manage All Users & Roles', icon: 'fas fa-users-slash', text: 'Ability to remove/suspend any User, Dietitian, or Organization from the platform.', slug: 'user_management', route: '/admin/profile' },
+    { title: 'Deep System Analytics', icon: 'fas fa-chart-pie', text: 'View statistics on consultations, membership growth, and platform brokerage earnings.', slug: 'view_analytics', route: '/admin/analytics' },
+    { title: 'Monitor Platform Activity', icon: 'fas fa-eye', text: 'Track detailed logs: user additions, dietitian verifications, content moderation, and more.', slug: 'activity_logs', route: '/admin/profile' },
+    { title: 'Verify Partner Organizations', icon: 'fas fa-shield-halved', text: 'Oversee and verify all Certifying Organizations to ensure compliance and minimize fraud.', slug: 'verify_orgs', route: '/admin/verify-organizations' },
   ];
 
   // === 2. Live Platform Metrics Mock Data (Core KPIs) ===
   const platformMetrics = [
-    { title: 'Active Diet Plans', value: '4,521', icon: 'fas fa-clipboard-list', color: 'text-green-600', link: '/admin_dash?view=plans' },
-    { title: 'Total Brokerage Earnings', value: '$85K', icon: 'fas fa-sack-dollar', color: 'text-yellow-600', link: '/admin_dash?view=brokerage' },
-    { title: 'New Consultations (Last 7D)', value: '1,290', icon: 'fas fa-calendar-check', color: 'text-blue-600', link: '/admin_dash?view=consults' },
-    { title: 'Pending Support Queries', value: '18', icon: 'fas fa-headset', color: 'text-red-600', link: '/admin_dash?view=queries' },
+    { title: 'Active Diet Plans', value: '4,521', icon: 'fas fa-clipboard-list', color: 'text-green-600', link: '/admin/analytics' },
+    { title: 'Total Brokerage Earnings', value: '$85K', icon: 'fas fa-sack-dollar', color: 'text-yellow-600', link: '/admin/analytics' },
+    { title: 'New Consultations (Last 7D)', value: '1,290', icon: 'fas fa-calendar-check', color: 'text-blue-600', link: '/admin/analytics' },
+    { title: 'Pending Support Queries', value: '18', icon: 'fas fa-headset', color: 'text-red-600', link: '/admin/queries' },
   ];
 
   // === 3. FAQ State and Logic ===
@@ -60,13 +60,13 @@ const AdminHome = () => {
             {/* Action Buttons (Added second button) */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button
-                onClick={() => navigate('/admin_dash')}
+                onClick={() => navigate('/admin/profile')}
                 className="bg-[#27AE60] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300"
               >
                 Go to Dashboard
               </button>
               <button
-                onClick={() => navigate('/admin_dash?view=queries')}
+                onClick={() => navigate('/admin/queries')}
                 className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
               >
                 View  Queries
@@ -110,7 +110,7 @@ const AdminHome = () => {
           </div>
 
           <button
-            onClick={() => navigate('/admin_dash?view=full_stats')}
+            onClick={() => navigate('/admin/analytics')}
             className={`mt-10 bg-[#1A4A40] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[${primaryGreen}] transition-colors`}
           >
             View Full Analytics
@@ -130,7 +130,7 @@ const AdminHome = () => {
             {dutyItems.map((item, index) => (
               <div
                 key={index}
-                onClick={() => navigate(`/admin_dash?action=${item.slug}`)}
+                onClick={() => navigate(item.route)}
                 className={`bg-white p-6 rounded-xl shadow-md border-b-4 border-[${primaryGreen}] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer`}
               >
                 <div className={`text-5xl text-[${primaryGreen}] mb-4`}>

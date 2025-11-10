@@ -282,13 +282,12 @@ const Header = () => {
       </div>
       </header>
 
-      {/* Show floating Contact Us button for role-specific pages (top-right below header) */}
-      {/* Hide floating Contact Us button for admin */}
-      {isLoggedInArea && !currentPath.startsWith('/admin') && (
-        <FloatingContactButton 
-          handleScrollToTop={handleScrollToTop} 
+      {/* Show floating Contact Us button only for user, dietitian, and corporate partner pages */}
+      {(currentPath.startsWith('/user') || currentPath.startsWith('/dietitian') || currentPath.startsWith('/corporatepartner')) && (
+        <FloatingContactButton
+          handleScrollToTop={handleScrollToTop}
           // **PASSING the dynamic contact path to the FloatingContactButton**
-          contactPath={getContactPath()} 
+          contactPath={getContactPath()}
         />
       )}
     </>

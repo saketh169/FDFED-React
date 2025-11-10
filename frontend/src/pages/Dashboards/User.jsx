@@ -203,14 +203,15 @@ const UserDashboard = () => {
             </p>
 
             <p className="font-semibold text-lg text-gray-800">{user?.name || mockUser.name}</p>
-            <p className="text-sm text-gray-600">Age: {user?.age || mockUser.age} • Phone: {user?.phone || mockUser.phone}</p>
-            <p className="text-sm text-gray-600">{user?.email || mockUser.email}</p>
+            <p className="text-sm text-gray-600">Age: {user?.age || mockUser.age}</p>
+            <p className="text-sm text-gray-600">Email: {user?.email || mockUser.email}</p>
+            <p className="text-sm text-gray-600">Phone: {user?.phone || mockUser.phone}</p>
             <p className="text-sm text-gray-600 mb-4">{user?.address || mockUser.address}</p>
 
-            <div className="mt-5 flex gap-2 flex-wrap justify-center">
+            <div className="flex gap-2 flex-wrap justify-center">
               <button
                 onClick={() => navigate("/user/edit-profile")}
-                className="flex items-center gap-1.5 px-4 py-2 border border-emerald-600 text-emerald-600 rounded-full text-sm font-medium hover:bg-emerald-600 hover:text-white transition"
+                className="flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-600 hover:text-white transition"
               >
                 <i className="fas fa-user-edit"></i> Edit Profile
               </button>

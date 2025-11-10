@@ -65,12 +65,6 @@ const OrganizationHome = () => {
               >
                 Go to Dashboard
               </button>
-              <button
-                onClick={() => navigate('/contact')}
-                className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
-              >
-                Contact Support
-              </button>
             </div>
           </div>
           
