@@ -1,0 +1,61 @@
+@import "tailwindcss";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+/* Custom color variables */
+:root {
+  --primary-green: #2d7a5f;
+  --dark-accent: #1e5a45;
+  --secondary-text: #2f4f4f;
+  --light-bg: #f8fafc;
+}
+
+body {
+  font-family: "Montserrat", Arial, sans-serif;
+  color: var(--secondary-text);
+  line-height: 1.6;
+  background-color: var(--light-bg);
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom Tailwind color classes */
+.text-primary-green {
+  color: var(--primary-green);
+}
+
+.bg-primary-green {
+  background-color: var(--primary-green);
+}
+
+.text-secondary-text {
+  color: var(--secondary-text);
+}
+
+.bg-dark-accent {
+  background-color: var(--dark-accent);
+}
+
+.hover\:bg-dark-accent:hover {
+  background-color: var(--dark-accent);
+}
+
+.border-primary-green {
+  border-color: var(--primary-green);
+}
+
+.focus\:ring-primary-green:focus {
+  --tw-ring-color: var(--primary-green);
+}
+
+.focus\:border-primary-green:focus {
+  border-color: var(--primary-green);
+}
+
+/* Font families */
+.font-montserrat {
+  font-family: "Montserrat", Arial, sans-serif;
+}
+
+.font-poppins {
+  font-family: "Poppins", Arial, sans-serif;
+}
