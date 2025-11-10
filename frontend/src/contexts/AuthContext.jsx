@@ -91,7 +91,18 @@ export const AuthProvider = ({ children, currentRole }) => {
   // Fetch user details from API
   const fetchUserDetails = async (token, role) => {
     try {
-      const response = await axios.get('/api/getuserdetails', {
+      // Role-specific API endpoints
+      const apiEndpoints = {
+        user: '/api/getuserdetails',
+        dietitian: '/api/getdietitiandetails',
+        organization: '/api/getorganizationdetails',
+        admin: '/api/getadmindetails',
+        corporatepartner: '/api/getcorporatepartnerdetails'
+      };
+
+      const endpoint = apiEndpoints[role] || '/api/getuserdetails';
+
+      const response = await axios.get(endpoint, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

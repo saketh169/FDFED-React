@@ -1,53 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import axios from 'axios';
-
-// Role-specific configuration
-const roleConfig = {
-  user: {
-    tokenKey: 'authToken_user',
-    signinPath: '/signin?role=user',
-    dashboardPath: '/user/profile',
-    roleLabel: 'User',
-    apiEndpoint: '/api/getuserdetails',
-    fields: ['name', 'phone', 'dob', 'gender', 'address']
-  },
-  dietitian: {
-    tokenKey: 'authToken_dietitian',
-    signinPath: '/signin?role=dietitian',
-    dashboardPath: '/dietitian/profile',
-    roleLabel: 'Dietitian',
-    apiEndpoint: '/api/getdietitiandetails',
-    fields: ['name', 'phone', 'age']
-  },
-  organization: {
-    tokenKey: 'authToken_organization',
-    signinPath: '/signin?role=organization',
-    dashboardPath: '/organization/profile',
-    roleLabel: 'Organization',
-    apiEndpoint: '/api/getorganizationdetails',
-    fields: ['name', 'phone', 'address']
-  },
-  admin: {
-    tokenKey: 'authToken_admin',
-    signinPath: '/signin?role=admin',
-    dashboardPath: '/admin/profile',
-    roleLabel: 'Admin',
-    apiEndpoint: '/api/getadmindetails',
-    fields: ['name', 'phone']
-  },
-  corporatepartner: {
-    tokenKey: 'authToken_corporatepartner',
-    signinPath: '/signin?role=corporatepartner',
-    dashboardPath: '/corporatepartner/profile',
-    roleLabel: 'Corporate Partner',
-    apiEndpoint: '/api/getcorporatepartnerdetails',
-    fields: ['name', 'phone', 'address']
-  }
-};
+import { useProfile } from '../contexts/ProfileContext';
 
 // Yup validation schema builder based on role fields
 const getValidationSchema = (fields) => {
@@ -90,25 +46,24 @@ const getValidationSchema = (fields) => {
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-  const [originalData, setOriginalData] = useState({});
-  
-  // Detect role from current path
-  const detectRole = () => {
-    if (location.pathname.includes('/user/')) return 'user';
-    if (location.pathname.includes('/dietitian/')) return 'dietitian';
-    if (location.pathname.includes('/organization/')) return 'organization';
-    if (location.pathname.includes('/admin/')) return 'admin';
-    if (location.pathname.includes('/corporatepartner/')) return 'corporatepartner';
-    return 'user'; // Default fallback
-  };
-  
-  const role = detectRole();
-  const config = roleConfig[role];
-  
+  const {
+    profileData,
+    originalData,
+    isLoading,
+    isFetching,
+    message,
+    config,
+    fetchProfileData,
+    updateProfile,
+    resetProfileData,
+    initializeRole
+  } = useProfile();
+
+  // Initialize role and config
+  useEffect(() => {
+    initializeRole();
+  }, [initializeRole]);
+
   // React Hook Form with Yup validation
   const {
     register,
@@ -117,115 +72,44 @@ const EditProfile = () => {
     setValue,
     reset
   } = useForm({
-    resolver: yupResolver(getValidationSchema(config.fields)),
+    resolver: config ? yupResolver(getValidationSchema(config.fields)) : undefined,
     mode: 'onBlur'
   });
   
   // Fetch user details on component mount
   useEffect(() => {
-    const fetchUserDetails = async () => {
-      try {
-        const token = localStorage.getItem(config.tokenKey);
-        if (!token) {
-          setMessage('Session expired. Please login again.');
-          setTimeout(() => navigate(config.signinPath), 2000);
-          return;
-        }
-
-        const response = await axios.get(config.apiEndpoint, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+    const loadProfile = async () => {
+      const data = await fetchProfileData();
+      if (data) {
+        // Set form values
+        Object.keys(data).forEach(key => {
+          setValue(key, data[key]);
         });
-
-        if (response.data.success) {
-          const userData = {};
-          
-          // Populate form based on role-specific fields
-          config.fields.forEach(field => {
-            if (field === 'dob' && response.data[field]) {
-              userData[field] = response.data[field].split('T')[0];
-            } else {
-              userData[field] = response.data[field] || '';
-            }
-          });
-          
-          // Email is always read-only
-          userData.email = response.data.email || '';
-          
-          // Set form values
-          Object.keys(userData).forEach(key => {
-            setValue(key, userData[key]);
-          });
-          
-          setOriginalData(userData);
-        }
-      } catch (error) {
-        console.error('Error fetching user details:', error);
-        setMessage('Failed to load user details. Please try again.');
-      } finally {
-        setIsFetching(false);
       }
     };
-
-    fetchUserDetails();
-  }, [navigate, config, setValue]);
+    
+    loadProfile();
+  }, [fetchProfileData, setValue]);
 
   const onSubmit = async (data) => {
-    setMessage('');
-
-    // Check if any changes were made
-    const hasChanges = config.fields.some(key => data[key] !== originalData[key]);
-
-    if (!hasChanges) {
-      setMessage('No changes detected. Please modify at least one field.');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const token = localStorage.getItem(config.tokenKey);
-      if (!token) {
-        setMessage('Session expired. Please login again.');
-        setTimeout(() => navigate(config.signinPath), 2000);
-        return;
-      }
-
-      // Only send fields that were changed
-      const updatePayload = {};
-      config.fields.forEach(key => {
-        if (data[key] !== originalData[key]) {
-          updatePayload[key] = data[key];
-        }
-      });
-
-      const response = await axios.put('/api/update-profile', updatePayload, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.data.success) {
-        setMessage('Profile updated successfully! Redirecting to dashboard...');
-        setOriginalData(data); // Update original data
-        setTimeout(() => {
-          navigate(config.dashboardPath);
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Update profile error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to update profile. Please try again.';
-      setMessage(`Error: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
-    }
+    await updateProfile(data);
   };
 
   const handleReset = () => {
     reset(originalData);
-    setMessage('');
+    resetProfileData();
   };
+
+  if (!config) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <i className="fas fa-spinner fa-spin text-4xl text-emerald-600 mb-4"></i>
+          <p className="text-gray-600">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isFetching) {
     return (
