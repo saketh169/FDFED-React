@@ -41,7 +41,7 @@ const AboutPage = () => {
     }, [testimonials.length]);
 
     return (
-      <section id="testimonials" className="py-20 px-4 md:px-8 bg-gradient-to-r from-green-50 to-teal-50 min-h-[400px] animate-fade-in-up animate-delay-[300ms]">
+      <section id="testimonials" className="py-20 px-4 md:px-8 bg-linear-to-r from-green-50 to-teal-50 min-h-[400px] animate-fade-in-up animate-delay-[300ms]">
         <div className="max-w-4xl mx-auto text-center h-full flex flex-col justify-center">
           <h2 className="text-4xl font-bold text-gray-800 mb-12">
             What Our Users Say
@@ -116,7 +116,7 @@ const AboutPage = () => {
 
   return (
     <main className="flex-1 animate-fade-in">
-      <section id="about-intro" className="py-20 px-4 md:px-8 bg-gradient-to-b from-green-50 to-white min-h-[400px] animate-slide-up">
+      <section id="about-intro" className="py-20 px-4 md:px-8 bg-linear-to-b from-green-50 to-white min-h-[400px] animate-slide-up">
         <div className="max-w-6xl mx-auto h-full text-center flex flex-col justify-center">
           <h2 className="text-5xl font-extrabold text-gray-800 mb-4">About NutriConnect</h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">

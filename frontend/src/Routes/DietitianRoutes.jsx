@@ -9,6 +9,7 @@ import DietitianDocStatus from '../pages/Status/DietitianDocStatus';
 import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
 import DietitianAddPlanForm from '../pages/MealPlans/DietitianAddPlanForm';
+import ClientsList from '../pages/Appointments/ClientsList';
 
 import Blog from '../pages/Blog';
 import Contact from '../pages/Contactus';
@@ -44,6 +45,13 @@ export default function DietitianRoutes() {
           element={
             <VerifyProvider requiredRole="dietitian" redirectTo="/dietitian/doc-status">
               <DietitianAddPlanForm/>
+            </VerifyProvider>
+          } />
+        <Route
+          path="clients-profiles"
+          element={
+            <VerifyProvider requiredRole="dietitian" redirectTo="/dietitian/doc-status">
+              <ClientsList/>
             </VerifyProvider>
           } />
 

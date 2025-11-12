@@ -18,7 +18,7 @@ const Footer = () => {
       {/* Font Awesome CDN (Can be moved to index.html for better practice) */}
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
       
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 px-5 border-b border-white/20 pb-12">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 px-5 border-b border-white/20 pb-12">
         
         {/* Column 1: Contact Us (STATIC) */}
         <div className="flex flex-col items-start">
@@ -56,7 +56,70 @@ const Footer = () => {
         {/* Column 2: Quick Links (DYNAMIC - Uses the new component) */}
         <NavFooter handleScrollToTop={handleScrollToTop} />
 
-        {/* Column 3: Follow Us (STATIC) */}
+        {/* Column 3: Services (STATIC) */}
+        <div className="flex flex-col items-start">
+          <h3 className="text-xl font-semibold mb-4 relative pb-2.5 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-12 after:h-0.5 after:bg-[#28B463]">
+            Services
+          </h3>
+          <ul className="list-none p-0 text-white/80">
+            <li className="mb-2">
+              <NavLink
+                to="/user/weight-management"
+                className="no-underline hover:text-[#FFD700] hover:pl-2 transition-all duration-300"
+                aria-label="Weight Management"
+              >
+                Weight Management
+              </NavLink>
+            </li>
+            <li className="mb-2">
+              <NavLink
+                to="/user/diabetes-thyroid"
+                className="no-underline hover:text-[#FFD700] hover:pl-2 transition-all duration-300"
+                aria-label="Diabetes/Thyroid"
+              >
+                Diabetes/Thyroid
+              </NavLink>
+            </li>
+            <li className="mb-2">
+              <NavLink
+                to="/user/cardiac-health"
+                className="no-underline hover:text-[#FFD700] hover:pl-2 transition-all duration-300"
+                aria-label="Cardiac Health"
+              >
+                Cardiac Health
+              </NavLink>
+            </li>
+            <li className="mb-2">
+              <NavLink
+                to="/user/womens-health"
+                className="no-underline hover:text-[#FFD700] hover:pl-2 transition-all duration-300"
+                aria-label="Women's Health"
+              >
+                Women's Health
+              </NavLink>
+            </li>
+            <li className="mb-2">
+              <NavLink
+                to="/user/skin-hair"
+                className="no-underline hover:text-[#FFD700] hover:pl-2 transition-all duration-300"
+                aria-label="Skin & Hair Care"
+              >
+                Skin & Hair Care
+              </NavLink>
+            </li>
+            <li className="mb-2">
+              <NavLink
+                to="/user/gut-health"
+                className="no-underline hover:text-[#FFD700] hover:pl-2 transition-all duration-300"
+                aria-label="Gut Health"
+              >
+                Gut Health
+              </NavLink>
+            </li>
+          </ul>
+        </div>
+
+        {/* Column 4: Follow Us (STATIC) */}
         <div className="flex flex-col items-start">
           <h3 className="text-xl font-semibold mb-4 relative pb-2.5 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-12 after:h-0.5 after:bg-[#28B463]">
             Follow Us

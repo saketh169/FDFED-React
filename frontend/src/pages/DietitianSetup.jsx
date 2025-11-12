@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
+import axios from 'axios';
 
 const DietitianSetup = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   
   const { register, handleSubmit, formState: { errors, isSubmitting }, control } = useForm({
     defaultValues: {
@@ -62,15 +65,84 @@ const DietitianSetup = () => {
     name: 'consultationTypes'
   });
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     if (currentStep === 1) {
-      // Move to step 2
       setCurrentStep(2);
       console.log('Step 1 Data:', data);
     } else {
-      // Form complete - show success
-      alert('✅ Profile validation passed!\n\nForm is ready for API integration.');
-      console.log('Complete Form Data:', data);
+      setIsLoading(true);
+      setError('');
+
+      try {
+        // Get user ID from localStorage
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+          setError('User ID not found. Please sign up first.');
+          return;
+        }
+
+        // Get auth token
+        const token = localStorage.getItem('authToken_dietitian');
+        if (!token) {
+          setError('Authentication token not found. Please sign in.');
+          return;
+        }
+
+        // Process the data to match schema
+        const processedData = {
+          name: data.name,
+          age: data.age,
+          specialization: data.specialization ? data.specialization.split(',').map(s => s.trim()) : [],
+          experience: data.experience,
+          fees: data.fees,
+          languages: data.languages ? data.languages.split(',').map(s => s.trim()) : [],
+          location: data.location,
+          online: data.onlineConsultation || false,
+          offline: data.offlineConsultation || false,
+          education: data.education ? data.education.split(',').map(s => s.trim()) : [],
+          about: data.about,
+          title: data.title,
+          description: data.description,
+          specialties: data.specialties ? data.specialties.split(',').map(s => s.trim()) : [],
+          expertise: data.expertise ? data.expertise.split(',').map(s => s.trim()) : [],
+          certifications: data.certifications || [],
+          awards: data.awards || [],
+          publications: data.publications || [],
+          consultationTypes: data.consultationTypes || [],
+          availability: {
+            workingDays: data.workingDays ? data.workingDays.split(',').map(s => s.trim()) : [],
+            workingHours: {
+              start: data.workingHoursStart,
+              end: data.workingHoursEnd
+            }
+          },
+          socialMedia: {
+            linkedin: data.linkedin,
+            twitter: data.twitter
+          }
+        };
+
+        // Send POST request to update profile
+        const response = await axios.post(`/api/dietitians/${userId}`, processedData, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.data.success) {
+          // Success
+          alert('✅ Profile setup completed successfully! Please proceed to upload your documents.');
+          // Redirect to document upload
+          navigate('/upload-documents?role=dietitian');
+        } else {
+          setError(response.data.message || 'Profile update failed');
+        }
+      } catch (err) {
+        console.error('Profile update error:', err);
+        setError(err.response?.data?.message || 'An error occurred during profile setup');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -95,6 +167,11 @@ const DietitianSetup = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg shadow-xl p-12">
+          {error && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+              <i className="fas fa-exclamation-triangle mr-2"></i>{error}
+            </div>
+          )}
           {/* ========== STEP 1: DIETITIAN DETAILS ========== */}
           {currentStep === 1 && (
             <div>
@@ -126,52 +203,18 @@ const DietitianSetup = () => {
                 </div>
               </div>
 
-              {/* Age & Phone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Age *</label>
-                  <input
-                    type="number"
-                    {...register('age', { required: 'Age is required', min: { value: 18, message: 'Must be 18+' } })}
-                    className={`w-full px-4 py-3 rounded-lg border-2 ${errors.age ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#27AE60] transition-all`}
-                    placeholder="e.g., 30"
-                    min="0"
-                  />
-                  {errors.age && <span className="text-red-500 text-sm mt-1">{errors.age.message}</span>}
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phone *</label>
-                  <input
-                    type="tel"
-                    {...register('phone', { required: 'Phone is required', pattern: { value: /^[0-9]{10}$/, message: '10 digits required' } })}
-                    className={`w-full px-4 py-3 rounded-lg border-2 ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#27AE60] transition-all`}
-                    placeholder="e.g., 1234567890"
-                  />
-                  {errors.phone && <span className="text-red-500 text-sm mt-1">{errors.phone.message}</span>}
-                </div>
-              </div>
+              {/* Age */}
 
-              {/* Specialization Domain & Specializations */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Specialization Domain</label>
-                  <input
-                    type="text"
-                    {...register('specializationDomain')}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-[#27AE60] transition-all"
-                    placeholder="e.g., Pediatric Nutrition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Specializations (comma-separated) *</label>
-                  <input
-                    type="text"
-                    {...register('specialization', { required: 'Specializations are required' })}
-                    className={`w-full px-4 py-3 rounded-lg border-2 ${errors.specialization ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#27AE60] transition-all`}
-                    placeholder="e.g., Diabetes, Weight Loss"
-                  />
-                  {errors.specialization && <span className="text-red-500 text-sm mt-1">{errors.specialization.message}</span>}
-                </div>
+              {/* Specializations */}
+              <div className="mb-8">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Specializations (comma-separated) *</label>
+                <input
+                  type="text"
+                  {...register('specialization', { required: 'Specializations are required' })}
+                  className={`w-full px-4 py-3 rounded-lg border-2 ${errors.specialization ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#27AE60] transition-all`}
+                  placeholder="e.g., Diabetes, Weight Loss"
+                />
+                {errors.specialization && <span className="text-red-500 text-sm mt-1">{errors.specialization.message}</span>}
               </div>
 
               {/* Experience & Fees */}
@@ -425,7 +468,7 @@ const DietitianSetup = () => {
               {/* Step 2 Buttons */}
               <div className="flex gap-4 justify-end pt-6 border-t-2 border-gray-200">
                 <button type="button" onClick={() => setCurrentStep(1)} className="px-8 py-3 rounded-lg border-2 border-gray-400 text-gray-700 font-bold hover:bg-gray-100 transition-all">Previous</button>
-                <button type="submit" disabled={isSubmitting} className="px-8 py-3 rounded-lg bg-[#27AE60] text-white font-bold hover:bg-[#1e8449] transition-all disabled:opacity-50 flex items-center gap-2"><i className="fas fa-save"></i>{isSubmitting ? 'Submitting...' : 'Submit'}</button>
+                <button type="submit" disabled={isSubmitting || isLoading} className="px-8 py-3 rounded-lg bg-[#27AE60] text-white font-bold hover:bg-[#1e8449] transition-all disabled:opacity-50 flex items-center gap-2"><i className="fas fa-save"></i>{isSubmitting || isLoading ? 'Submitting...' : 'Submit'}</button>
               </div>
             </div>
           )}

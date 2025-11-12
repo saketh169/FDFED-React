@@ -1,0 +1,320 @@
+const mongoose = require('mongoose');
+const Booking = require('../models/bookingModel');
+
+/**
+ * Create a new booking
+ * POST /api/bookings/create
+ */
+exports.createBooking = async (req, res) => {
+  try {
+    const {
+      userId,
+      username,
+      email,
+      dietitianId,
+      dietitianName,
+      date,
+      time,
+      consultationType,
+      amount,
+      paymentMethod,
+      paymentId,
+    } = req.body;
+
+    // Validate required fields
+    if (!userId || !username || !email || !dietitianId || !dietitianName || !date || !time || !consultationType || !amount || !paymentMethod || !paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    // Validate date is in the future
+    const bookingDate = new Date(date);
+    if (bookingDate < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking date must be in the future'
+      });
+    }
+
+    // Check if payment ID is unique
+    const existingPayment = await Booking.findOne({ paymentId });
+    if (existingPayment) {
+      return res.status(400).json({
+        success: false,
+        message: 'This payment ID has already been used'
+      });
+    }
+
+    // Create new booking
+    const booking = new Booking({
+      userId,
+      username,
+      email,
+      dietitianId,
+      dietitianName,
+      date: bookingDate,
+      time,
+      consultationType,
+      amount,
+      paymentMethod,
+      paymentId,
+      paymentStatus: 'completed',
+      status: 'confirmed'
+    });
+
+    // Save to database
+    const savedBooking = await booking.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Booking created successfully',
+      data: savedBooking
+    });
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create booking'
+    });
+  }
+};
+
+/**
+ * Get all bookings for a user
+ * GET /api/bookings/user/:userId
+ */
+exports.getUserBookings = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { status, sort = '-createdAt' } = req.query;
+
+    // Validate userId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID'
+      });
+    }
+
+    let query = { userId };
+
+    // Filter by status if provided
+    if (status) {
+      query.status = status;
+    }
+
+    const bookings = await Booking.find(query)
+      .sort(sort)
+      .exec();
+
+    res.status(200).json({
+      success: true,
+      data: bookings,
+      count: bookings.length
+    });
+  } catch (error) {
+    console.error('Error fetching user bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch bookings'
+    });
+  }
+};
+
+/**
+ * Get all bookings for a dietitian
+ * GET /api/bookings/dietitian/:dietitianId
+ */
+exports.getDietitianBookings = async (req, res) => {
+  try {
+    const { dietitianId } = req.params;
+    const { status, sort = '-createdAt' } = req.query;
+
+    // Validate dietitianId
+    if (!mongoose.Types.ObjectId.isValid(dietitianId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid dietitian ID'
+      });
+    }
+
+    let query = { dietitianId };
+
+    // Filter by status if provided
+    if (status) {
+      query.status = status;
+    }
+
+    const bookings = await Booking.find(query)
+      .sort(sort)
+      .exec();
+
+    res.status(200).json({
+      success: true,
+      data: bookings,
+      count: bookings.length
+    });
+  } catch (error) {
+    console.error('Error fetching dietitian bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch bookings'
+    });
+  }
+};
+
+/**
+ * Get a specific booking by ID
+ * GET /api/bookings/:bookingId
+ */
+exports.getBookingById = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    // Validate booking ID
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking ID'
+      });
+    }
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error fetching booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch booking'
+    });
+  }
+};
+
+/**
+ * Update booking status
+ * PATCH /api/bookings/:bookingId/status
+ */
+exports.updateBookingStatus = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { status } = req.body;
+
+    // Validate booking ID
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking ID'
+      });
+    }
+
+    // Validate status value
+    const validStatuses = ['confirmed', 'cancelled', 'completed', 'no-show'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      });
+    }
+
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { status, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking status updated successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error updating booking status:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update booking'
+    });
+  }
+};
+
+/**
+ * Cancel a booking
+ * DELETE /api/bookings/:bookingId
+ */
+exports.cancelBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    // Validate booking ID
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking ID'
+      });
+    }
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Check if booking can be cancelled
+    if (booking.status === 'completed' || booking.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel a ${booking.status} booking`
+      });
+    }
+
+    // Update booking status
+    booking.status = 'cancelled';
+    booking.updatedAt = Date.now();
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking cancelled successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error cancelling booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to cancel booking'
+    });
+  }
+};
+
+module.exports = exports;

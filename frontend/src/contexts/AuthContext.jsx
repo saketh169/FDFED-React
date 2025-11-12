@@ -110,6 +110,7 @@ export const AuthProvider = ({ children, currentRole }) => {
 
       if (response.data.success) {
         const userData = {
+          id: response.data.id,
           name: response.data.name,
           email: response.data.email,
           phone: response.data.phone,

@@ -96,7 +96,7 @@ const DietitianHome = () => {
                 Go to Dashboard
               </button>
               <button
-                onClick={() => navigate('/dietitian/schedule')}
+                onClick={() => navigate('/dietitian/clients-profiles')}
                 className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
               >
                 View My Clients
@@ -222,7 +222,7 @@ const DietitianHome = () => {
             </p>
             <div className="button-container text-center md:text-left">
               <button 
-                onClick={() => navigate('/dietitian/schedule')}
+                onClick={() => navigate('/dietitian/clients-profiles')}
                 className="py-3 px-8 bg-[#27AE60] text-white font-bold rounded-full shadow-md hover:bg-[#1E6F5C] transition-colors"
               >
                 View All Clients
