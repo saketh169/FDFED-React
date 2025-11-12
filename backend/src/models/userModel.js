@@ -43,7 +43,7 @@ const DietitianSchema = new Schema({
     name: { type: String, required: true, minlength: 5, unique: true, trim: true }, // ROLE-SPECIFIC UNIQUE
     email: { type: String, required: true, lowercase: true, trim: true }, // Email from UserAuth
     age: { type: Number, required: true, min: 18 },
-    phone: { type: String, required: true, minlength: 10, maxlength: 10 }, // Global check in Controller
+    phone: { type: String, minlength: 10, maxlength: 10 }, // Optional field
     licenseNumber: { type: String, required: true, unique: true, match: /^DLN[0-9]{6}$/ }, // ROLE-SPECIFIC UNIQUE
     interestedField: { type: String },
     degreeType: { type: String },
@@ -76,6 +76,61 @@ const DietitianSchema = new Schema({
     documentUploadStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
     lastDocumentUpdate: { type: Date, default: null },
     profileImage: { type: Buffer },
+    specialization: [{ type: String }],
+    specialties: [{ type: String }],
+    experience: { type: Number },
+    fees: { type: Number },
+    languages: [{ type: String }],
+    location: { type: String },
+    rating: { type: Number },
+    online: { type: Boolean },
+    offline: { type: Boolean },
+    about: { type: String },
+    education: [{ type: String }],
+    bookedslots: [{
+        date: { type: String },
+        slots: [{ type: String }]
+    }],
+    isDeleted: { type: Boolean, default: false },
+    title: { type: String },
+    description: { type: String },
+    expertise: [{ type: String }],
+    certifications: [{
+        name: { type: String },
+        year: { type: Number },
+        issuer: { type: String }
+    }],
+    awards: [{
+        name: { type: String },
+        year: { type: Number },
+        description: { type: String }
+    }],
+    publications: [{
+        title: { type: String },
+        year: { type: Number },
+        link: { type: String }
+    }],
+    testimonials: [{
+        text: { type: String },
+        author: { type: String },
+        rating: { type: Number }
+    }],
+    consultationTypes: [{
+        type: { type: String },
+        duration: { type: Number },
+        fee: { type: Number }
+    }],
+    availability: {
+        workingDays: [{ type: String }],
+        workingHours: {
+            start: { type: String },
+            end: { type: String }
+        }
+    },
+    socialMedia: {
+        linkedin: { type: String },
+        twitter: { type: String }
+    }
 }, { timestamps: true });
 
 // 2d. Organization Profile

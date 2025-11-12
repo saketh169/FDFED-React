@@ -22,7 +22,7 @@ const Sidebar = () => {
   const userNavLinks = [
     { name: 'Home', href: '/user', icon: 'fas fa-home' },
     { name: 'Dietitians', href: '/user/dietitian-profiles', icon: 'fas fa-user-tie' },
-    { name: 'Appointments', href: '/user/user-consultations', icon: 'fas fa-calendar' },
+    { name: 'Appointments', href: '/user/my-dietitians', icon: 'fas fa-calendar' },
     { name: 'Schedule', href: '/user/user-schedule', icon: 'fas fa-calendar-check' },
     { name: 'Pricing', href: '/user/pricing', icon: 'fas fa-tag' },
     { name: 'MealPlans', href: '/user/get-plans', icon: 'fas fa-utensils' },
@@ -33,7 +33,7 @@ const Sidebar = () => {
   const dietitianNavLinks = [
     { name: 'Home', href: '/dietitian', icon: 'fas fa-home' },
     { name: 'My Verification', href: '/dietitian/doc-status', icon: 'fas fa-handshake' },
-    { name: 'My Clients', href: '/dietitian/dietitian-consultations', icon: 'fas fa-users' },
+    { name: 'My Clients', href: '/dietitian/clients-profiles', icon: 'fas fa-users' },
     { name: 'Schedule', href: '/dietitian/dietitian-schedule', icon: 'fas fa-calendar-check' },
     { name: 'MealPlans', href: '/dietitian/add-plans', icon: 'fas fa-utensils' },
     { name: 'Blog', href: '/dietitian/blog', icon: 'fas fa-blog' },

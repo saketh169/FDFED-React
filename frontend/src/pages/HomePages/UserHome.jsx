@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 
 const UserHome = () => {
   const navigate = useNavigate();
@@ -36,9 +36,9 @@ const UserHome = () => {
 
   // === 3. Blog Data (Placeholder) ===
   const blogPosts = [
-    { id: 1, title: 'Top 5 Nutrition Tips for 2025', excerpt: 'Kickstart your health journey...', author: 'Dr. Jane', image: 'https://via.placeholder.com/400x200?text=Nutrition+Tips' },
-    { id: 2, title: 'Quick Healthy Recipes', excerpt: '5-minute meals for busy days...', author: 'Chef Mark', image: 'https://via.placeholder.com/400x200?text=Healthy+Recipes' },
-    { id: 3, title: 'The Role of AI in Dietetics', excerpt: 'Revolutionizing nutrition care...', author: 'AI Team', image: 'https://via.placeholder.com/400x200?text=AI+in+Health' },
+    { id: 1, title: 'Top 5 Nutrition Tips for 2025', excerpt: 'Kickstart your health journey...', author: 'Dr. Jane', image: '/images/nutrition-tips.jpg' },
+    { id: 2, title: 'Quick Healthy Recipes', excerpt: '5-minute meals for busy days...', author: 'Chef Mark', image: '/images/healthy-recipes.jpg' },
+    { id: 3, title: 'The Role of AI in Dietetics', excerpt: 'Revolutionizing nutrition care...', author: 'AI Team', image: '/images/ai-in-health.jpg' },
   ];
 
 
@@ -146,43 +146,43 @@ const UserHome = () => {
       {/* ======================================================= */}
       <section id="booking" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[400ms]">
         <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Book Your Next Consultation 🧑‍⚕️</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Book Your Next Consultation </h2>
           <p className="text-gray-600 mb-10 text-lg">Select a specialization to connect with the right dietitian and start your plan.</p>
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6">
             {/* First Row of 3 Services */}
             {dietServices.slice(0, 3).map((service, index) => (
-              <button
+              <NavLink
                 key={index}
-                onClick={() => navigate('/dietitian-profiles?service=' + service.slug)}
-                className="group bg-gray-50 p-6 rounded-xl shadow-md border-b-4 border-[#27AE60] hover:shadow-xl hover:bg-green-100 transition-all duration-300 transform hover:-translate-y-2"
+                to={`/user/dietitian-profiles/${service.slug}`}
+                className="group bg-gray-50 p-6 rounded-xl shadow-md border-b-4 border-[#27AE60] hover:shadow-xl hover:bg-green-100 transition-all duration-300 transform hover:-translate-y-2 block text-center"
               >
                 <div className="text-5xl text-[#27AE60] mb-3">
                   <i className={service.icon}></i>
                 </div>
                 <h3 className="text-lg font-semibold text-[#2F4F4F]">{service.title}</h3>
-              </button>
+              </NavLink>
             ))}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
              {/* Second Row of 3 Services */}
             {dietServices.slice(3, 6).map((service, index) => (
-              <button
+              <NavLink
                 key={index + 3}
-                onClick={() => navigate('/dietitian-profiles?service=' + service.slug)}
-                className="group bg-gray-50 p-6 rounded-xl shadow-md border-b-4 border-[#27AE60] hover:shadow-xl hover:bg-green-100 transition-all duration-300 transform hover:-translate-y-2"
+                to={`/user/dietitian-profiles/${service.slug}`}
+                className="group bg-gray-50 p-6 rounded-xl shadow-md border-b-4 border-[#27AE60] hover:shadow-xl hover:bg-green-100 transition-all duration-300 transform hover:-translate-y-2 block text-center"
               >
                 <div className="text-5xl text-[#27AE60] mb-3">
                   <i className={service.icon}></i>
                 </div>
                 <h3 className="text-lg font-semibold text-[#2F4F4F]">{service.title}</h3>
-              </button>
+              </NavLink>
             ))}
           </div>
 
           <button
-            onClick={() => navigate('/dietitian-profiles')}
+            onClick={() => navigate('/user/dietitian-profiles')}
             className="mt-10 bg-[#1A4A40] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#27AE60] transition-all"
           >
             Browse All Dietitians

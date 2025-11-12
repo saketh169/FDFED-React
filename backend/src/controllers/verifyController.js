@@ -280,6 +280,7 @@ async function finalApproveDietitian(req, res) {
         }
 
         dietitian.verificationStatus.finalReport = 'Verified';
+        dietitian.documentUploadStatus = 'verified'; // Update overall status
         await dietitian.save();
 
         console.log(`Final Approval Submitted: ${dietitian.name} - Final Report: Verified`);
@@ -305,6 +306,7 @@ async function finalDisapproveDietitian(req, res) {
         }
 
         dietitian.verificationStatus.finalReport = 'Rejected';
+        dietitian.documentUploadStatus = 'rejected'; // Update overall status
         await dietitian.save();
 
         console.log(`Final Disapproval Submitted: ${dietitian.name} - Final Report: Rejected`);
@@ -701,6 +703,7 @@ async function finalApproveOrganization(req, res) {
         }
 
         organization.verificationStatus.finalReport = 'Verified';
+        organization.documentUploadStatus = 'verified'; // Update overall status
         await organization.save();
 
         console.log(`Final Approval Submitted: ${organization.name} - Final Report: Verified`);
@@ -726,6 +729,7 @@ async function finalDisapproveOrganization(req, res) {
         }
 
         organization.verificationStatus.finalReport = 'Rejected';
+        organization.documentUploadStatus = 'rejected'; // Update overall status
         await organization.save();
 
         console.log(`Final Disapproval Submitted: ${organization.name} - Final Report: Rejected`);
@@ -1117,6 +1121,7 @@ async function finalApproveCorporate(req, res) {
         }
 
         corporatePartner.verificationStatus.finalReport = 'Verified';
+        corporatePartner.documentUploadStatus = 'verified'; // Update overall status
         await corporatePartner.save();
 
         console.log(`Final Approval Submitted: ${corporatePartner.name} - Final Report: Verified`);
@@ -1142,6 +1147,7 @@ async function finalDisapproveCorporate(req, res) {
         }
 
         corporatePartner.verificationStatus.finalReport = 'Rejected';
+        corporatePartner.documentUploadStatus = 'rejected'; // Update overall status
         await corporatePartner.save();
 
         console.log(`Final Disapproval Submitted: ${corporatePartner.name} - Final Report: Rejected`);

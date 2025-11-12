@@ -487,6 +487,7 @@ async function getUserDetailsGeneric(req, res) {
         const response = {
             success: true,
             role: userRole,
+            id: user._id,
             name: user.name || 'User',
             email: user.email,
             phone: user.phone || 'N/A',

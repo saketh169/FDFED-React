@@ -16,6 +16,11 @@ import Contact from '../pages/Contactus';
 import CreateBlog from '../pages/Blog/CreateBlog';
 import BlogPost from '../pages/Blog/BlogPost';
 
+import AllDietitiansPage from '../pages/AllDietitiansPage';
+import DietitianProfilesPage from '../pages/DietitianProfilesPage';
+import DietitianProfile from '../pages/Consultations/DietitianProfile';
+import DietitiansList from '../pages/Appointments/DietitiansList';
+
 
 
 export default function UserRoutes() {
@@ -44,6 +49,67 @@ export default function UserRoutes() {
         <Route path="blog" element={<Blog/>} />
         <Route path="contact-us" element={<Contact/>} />
         <Route path="chatbot" element={<Chatbot/>} />
+        
+        {/* Dietitian Routes */}
+        <Route path="dietitian-profiles" element={<AllDietitiansPage />} />
+        <Route
+          path="dietitian-profiles/skin-hair"
+          element={<DietitianProfilesPage specializationType="skin-hair" />}
+        />
+        <Route
+          path="dietitian-profiles/womens-health"
+          element={<DietitianProfilesPage specializationType="womens-health" />}
+        />
+        <Route
+          path="dietitian-profiles/weight-management"
+          element={
+            <DietitianProfilesPage specializationType="weight-management" />
+          }
+        />
+        <Route
+          path="dietitian-profiles/gut-health"
+          element={<DietitianProfilesPage specializationType="gut-health" />}
+        />
+        <Route
+          path="dietitian-profiles/diabetes-thyroid"
+          element={
+            <DietitianProfilesPage specializationType="diabetes-thyroid" />
+          }
+        />
+        <Route
+          path="dietitian-profiles/cardiac-health"
+          element={
+            <DietitianProfilesPage specializationType="cardiac-health" />
+          }
+        />
+        <Route path="dietitian-profiles/:id" element={<DietitianProfile />} />
+        <Route path="my-dietitians" element={<DietitiansList />} />
+
+        {/* Specialization Routes */}
+        <Route
+          path="weight-management"
+          element={<DietitianProfilesPage specializationType="weight-management" />}
+        />
+        <Route
+          path="diabetes-thyroid"
+          element={<DietitianProfilesPage specializationType="diabetes-thyroid" />}
+        />
+        <Route
+          path="cardiac-health"
+          element={<DietitianProfilesPage specializationType="cardiac-health" />}
+        />
+        <Route
+          path="womens-health"
+          element={<DietitianProfilesPage specializationType="womens-health" />}
+        />
+        <Route
+          path="skin-hair"
+          element={<DietitianProfilesPage specializationType="skin-hair" />}
+        />
+        <Route
+          path="gut-health"
+          element={<DietitianProfilesPage specializationType="gut-health" />}
+        />
         
         {/* Fallback Route */}
         <Route path="*" element={<Navigate to="home" replace />} />
