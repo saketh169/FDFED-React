@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
 import Status from "../../middleware/StatusBadge"; // Import Status component
-import { AuthProvider } from "../../contexts/AuthContext"; // Import AuthProvider
 import { useAuthContext } from "../../hooks/useAuthContext"; // Import useAuthContext hook
 
 // Mock Data (Replace with actual API data)
@@ -26,10 +25,18 @@ const DietitianDashboard = () => {
 
   // Set profile image from user data when available
   useEffect(() => {
-    if (user && user.profileImage) {
+    if (user?.profileImage) {
       setProfileImage(user.profileImage);
+      // Store with role-specific key to avoid conflicts
+      localStorage.setItem('profileImage_dietitian', user.profileImage);
+    } else {
+      // Check localStorage as fallback with role-specific key
+      const storedImage = localStorage.getItem('profileImage_dietitian');
+      if (storedImage) {
+        setProfileImage(storedImage);
+      }
     }
-  }, [user]);
+  }, [user, user?.profileImage]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -39,8 +46,8 @@ const DietitianDashboard = () => {
     const reader = new FileReader();
     reader.onload = () => {
       setProfileImage(reader.result);
-      // Store in localStorage for header display
-      localStorage.setItem('profileImage', reader.result);
+      // Store in localStorage with role-specific key
+      localStorage.setItem('profileImage_dietitian', reader.result);
     };
     reader.readAsDataURL(file);
 
@@ -49,8 +56,14 @@ const DietitianDashboard = () => {
     formData.append("profileImage", file);
 
     try {
-      // Get token from context
-      if (!token) {
+      // Get token from context or localStorage
+      let authToken = token;
+      if (!authToken) {
+        // Fallback to localStorage if context doesn't have token
+        authToken = localStorage.getItem('authToken_dietitian');
+      }
+      
+      if (!authToken) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=dietitian');
         return;
@@ -60,13 +73,17 @@ const DietitianDashboard = () => {
         method: 'POST', 
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
       const data = await res.json();
 
       if (data.success) {
         alert("Profile photo updated successfully!");
+        // Refresh user data from AuthContext to get the updated profileImage
+        if (user?.id) {
+          window.location.reload();
+        }
       } else {
         alert(`Upload failed: ${data.message || 'Unknown error'}`);
         // Revert to old image on failure if needed
@@ -299,11 +316,4 @@ const DietitianDashboard = () => {
   );
 };
 
-// Wrap the component with AuthProvider for dietitian role
-const DietitianDashboardWithAuth = () => (
-  <AuthProvider currentRole="dietitian">
-    <DietitianDashboard />
-  </AuthProvider>
-);
-
-export default DietitianDashboardWithAuth;
+export default DietitianDashboard;

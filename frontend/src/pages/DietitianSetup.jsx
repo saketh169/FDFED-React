@@ -1,15 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import axios from 'axios';
+import { useAuthContext } from '../hooks/useAuthContext';
 
 const DietitianSetup = () => {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [userProfile, setUserProfile] = useState(null);
   
-  const { register, handleSubmit, formState: { errors, isSubmitting }, control } = useForm({
+  // Fetch user profile data on component mount
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const userId = localStorage.getItem('userId');
+        const token = localStorage.getItem('authToken_dietitian');
+        
+        if (!userId || !token) {
+          return;
+        }
+
+        const response = await axios.get(`/api/dietitians/profile/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.data.success) {
+          setUserProfile(response.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching user profile:', err);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  const { register, handleSubmit, formState: { errors, isSubmitting }, control, reset } = useForm({
     defaultValues: {
       // Step 1 - Dietitian Details
       name: '',
@@ -44,6 +73,39 @@ const DietitianSetup = () => {
     },
     mode: 'onBlur'
   });
+
+  // Update form with fetched user data
+  useEffect(() => {
+    if (userProfile) {
+      reset({
+        name: userProfile.name || '',
+        email: userProfile.email || '',
+        phone: userProfile.phone || '',
+        age: userProfile.age || '',
+        specializationDomain: userProfile.specializationDomain || '',
+        specialization: Array.isArray(userProfile.specialization) ? userProfile.specialization.join(', ') : '',
+        experience: userProfile.experience || '',
+        fees: userProfile.fees || '',
+        languages: Array.isArray(userProfile.languages) ? userProfile.languages.join(', ') : '',
+        location: userProfile.location || '',
+        about: userProfile.about || '',
+        education: Array.isArray(userProfile.education) ? userProfile.education.join(', ') : '',
+        title: userProfile.title || '',
+        description: userProfile.description || '',
+        specialties: Array.isArray(userProfile.specialties) ? userProfile.specialties.join(', ') : '',
+        expertise: Array.isArray(userProfile.expertise) ? userProfile.expertise.join(', ') : '',
+        certifications: userProfile.certifications || [{ name: '', year: '', issuer: '' }],
+        awards: userProfile.awards || [{ name: '', year: '', description: '' }],
+        publications: userProfile.publications || [{ title: '', year: '', link: '' }],
+        consultationTypes: userProfile.consultationTypes || [{ type: '', duration: '', fee: '' }],
+        workingDays: userProfile.availability?.workingDays?.join(', ') || '',
+        workingHoursStart: userProfile.availability?.workingHours?.start || '',
+        workingHoursEnd: userProfile.availability?.workingHours?.end || '',
+        linkedin: userProfile.socialMedia?.linkedin || '',
+        twitter: userProfile.socialMedia?.twitter || '',
+      });
+    }
+  }, [userProfile, reset]);
 
   const { fields: certFields, append: appendCert, remove: removeCert } = useFieldArray({
     control,
@@ -130,10 +192,10 @@ const DietitianSetup = () => {
         });
 
         if (response.data.success) {
-          // Success
-          alert('✅ Profile setup completed successfully! Please proceed to upload your documents.');
-          // Redirect to document upload
-          navigate('/upload-documents?role=dietitian');
+          // Success - redirect to dietitian dashboard instead of document upload
+          alert('✅ Profile setup completed successfully! Welcome to your dashboard.');
+          // Redirect to dietitian profile/dashboard
+          navigate('/dietitian/profile');
         } else {
           setError(response.data.message || 'Profile update failed');
         }
@@ -192,18 +254,51 @@ const DietitianSetup = () => {
                   {errors.name && <span className="text-red-500 text-sm mt-1">{errors.name.message}</span>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email * 
+                    <span className="text-xs text-gray-500 ml-2">(From signup - read only)</span>
+                  </label>
                   <input
                     type="email"
                     {...register('email', { required: 'Email is required', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email' } })}
-                    className={`w-full px-4 py-3 rounded-lg border-2 ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#27AE60] transition-all`}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-gray-100 cursor-not-allowed transition-all"
                     placeholder="e.g., john@example.com"
+                    readOnly
                   />
                   {errors.email && <span className="text-red-500 text-sm mt-1">{errors.email.message}</span>}
                 </div>
               </div>
 
-              {/* Age */}
+              {/* Age & Phone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Age * 
+                    <span className="text-xs text-gray-500 ml-2">(From signup)</span>
+                  </label>
+                  <input
+                    type="number"
+                    {...register('age', { required: 'Age is required', min: { value: 18, message: 'Must be at least 18' } })}
+                    className={`w-full px-4 py-3 rounded-lg border-2 ${errors.age ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#27AE60] transition-all`}
+                    placeholder="e.g., 30"
+                  />
+                  {errors.age && <span className="text-red-500 text-sm mt-1">{errors.age.message}</span>}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Phone Number * 
+                    <span className="text-xs text-gray-500 ml-2">(From signup - read only)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    {...register('phone', { required: 'Phone is required', pattern: { value: /^[0-9]{10}$/, message: 'Must be 10 digits' } })}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-gray-100 cursor-not-allowed transition-all"
+                    placeholder="e.g., 9876543210"
+                    readOnly
+                  />
+                  {errors.phone && <span className="text-red-500 text-sm mt-1">{errors.phone.message}</span>}
+                </div>
+              </div>
 
               {/* Specializations */}
               <div className="mb-8">

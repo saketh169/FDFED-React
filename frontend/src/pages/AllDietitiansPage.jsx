@@ -15,11 +15,11 @@ const Notification = ({ show, message, type, onClose }) => {
 
   if (!show) return null;
 
-  const bgColor = type === "success" ? "bg-emerald-600" : "bg-red-600";
+  const bgColor = type === "success" ? "bg-[#28B463]" : "bg-red-600";
   const textColor = "text-white";
-  const borderColor = type === "success" ? "border-emerald-700" : "border-red-700";
+  const borderColor = type === "success" ? "border-[#1E6F5C]" : "border-red-700";
   const icon = type === "success" ? "✓" : "✕";
-  const iconBg = type === "success" ? "bg-emerald-700" : "bg-red-700";
+  const iconBg = type === "success" ? "bg-[#1E6F5C]" : "bg-red-700";
 
   return (
     <div
@@ -41,7 +41,7 @@ const Notification = ({ show, message, type, onClose }) => {
         </div>
         <button
           onClick={onClose}
-          className="text-emerald-100 hover:text-white transition-colors shrink-0"
+          className="text-white hover:text-gray-200 transition-colors shrink-0"
           aria-label="Close notification"
         >
           <i className="fas fa-times text-lg"></i>
@@ -240,12 +240,27 @@ const AllDietitiansPage = () => {
   };
 
   const handleProceedToPayment = (details) => {
+    console.log('====== AllDietitiansPage - handleProceedToPayment ======');
+    console.log('Details received from BookingSidebar:', details);
+    console.log('Current dietitian:', currentDietitian);
+    console.log('======================================================');
+    
     setPaymentDetails({
-      amount: currentDietitian.fees,
-      dietitianName: currentDietitian.name,
+      amount: details.amount || currentDietitian?.fees || 500,
+      dietitianId: details.dietitianId || currentDietitian?._id,
+      dietitianName: details.dietitianName || currentDietitian?.name,
+      dietitianEmail: details.dietitianEmail || currentDietitian?.email,
+      dietitianPhone: details.dietitianPhone || currentDietitian?.phone,
+      dietitianSpecialization: details.dietitianSpecialization || currentDietitian?.specialties?.[0] || '',
       date: details.date,
       time: details.time,
-      type: details.consultationType,
+      type: details.type || details.consultationType,
+      consultationType: details.consultationType || details.type,
+      userId: details.userId,
+      userName: details.userName,
+      userEmail: details.userEmail,
+      userPhone: details.userPhone,
+      userAddress: details.userAddress,
     });
     setIsPaymentModalOpen(true);
     setIsBookingSidebarOpen(false);
@@ -284,16 +299,16 @@ const AllDietitiansPage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header Section */}
-      <div className="border-b-2 bg-white border-emerald-600">
+      <div className="border-b-2 bg-white border-[#28B463]">
         <div className="max-w-7xl mx-auto px-6 py-1">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-emerald-600 mb-0">
+            <h1 className="text-3xl font-bold text-[#1E6F5C] mb-0">
               Find Your Perfect Dietitian
             </h1>
             <p className="text-gray-600 font-medium max-w-2xl mx-auto">
               Connect with certified nutrition experts for personalized health guidance
             </p>
-            <div className="w-16 h-0.5 bg-emerald-600 mx-auto mt-1 rounded-full" />
+            <div className="w-16 h-0.5 bg-[#28B463] mx-auto mt-1 rounded-full" />
           </div>
         </div>
       </div>
@@ -324,19 +339,19 @@ const AllDietitiansPage = () => {
                     placeholder="Search by name, location, or specialties..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-gray-700"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]/30 focus:border-[#28B463] text-gray-700"
                   />
-                  <i className="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-600"></i>
+                  <i className="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-[#28B463]"></i>
                 </div>
               </div>
 
               {/* Results Count */}
               <div className="mb-6 flex justify-between items-center pb-4 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-emerald-600 rounded-full"></div>
+                  <div className="w-3 h-3 bg-[#28B463] rounded-full"></div>
                   <p className="text-gray-600 font-medium">
                     Found{" "}
-                    <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded">
+                    <span className="text-[#1E6F5C] font-bold bg-[#E8F5E9] px-2 py-1 rounded">
                       {filteredDietitians.length}
                     </span>{" "}
                     dietitian{filteredDietitians.length !== 1 ? "s" : ""}
@@ -362,10 +377,10 @@ const AllDietitiansPage = () => {
                 ) : (
                   <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                     <div className="max-w-md mx-auto">
-                    <div className="text-4xl mb-4 text-emerald-600">
-                      <i className="fas fa-search text-emerald-600"></i>
+                    <div className="text-4xl mb-4 text-[#28B463]">
+                      <i className="fas fa-search text-[#28B463]"></i>
                     </div>
-                      <h3 className="text-xl font-bold text-teal-900 mb-3">
+                      <h3 className="text-xl font-bold text-[#1E6F5C] mb-3">
                         No dietitians found
                       </h3>
                       <p className="text-gray-600 mb-6 leading-relaxed">
@@ -373,7 +388,7 @@ const AllDietitiansPage = () => {
                       </p>
                       <button
                         onClick={handleClearFilters}
-                        className="px-6 py-3 bg-emerald-600 text-white font-semibold rounded-full hover:bg-emerald-700 transition-colors"
+                        className="px-6 py-3 bg-[#28B463] text-white font-semibold rounded-full hover:bg-[#1E6F5C] transition-colors shadow-md"
                       >
                         Clear All Filters
                       </button>
@@ -392,6 +407,7 @@ const AllDietitiansPage = () => {
         onClose={handleCloseBooking}
         onProceedToPayment={handleProceedToPayment}
         dietitianId={currentDietitian?._id}
+        dietitian={currentDietitian}
       />
 
       {/* Payment Modal */}

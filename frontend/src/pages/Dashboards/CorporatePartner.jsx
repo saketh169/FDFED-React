@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import Status from "../../middleware/StatusBadge"; // Import Status component 
-import { AuthProvider } from "../../contexts/AuthContext";
 import { useAuthContext } from "../../hooks/useAuthContext"; 
 
 // --- Mock Data ---
@@ -108,10 +107,18 @@ const CorporateDashboard = () => {
 
   // Set profile image from user data when available
   useEffect(() => {
-    if (user && user.profileImage) {
+    if (user?.profileImage) {
       setPartnerLogo(user.profileImage);
+      // Store with role-specific key to avoid conflicts
+      localStorage.setItem('profileImage_corporatepartner', user.profileImage);
+    } else {
+      // Check localStorage as fallback with role-specific key
+      const storedImage = localStorage.getItem('profileImage_corporatepartner');
+      if (storedImage) {
+        setPartnerLogo(storedImage);
+      }
     }
-  }, [user]);
+  }, [user, user?.profileImage]);
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
@@ -121,8 +128,8 @@ const CorporateDashboard = () => {
     const reader = new FileReader();
     reader.onload = () => {
       setPartnerLogo(reader.result);
-      // Store in localStorage for header display
-      localStorage.setItem('profileImage', reader.result);
+      // Store in localStorage with role-specific key
+      localStorage.setItem('profileImage_corporatepartner', reader.result);
     };
     reader.readAsDataURL(file);
 
@@ -132,8 +139,14 @@ const CorporateDashboard = () => {
       const formData = new FormData();
       formData.append('profileImage', file);
 
-      // Get token from context
-      if (!token) {
+      // Get token from context or localStorage
+      let authToken = token;
+      if (!authToken) {
+        // Fallback to localStorage if context doesn't have token
+        authToken = localStorage.getItem('authToken_corporatepartner');
+      }
+
+      if (!authToken) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=corporatepartner');
         return;
@@ -143,7 +156,7 @@ const CorporateDashboard = () => {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -151,6 +164,10 @@ const CorporateDashboard = () => {
       
       if (data.success) {
         alert('Partner logo uploaded successfully!');
+        // Refresh user data from AuthContext to get the updated profileImage
+        if (user?.id) {
+          window.location.reload();
+        }
       } else {
         alert(`Upload failed: ${data.message || 'Unknown error'}`);
       }
@@ -448,10 +465,4 @@ const CorporateDashboard = () => {
 };
 
 // Wrap the component with AuthProvider for corporatepartner role
-const CorporateDashboardWithAuth = () => (
-  <AuthProvider currentRole="corporatepartner">
-    <CorporateDashboard />
-  </AuthProvider>
-);
-
-export default CorporateDashboardWithAuth;
+export default CorporateDashboard;

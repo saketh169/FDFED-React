@@ -88,6 +88,13 @@ export const AuthProvider = ({ children, currentRole }) => {
     initializeAuth();
   }, [currentRole]); // Re-run when currentRole changes
 
+  // Sync profile image to role-specific localStorage when user data changes
+  useEffect(() => {
+    if (user?.profileImage && role) {
+      localStorage.setItem(`profileImage_${role}`, user.profileImage);
+    }
+  }, [user?.profileImage, role]);
+
   // Fetch user details from API
   const fetchUserDetails = async (token, role) => {
     try {

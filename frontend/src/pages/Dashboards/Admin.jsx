@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import Sidebar from "../../components/Sidebar/Sidebar";
-import { AuthProvider } from "../../contexts/AuthContext";
 import { useAuthContext } from "../../hooks/useAuthContext";
 
 // --- Mock Data & API Call Simulation ---
@@ -229,10 +228,18 @@ const AdminDashboard = () => {
 
   // Set profile image from user data when available
   useEffect(() => {
-    if (user && user.profileImage) {
+    if (user?.profileImage) {
       setProfileImage(user.profileImage);
+      // Store with role-specific key to avoid conflicts
+      localStorage.setItem('profileImage_admin', user.profileImage);
+    } else {
+      // Check localStorage as fallback with role-specific key
+      const storedImage = localStorage.getItem('profileImage_admin');
+      if (storedImage) {
+        setProfileImage(storedImage);
+      }
     }
-  }, [user]);
+  }, [user, user?.profileImage]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -242,7 +249,8 @@ const AdminDashboard = () => {
     const reader = new FileReader();
     reader.onload = () => {
       setProfileImage(reader.result);
-      localStorage.setItem('profileImage', reader.result);
+      // Store in localStorage with role-specific key
+      localStorage.setItem('profileImage_admin', reader.result);
     };
     reader.readAsDataURL(file);
 
@@ -253,7 +261,14 @@ const AdminDashboard = () => {
     try {
       setIsUploading(true);
       
-      if (!token) {
+      // Get token from context or localStorage
+      let authToken = token;
+      if (!authToken) {
+        // Fallback to localStorage if context doesn't have token
+        authToken = localStorage.getItem('authToken_admin');
+      }
+      
+      if (!authToken) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=admin');
         return;
@@ -263,13 +278,17 @@ const AdminDashboard = () => {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
       const data = await response.json();
       if (data.success) {
         alert('Profile photo updated successfully!');
+        // Refresh user data from AuthContext to get the updated profileImage
+        if (user?.id) {
+          window.location.reload();
+        }
       } else {
         alert(`Upload failed: ${data.message || 'Unknown error'}`);
       }
@@ -474,10 +493,4 @@ const RevenueBox = ({ title, value, isTotal = false }) => (
 );
 
 // Wrap the component with AuthProvider for admin role
-const AdminDashboardWithAuth = () => (
-  <AuthProvider currentRole="admin">
-    <AdminDashboard />
-  </AuthProvider>
-);
-
-export default AdminDashboardWithAuth;
+export default AdminDashboard;

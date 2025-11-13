@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NavHeader from '../Navbar/NavHeader';
+import { useAuthContext } from '../../hooks/useAuthContext';
 
 // Utility function to get the base role path (e.g., '/user', '/dietitian', or '/')
 const getBasePath = (currentPath) => {
@@ -52,10 +53,13 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
-  const [profileImage, setProfileImage] = React.useState(null);
   const handleScrollToTop = () => window.scrollTo(0, 0);
 
-  // Check if the user is in ANY role-specific area
+  // Always call useAuthContext (hooks must be called unconditionally)
+  // It will return null values when outside provider, which is fine
+  const { user } = useAuthContext();
+
+  // Check if we're in a logged-in area first
   const isLoggedInArea = 
     currentPath.startsWith('/user') || 
     currentPath.startsWith('/dietitian') ||
@@ -63,10 +67,19 @@ const Header = () => {
     currentPath.startsWith('/organization') ||
     currentPath.startsWith('/corporatepartner');
 
-  // Check if user is on a profile page
-  const isProfilePage = 
-    currentPath.endsWith('/profile') || 
-    currentPath.includes('/profile/');
+  // Get current role from path
+  const getCurrentRoleFromPath = () => {
+    if (currentPath.startsWith('/admin')) return 'admin';
+    if (currentPath.startsWith('/organization')) return 'organization';
+    if (currentPath.startsWith('/corporatepartner')) return 'corporatepartner';
+    if (currentPath.startsWith('/dietitian')) return 'dietitian';
+    if (currentPath.startsWith('/user')) return 'user';
+    return null;
+  };
+
+  // Get profile image from user context with role-specific localStorage fallback
+  const currentRole = getCurrentRoleFromPath();
+  const profileImage = user?.profileImage || (currentRole ? localStorage.getItem(`profileImage_${currentRole}`) : null);
 
   // Determine which GET endpoint to use based on current path
   const getProfileImageEndpoint = React.useCallback(() => {
@@ -88,39 +101,10 @@ const Header = () => {
     return null;
   }, [currentPath]);
 
-  // Fetch profile image from backend using GET route
-  React.useEffect(() => {
-    if (isLoggedInArea) {
-      const fetchProfileImage = async () => {
-        try {
-          const role = getCurrentRole();
-          // Get token for current role
-          const token = localStorage.getItem(`authToken_${role}`);
-          if (!token) return;
-
-          const endpoint = getProfileImageEndpoint();
-          if (!endpoint) return;
-
-          const response = await fetch(endpoint, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          const data = await response.json();
-          if (data.success && data.profileImage) {
-            setProfileImage(data.profileImage);
-            localStorage.setItem('profileImage', data.profileImage);
-          }
-        } catch (error) {
-          console.error('Error fetching profile image:', error);
-        }
-      };
-
-      fetchProfileImage();
-    }
-  }, [isLoggedInArea, getProfileImageEndpoint, getCurrentRole]);
+  // Check if user is on a profile page
+  const isProfilePage = 
+    currentPath.endsWith('/profile') || 
+    currentPath.includes('/profile/');
 
   // **NEW LOGIC: Determine the correct Contact Us path**
   const getContactPath = () => {

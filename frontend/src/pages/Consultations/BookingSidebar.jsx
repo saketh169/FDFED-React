@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 const BookingSidebar = ({
   isOpen,
   onClose,
   onProceedToPayment,
   dietitianId,
+  dietitian,
 }) => {
+  const { user } = useAuthContext();
+  
   const [selectedDate, setSelectedDate] = useState(
     () => new Date().toISOString().split("T")[0]
   );
@@ -44,7 +48,7 @@ const BookingSidebar = ({
         ].filter((slot) => {
           if (!isToday) return true;
           const [hour, minute] = slot.split(":").map(Number);
-          return hour * 60 + minute >= currentTime;
+          return hour * 60 + minute > currentTime;
         });
 
         // Categorize slots
@@ -78,11 +82,42 @@ const BookingSidebar = ({
       setMessage("Please select a date and time slot.");
       return;
     }
-    onProceedToPayment({
+    
+    // Get userId from localStorage (set during signup/login)
+    const userId = localStorage.getItem('userId');
+    
+    // Prepare data object
+    const dataToSend = {
       date: selectedDate,
       time: selectedTime,
+      type: consultationType,
       consultationType,
-    });
+      amount: dietitian?.consultationFee || dietitian?.fees || 500,
+      // User details
+      userId: userId || user?.id || '', // Use localStorage userId first
+      userName: user?.name || '',
+      userEmail: user?.email || '',
+      userPhone: user?.phone || '',
+      userAddress: user?.address || '',
+      // Dietitian details
+      dietitianId: dietitianId || dietitian?._id || '',
+      dietitianName: dietitian?.name || '',
+      dietitianEmail: dietitian?.email || '',
+      dietitianPhone: dietitian?.phone || '',
+      dietitianSpecialization: dietitian?.specialties?.[0] || dietitian?.specialization || '',
+    };
+    
+    // Debug logging
+    console.log('====== BookingSidebar - Sending Data ======');
+    console.log('User object:', user);
+    console.log('UserId from localStorage:', userId);
+    console.log('Dietitian object:', dietitian);
+    console.log('DietitianId prop:', dietitianId);
+    console.log('Data being sent to parent:', dataToSend);
+    console.log('===========================================');
+    
+    // Pass ALL required details
+    onProceedToPayment(dataToSend);
   };
 
   const todayStr = new Date().toISOString().split("T")[0];

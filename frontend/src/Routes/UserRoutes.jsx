@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from '../contexts/AuthContext';
 
 import UserHome from '../pages/HomePages/UserHome';
 import UserSchedule from '../pages/Schedules/UserSchedule';
@@ -25,9 +26,10 @@ import DietitiansList from '../pages/Appointments/DietitiansList';
 
 export default function UserRoutes() {
   return (
-    <div className="p-6">
-      <Routes>
-        <Route index element={<Navigate to="home" replace />} />
+    <AuthProvider currentRole="user">
+      <div className="p-6">
+        <Routes>
+          <Route index element={<Navigate to="home" replace />} />
 
         {/* All routes are automatically protected by ProtectedProvider in Layout.jsx */}
         <Route path="home" element={<UserHome />} />
@@ -115,5 +117,6 @@ export default function UserRoutes() {
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>
     </div>
+    </AuthProvider>
   );
 }

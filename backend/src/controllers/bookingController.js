@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Booking = require('../models/bookingModel');
+const { sendBookingConfirmationToUser, sendBookingNotificationToDietitian } = require('../utils/emailService');
 
 /**
  * Create a new booking
@@ -11,8 +12,13 @@ exports.createBooking = async (req, res) => {
       userId,
       username,
       email,
+      userPhone,
+      userAddress,
       dietitianId,
       dietitianName,
+      dietitianEmail,
+      dietitianPhone,
+      dietitianSpecialization,
       date,
       time,
       consultationType,
@@ -22,10 +28,28 @@ exports.createBooking = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!userId || !username || !email || !dietitianId || !dietitianName || !date || !time || !consultationType || !amount || !paymentMethod || !paymentId) {
+    if (!userId || !username || !email || !dietitianId || !dietitianName || !dietitianEmail || !date || !time || !consultationType || !amount || !paymentMethod || !paymentId) {
+      // Log which fields are missing
+      const missingFields = [];
+      if (!userId) missingFields.push('userId');
+      if (!username) missingFields.push('username');
+      if (!email) missingFields.push('email');
+      if (!dietitianId) missingFields.push('dietitianId');
+      if (!dietitianName) missingFields.push('dietitianName');
+      if (!dietitianEmail) missingFields.push('dietitianEmail');
+      if (!date) missingFields.push('date');
+      if (!time) missingFields.push('time');
+      if (!consultationType) missingFields.push('consultationType');
+      if (!amount) missingFields.push('amount');
+      if (!paymentMethod) missingFields.push('paymentMethod');
+      if (!paymentId) missingFields.push('paymentId');
+      
+      console.error('Missing required fields:', missingFields);
+      console.error('Received data:', req.body);
+      
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields'
+        message: `Missing required fields: ${missingFields.join(', ')}`
       });
     }
 
@@ -40,10 +64,13 @@ exports.createBooking = async (req, res) => {
 
     // Validate date is in the future
     const bookingDate = new Date(date);
-    if (bookingDate < new Date()) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+    
+    if (bookingDate < now) {
       return res.status(400).json({
         success: false,
-        message: 'Booking date must be in the future'
+        message: 'Booking date must be today or in the future'
       });
     }
 
@@ -61,8 +88,13 @@ exports.createBooking = async (req, res) => {
       userId,
       username,
       email,
+      userPhone,
+      userAddress,
       dietitianId,
       dietitianName,
+      dietitianEmail,
+      dietitianPhone,
+      dietitianSpecialization,
       date: bookingDate,
       time,
       consultationType,
@@ -75,6 +107,37 @@ exports.createBooking = async (req, res) => {
 
     // Save to database
     const savedBooking = await booking.save();
+
+    // Send confirmation emails
+    try {
+      // Prepare email data
+      const emailData = {
+        username,
+        email,
+        userPhone,
+        userAddress,
+        dietitianName,
+        dietitianEmail,
+        dietitianSpecialization,
+        date: bookingDate,
+        time,
+        consultationType,
+        amount,
+        paymentId,
+        bookingId: savedBooking._id
+      };
+
+      // Send to user
+      await sendBookingConfirmationToUser(emailData);
+
+      // Send to dietitian
+      await sendBookingNotificationToDietitian(emailData);
+
+      console.log('Confirmation emails sent successfully');
+    } catch (emailErr) {
+      console.error('Error sending confirmation emails:', emailErr);
+      // Don't fail the request if email fails
+    }
 
     res.status(201).json({
       success: true,

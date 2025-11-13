@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -70,11 +70,34 @@ const EditProfile = () => {
     handleSubmit,
     formState: { errors },
     setValue,
-    reset
+    reset,
+    watch
   } = useForm({
     resolver: config ? yupResolver(getValidationSchema(config.fields)) : undefined,
     mode: 'onBlur'
   });
+
+  // Watch DOB field to calculate age
+  const dobValue = watch('dob');
+  const [calculatedAge, setCalculatedAge] = useState(null);
+
+  // Calculate age from DOB
+  useEffect(() => {
+    if (dobValue) {
+      const birthDate = new Date(dobValue);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      setCalculatedAge(age);
+    } else {
+      setCalculatedAge(null);
+    }
+  }, [dobValue]);
   
   // Fetch user details on component mount
   useEffect(() => {
@@ -228,6 +251,12 @@ const EditProfile = () => {
                       errors.dob ? 'border-red-500' : 'border-gray-300'
                     } focus:outline-none focus:ring-2 focus:ring-emerald-600`}
                   />
+                  {calculatedAge !== null && (
+                    <p className="text-emerald-600 text-sm mt-1 font-medium">
+                      <i className="fas fa-calendar-check mr-1"></i>
+                      Age: {calculatedAge} years
+                    </p>
+                  )}
                   {errors.dob && (
                     <p className="text-red-500 text-sm mt-1">{errors.dob.message}</p>
                   )}

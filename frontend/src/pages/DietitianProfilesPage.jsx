@@ -289,10 +289,19 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
   const handleProceedToPayment = (details) => {
     setPaymentDetails({
       amount: currentDietitian.fees,
+      dietitianId: currentDietitian._id,
       dietitianName: currentDietitian.name,
+      dietitianEmail: currentDietitian.email,
+      dietitianPhone: currentDietitian.phone,
+      dietitianSpecialization: details.dietitianSpecialization || currentDietitian.specialties?.[0] || currentDietitian.specialization,
       date: details.date,
       time: details.time,
       type: details.consultationType,
+      userName: details.userName,
+      userEmail: details.userEmail,
+      userId: details.userId,
+      userPhone: details.userPhone,
+      userAddress: details.userAddress,
     });
     setIsPaymentModalOpen(true);
     setIsBookingSidebarOpen(false);
@@ -301,18 +310,9 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
   // Handle payment submit (simulation only)
   const handlePaymentSubmit = async (paymentData) => {
     try {
-      // Validate email
-      if (!paymentData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentData.email)) {
-        showNotification("Please enter a valid email address", "error");
-        return;
-      }
-
-      // Close modals
-      setIsPaymentModalOpen(false);
-      
       // Show success notification
       showNotification(
-        "✨ Your consultation has been booked successfully! Confirmation email sent to " + paymentData.email,
+        `✨ Your consultation has been booked successfully! Confirmation email sent to ${paymentData.email}`,
         "success"
       );
       
@@ -444,6 +444,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
         onClose={handleCloseBooking}
         onProceedToPayment={handleProceedToPayment}
         dietitianId={currentDietitian?._id}
+        dietitian={currentDietitian}
       />
 
       {/* Payment Modal */}

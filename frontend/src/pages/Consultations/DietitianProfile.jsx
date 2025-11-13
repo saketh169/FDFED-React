@@ -309,6 +309,11 @@ export default function DietitianProfile() {
           setDietitian(dietitianFromState);
           setTestimonials(dietitianFromState.testimonials || []);
           setLoading(false);
+          
+          // Auto-open booking sidebar if requested
+          if (location.state?.openBooking) {
+            setIsBookingSidebarOpen(true);
+          }
           return;
         }
 
@@ -397,6 +402,11 @@ export default function DietitianProfile() {
   };
 
   const handleProceedToPayment = (details) => {
+    console.log('====== DietitianProfile - handleProceedToPayment ======');
+    console.log('Details received from BookingSidebar:', details);
+    console.log('Current dietitian object:', dietitian);
+    console.log('======================================================');
+    
     setBookingData(details);
     setNotification({
       show: false,
@@ -721,6 +731,7 @@ export default function DietitianProfile() {
         onClose={() => setIsBookingSidebarOpen(false)}
         onProceedToPayment={handleBookingSubmit}
         dietitianId={dietitian._id}
+        dietitian={dietitian}
       />
 
       {/* Payment Modal */}
@@ -729,11 +740,20 @@ export default function DietitianProfile() {
         onClose={() => setIsPaymentModalOpen(false)}
         onSubmit={handlePaymentSubmit}
         paymentDetails={{
-          amount: dietitian?.fees,
-          dietitianName: dietitian?.name,
+          amount: bookingData?.amount || dietitian?.fees || 500,
+          dietitianId: bookingData?.dietitianId || dietitian?._id,
+          dietitianName: bookingData?.dietitianName || dietitian?.name,
+          dietitianEmail: bookingData?.dietitianEmail || dietitian?.email,
+          dietitianPhone: bookingData?.dietitianPhone || dietitian?.phone,
+          dietitianSpecialization: bookingData?.dietitianSpecialization || dietitian?.specialties?.[0] || '',
           date: bookingData?.date,
           time: bookingData?.time,
-          type: bookingData?.consultationType,
+          type: bookingData?.type || bookingData?.consultationType,
+          consultationType: bookingData?.consultationType || bookingData?.type,
+          userId: bookingData?.userId,
+          userName: bookingData?.userName,
+          userPhone: bookingData?.userPhone,
+          userAddress: bookingData?.userAddress,
         }}
       />
 
