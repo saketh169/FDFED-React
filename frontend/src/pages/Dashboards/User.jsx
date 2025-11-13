@@ -97,14 +97,10 @@ const UserDashboard = () => {
   useEffect(() => {
     if (user?.profileImage) {
       setProfileImage(user.profileImage);
-      // Store with role-specific key to avoid conflicts
-      localStorage.setItem('profileImage_user', user.profileImage);
+      // Don't store profile images in localStorage to avoid quota issues
     } else {
-      // Check localStorage as fallback with role-specific key
-      const storedImage = localStorage.getItem('profileImage_user');
-      if (storedImage) {
-        setProfileImage(storedImage);
-      }
+      // Profile images are now fetched from server, no localStorage fallback
+      setProfileImage(null);
     }
   }, [user, user?.profileImage]);
 
@@ -116,8 +112,7 @@ const UserDashboard = () => {
     const reader = new FileReader();
     reader.onload = () => {
       setProfileImage(reader.result);
-      // Store in localStorage with role-specific key
-      localStorage.setItem('profileImage_user', reader.result);
+      // Don't store in localStorage to avoid quota issues
     };
     reader.readAsDataURL(file);
 
