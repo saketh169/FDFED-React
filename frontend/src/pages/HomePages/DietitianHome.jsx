@@ -48,9 +48,9 @@ const DietitianHome = () => {
   
   // === 3. Blog Data (Placeholder - Matches User Blog Structure) ===
   const blogPosts = [
-    { id: 1, title: 'Optimizing Client Meal Prep', excerpt: 'Time-saving tips for personalized plans.', author: 'Dr. Jane', image: 'https://via.placeholder.com/400x200?text=Meal+Prep+Guide' },
-    { id: 2, title: 'Telehealth Best Practices', excerpt: 'How to conduct effective video consultations.', author: 'Admin', image: 'https://via.placeholder.com/400x200?text=Telehealth' },
-    { id: 3, title: 'Latest in Gut-Brain Axis Research', excerpt: 'Insights for specialized client care.', author: 'Community', image: 'https://via.placeholder.com/400x200?text=Gut+Health' },
+    { id: 1, title: 'Optimizing Client Meal Prep', excerpt: 'Time-saving tips for personalized plans.', author: 'Dr. Jane', image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=200&fit=crop' },
+    { id: 2, title: 'Telehealth Best Practices', excerpt: 'How to conduct effective video consultations.', author: 'Admin', image: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=200&fit=crop' },
+    { id: 3, title: 'Latest in Gut-Brain Axis Research', excerpt: 'Insights for specialized client care.', author: 'Community', image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=200&fit=crop' },
   ];
 
   // === 4. FAQ State and Logic (Functional Accordion) ===
@@ -155,11 +155,11 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 3. APPOINTMENTS SCHEDULE (Today's Schedule) */}
       {/* ======================================================= */}
-      <section id="schedule" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[500px] animate-fade-in-up animate-delay-[400ms]">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 items-start">
+      <section id="schedule" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[400ms]">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 items-center justify-center min-h-full">
           
           <div className="md:w-1/2 appointment-list-container">
-            <h2 className="text-3xl font-bold text-[#1A4A40] mb-4">Today's Schedule</h2>
+            <h2 className="text-4xl font-bold text-[#1A4A40] mb-4">Today's Schedule</h2>
             <p className="text-gray-600 mb-6 intro-text">
               Stay organized and never miss a client meeting. View your appointments for today.
             </p>
@@ -205,8 +205,8 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 4. MANAGE CLIENTS (MY CLIENTS) */}
       {/* ======================================================= */}
-      <section id="clients" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[400px] animate-fade-in-up animate-delay-[500ms]">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 items-center">
+      <section id="clients" className="py-32 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[500ms]">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 items-center justify-center min-h-full">
           <div className="md:w-1/2 flex justify-center">
             <img 
               src="https://media.istockphoto.com/id/1330258945/vector/medical-checkup-concept.jpg?s=612x612&w=0&k=20&c=pwPdMqc099YdAldTuUIdHGLpWtwrFiCID-V3MkqNLQI=" 
@@ -215,8 +215,8 @@ const DietitianHome = () => {
             />
           </div>
 
-          <div className="md:w-1/2 clients-content text-center md:text-left">
-            <h2 className="text-3xl font-bold text-[#1A4A40] mb-4">Manage Your Clients</h2>
+          <div className="md:w-1/2 clients-content text-center md:text-left flex flex-col justify-center">
+            <h2 className="text-4xl font-bold text-[#1A4A40] mb-4">Manage Your Clients</h2>
             <p className="text-lg text-gray-700 mb-6 intro-text">
               Stay connected with your clients. View their profiles, chat directly, and schedule video consultations to provide **personalized nutrition guidance** and track their progress efficiently.
             </p>
@@ -235,9 +235,9 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 5. DIETITIAN INSIGHTS (BLOG - Compact User Style) */}
       {/* ======================================================= */}
-      <section id="insights" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-50 min-h-[500px] animate-fade-in-up animate-delay-[600ms]">
-        <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-12">
+      <section id="insights" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-50 min-h-[550px] animate-fade-in-up animate-delay-[600ms]">
+        <div className="max-w-6xl mx-auto text-center flex flex-col justify-center min-h-full">
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] mb-12">
             Share Your Insights with the Community 📝
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -286,8 +286,8 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 6. DIETITIAN GUIDE (How it Works) */}
       {/* ======================================================= */}
-      <section id="guide" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[500px] animate-fade-in-up animate-delay-[700ms]">
-        <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
+      <section id="guide" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[700ms]">
+        <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center justify-center min-h-full">
           
           <div className="md:w-1/2 image-container">
             <img 
@@ -298,7 +298,7 @@ const DietitianHome = () => {
           </div>
 
           <div className="md:w-1/2 content text-center md:text-left">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#4CAF50] mb-6">Dietitian Guide</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold text-[#4CAF50] mb-6">Dietitian Guide</h2>
             <p className="text-lg text-gray-700 mb-4">
               Our Dietitian Guide is designed to help you effectively manage your clients and provide the best nutritional support. This guide includes:
             </p>
@@ -322,9 +322,9 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 7. FAQs (Functional Accordion) */}
       {/* ======================================================= */}
-      <section id="faqs" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[500px] animate-fade-in-up animate-delay-[800ms]">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] text-center mb-12">
+      <section id="faqs" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[800ms]">
+        <div className="max-w-4xl mx-auto flex flex-col justify-center min-h-full">
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] text-center mb-12">
             Dietitians Frequently Asked Questions
           </h2>
           <div className="space-y-4">

@@ -23,7 +23,7 @@ const Notification = ({ show, message, type, onClose }) => {
 
   return (
     <div
-      className={`fixed top-24 right-6 max-w-sm w-full md:w-96 z-9999`}
+      className={`fixed top-16 right-6 max-w-sm w-full md:w-96 z-9999`}
       role="alert"
       aria-live="polite"
       aria-atomic="true"
@@ -161,7 +161,7 @@ const AllDietitiansPage = () => {
     // Specialization filter
     if (filters.specialization.length > 0) {
       result = result.filter((d) =>
-        d.specialties?.some((s) => filters.specialization.includes(s))
+        d.specialties?.some((s) => filters.specialization.some(f => f.toLowerCase() === s.toLowerCase()))
       );
     }
 
@@ -191,7 +191,7 @@ const AllDietitiansPage = () => {
     // Language filter
     if (filters.language.length > 0) {
       result = result.filter((d) =>
-        d.languages?.some((lang) => filters.language.includes(lang))
+        d.languages?.some((lang) => filters.language.some(l => l.toLowerCase() === lang.toLowerCase()))
       );
     }
 
@@ -314,11 +314,11 @@ const AllDietitiansPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 pt-20 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6">
+            <div className="sticky top-48">
               <FilterSidebar
                 specializations={[]}
                 onFilterChange={handleFilterChange}

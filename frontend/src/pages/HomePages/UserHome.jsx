@@ -36,9 +36,9 @@ const UserHome = () => {
 
   // === 3. Blog Data (Placeholder) ===
   const blogPosts = [
-    { id: 1, title: 'Top 5 Nutrition Tips for 2025', excerpt: 'Kickstart your health journey...', author: 'Dr. Jane', image: '/images/nutrition-tips.jpg' },
-    { id: 2, title: 'Quick Healthy Recipes', excerpt: '5-minute meals for busy days...', author: 'Chef Mark', image: '/images/healthy-recipes.jpg' },
-    { id: 3, title: 'The Role of AI in Dietetics', excerpt: 'Revolutionizing nutrition care...', author: 'AI Team', image: '/images/ai-in-health.jpg' },
+    { id: 1, title: 'Top 5 Nutrition Tips for 2025', excerpt: 'Kickstart your health journey...', author: 'Dr. Jane', image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=200&fit=crop' },
+    { id: 2, title: 'Quick Healthy Recipes', excerpt: '5-minute meals for busy days...', author: 'Chef Mark', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=200&fit=crop' },
+    { id: 3, title: 'The Role of AI in Dietetics', excerpt: 'Revolutionizing nutrition care...', author: 'AI Team', image: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=200&fit=crop' },
   ];
 
 
@@ -85,7 +85,7 @@ const UserHome = () => {
                 Go to Dashboard
                 </button>
                 <button
-                onClick={() => navigate('/user/schedule')}
+                onClick={() => navigate('/user/dietitian-profiles')}
                 className="bg-[#5a8f5a] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-[#1A4A40] transition-all duration-300"
                 >
                 Find a Dietitian
@@ -144,7 +144,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 3. BOOK CONSULTATION (Diet Services) - 2 ROWS */}
       {/* ======================================================= */}
-      <section id="booking" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[400ms]">
+      <section id="booking" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[400ms]">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Book Your Next Consultation </h2>
           <p className="text-gray-600 mb-10 text-lg">Select a specialization to connect with the right dietitian and start your plan.</p>
@@ -193,10 +193,10 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* USER GUIDE / HOW IT WORKS */}
       {/* ======================================================= */}
-      <section id="user-guide" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[400px] animate-fade-in-up animate-delay-[500ms]">
+      <section id="user-guide" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[500ms]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1">
-                <h2 className="text-3xl sm:text-4xl font-bold text-[#27AE60] mb-6">User Guide & Support</h2>
+                <h2 className="text-4xl sm:text-5xl font-bold text-[#27AE60] mb-6">User Guide & Support</h2>
                 <p className="text-gray-700 text-lg mb-4">
                     Our guide helps you make the most of the platform. Whether you're setting up your profile or looking for advanced tips, we've got you covered:
                 </p>
@@ -223,10 +223,10 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 4. APPOINTMENTS MANAGEMENT */}
       {/* ======================================================= */}
-      <section id="appointments" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[400px] animate-fade-in-up animate-delay-[600ms]">
+      <section id="appointments" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[600ms]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className='order-2 md:order-1'>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">My Appointments & Records</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] mb-4">My Appointments & Records</h2>
             <ul className="space-y-3 text-gray-700 mb-6 list-none p-0">
               <li className="flex items-center gap-2"><i className="fas fa-calendar-check text-[#27AE60]"></i> View upcoming and past session details.</li>
               <li className="flex items-center gap-2"><i className="fas fa-comments text-[#27AE60]"></i> Direct chat access with your dietitian.</li>
@@ -248,9 +248,9 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 5. BLOG POSTS (Updated for height/width/heading) */}
       {/* ======================================================= */}
-      <section id="blog" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 text-center min-h-[550px] overflow-auto animate-fade-in-up animate-delay-[700ms]">
+      <section id="blog" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 text-center min-h-[550px] overflow-auto animate-fade-in-up animate-delay-[700ms]">
         <div className="max-w-6xl mx-auto flex flex-col justify-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-12">
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] mb-12">
             View Latest Blog Posts from Other Users 💡
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -292,13 +292,13 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 6. PRICING PLANS */}
       {/* ======================================================= */}
-      <section id="pricing" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[400px] animate-fade-in-up animate-delay-[800ms]">
+      <section id="pricing" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[800ms]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="flex justify-center">
             <img src="https://videoigniter.com/wp-content/uploads/2024/02/How-Much-Does-Animation-Cost.jpg" alt="Pricing Plans" className="rounded-xl shadow-lg w-72 md:w-full max-w-sm" />
           </div>
           <div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">NutriConnect Membership Plans 💰</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] mb-4">NutriConnect Membership Plans 💰</h2>
             <p className="text-gray-700 mb-6 text-lg">
               Unlock premium features like advanced tracking, priority support, and exclusive content with our flexible subscription models. Choose from Basic, Premium, or Ultimate.
             </p>
@@ -315,9 +315,9 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 7. FAQs (FUNCTIONAL ACCORDION) */}
       {/* ======================================================= */}
-      <section id="faqs" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[900ms]">
+      <section id="faqs" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[900ms]">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] text-center mb-12">
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] text-center mb-12">
             Users Frequently Asked Questions
           </h2>
           <div className="space-y-4">
