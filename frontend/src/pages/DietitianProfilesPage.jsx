@@ -158,7 +158,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
             (f) => f.value
           );
           data = data.filter((d) =>
-            d.specialties?.some((s) => specializationFilters.includes(s))
+            d.specialties?.some((s) => specializationFilters.some(f => f.toLowerCase() === s.toLowerCase()))
           );
         }
 
@@ -198,7 +198,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
 
     if (filters.specialization.length > 0) {
       result = result.filter((d) =>
-        d.specialties?.some((s) => filters.specialization.includes(s))
+        d.specialties?.some((s) => filters.specialization.some(f => f.toLowerCase() === s.toLowerCase()))
       );
     }
 
@@ -226,7 +226,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
 
     if (filters.language.length > 0) {
       result = result.filter((d) =>
-        d.languages?.some((lang) => filters.language.includes(lang))
+        d.languages?.some((lang) => filters.language.some(l => l.toLowerCase() === lang.toLowerCase()))
       );
     }
 
@@ -339,7 +339,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header Section */}
-      <div className="border-b-2 bg-white border-emerald-600">
+      <div className="border-b-2 bg-white border-emerald-600 fixed top-20 left-0 right-0 z-20">
         <div className="max-w-7xl mx-auto px-6 py-1">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-emerald-600 mb-0">
@@ -353,16 +353,32 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
         </div>
       </div>
 
+      {/* Search Bar Section */}
+     <div className="fixed top-36 left-80 right-0 z-10 bg-gray-100 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="relative max-w-2xl">
+            <input
+              type="text"
+              placeholder="Search by name, location, or specialties..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-gray-700"
+            />
+            <i className="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-600"></i>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 pt-20 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6">
+            <div className="sticky top-48">
               {/* Back Button */}
               <div className="mb-6">
                 <button
-                  onClick={() => window.location.href = '/user/dietitian-profiles/all'}
+                  onClick={() => window.location.href = '/user/dietitian-profiles'}
                   className="w-full inline-flex items-center justify-center px-4 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   <i className="fas fa-chevron-left mr-2"></i>
@@ -382,20 +398,6 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
           {/* Main Content */}
           <div className="lg:col-span-3">
             <div className="rounded-lg p-6 bg-white shadow-sm">
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative max-w-2xl">
-                  <input
-                    type="text"
-                    placeholder="Search by name, location, or specialties..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-gray-700"
-                  />
-                  <i className="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-600"></i>
-                </div>
-              </div>
-
               {/* Results Count */}
               <div className="mb-6 flex justify-between items-center pb-4 border-b border-gray-200">
                 <p className="text-gray-600 font-medium">

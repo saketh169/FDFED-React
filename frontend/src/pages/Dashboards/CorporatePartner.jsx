@@ -109,14 +109,10 @@ const CorporateDashboard = () => {
   useEffect(() => {
     if (user?.profileImage) {
       setPartnerLogo(user.profileImage);
-      // Store with role-specific key to avoid conflicts
-      localStorage.setItem('profileImage_corporatepartner', user.profileImage);
+      // Don't store profile images in localStorage to avoid quota issues
     } else {
-      // Check localStorage as fallback with role-specific key
-      const storedImage = localStorage.getItem('profileImage_corporatepartner');
-      if (storedImage) {
-        setPartnerLogo(storedImage);
-      }
+      // Profile images are now fetched from server, no localStorage fallback
+      setPartnerLogo(null);
     }
   }, [user, user?.profileImage]);
 
@@ -128,8 +124,7 @@ const CorporateDashboard = () => {
     const reader = new FileReader();
     reader.onload = () => {
       setPartnerLogo(reader.result);
-      // Store in localStorage with role-specific key
-      localStorage.setItem('profileImage_corporatepartner', reader.result);
+      // Don't store in localStorage to avoid quota issues
     };
     reader.readAsDataURL(file);
 

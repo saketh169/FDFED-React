@@ -23,7 +23,7 @@ const Notification = ({ show, message, type, onClose }) => {
 
   return (
     <div
-      className={`fixed top-24 right-6 max-w-sm w-full md:w-96 z-9999`}
+      className={`fixed top-16 right-6 max-w-sm w-full md:w-96 z-9999`}
       role="alert"
       aria-live="polite"
       aria-atomic="true"
@@ -161,7 +161,7 @@ const AllDietitiansPage = () => {
     // Specialization filter
     if (filters.specialization.length > 0) {
       result = result.filter((d) =>
-        d.specialties?.some((s) => filters.specialization.includes(s))
+        d.specialties?.some((s) => filters.specialization.some(f => f.toLowerCase() === s.toLowerCase()))
       );
     }
 
@@ -191,7 +191,7 @@ const AllDietitiansPage = () => {
     // Language filter
     if (filters.language.length > 0) {
       result = result.filter((d) =>
-        d.languages?.some((lang) => filters.language.includes(lang))
+        d.languages?.some((lang) => filters.language.some(l => l.toLowerCase() === lang.toLowerCase()))
       );
     }
 
@@ -299,8 +299,8 @@ const AllDietitiansPage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header Section */}
-      <div className="border-b-2 bg-white border-[#28B463]">
-        <div className="max-w-7xl mx-auto px-6 py-1">
+      <div className="border-b-2 bg-white border-[#28B463] pt-2 fixed top-16 left-0 right-0 z-20">
+        <div className="max-w-screen-2xl mx-auto px-6 py-1">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-[#1E6F5C] mb-0">
               Find Your Perfect Dietitian
@@ -314,11 +314,11 @@ const AllDietitiansPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-screen-2xl mx-auto px-6 pt-17 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6">
+            <div className="sticky top-24">
               <FilterSidebar
                 specializations={[]}
                 onFilterChange={handleFilterChange}
@@ -329,7 +329,7 @@ const AllDietitiansPage = () => {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <div className="rounded-lg p-6 bg-white shadow-sm">
               {/* Search Bar */}
               <div className="mb-6">
@@ -346,8 +346,8 @@ const AllDietitiansPage = () => {
               </div>
 
               {/* Results Count */}
-              <div className="mb-6 flex justify-between items-center pb-4 border-b border-gray-200">
-                <div className="flex items-center gap-3">
+              <div className=" mb-6 flex justify-between items-center pb-4 border-b border-gray-200">
+                <div className="flex items-center gap-3 ">
                   <div className="w-3 h-3 bg-[#28B463] rounded-full"></div>
                   <p className="text-gray-600 font-medium">
                     Found{" "}
@@ -365,36 +365,38 @@ const AllDietitiansPage = () => {
               </div>
 
               {/* Results Grid */}
-              <div className="space-y-6">
-                {filteredDietitians.length > 0 ? (
-                  filteredDietitians.map((dietitian) => (
-                    <DietitianCard
-                      key={dietitian._id}
-                      dietitian={dietitian}
-                      onBookAppointment={handleBookAppointment}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                    <div className="max-w-md mx-auto">
-                    <div className="text-4xl mb-4 text-[#28B463]">
-                      <i className="fas fa-search text-[#28B463]"></i>
+              <div className="h-[1200px] overflow-y-auto">
+                <div className="space-y-6">
+                  {filteredDietitians.length > 0 ? (
+                    filteredDietitians.map((dietitian) => (
+                      <DietitianCard
+                        key={dietitian._id}
+                        dietitian={dietitian}
+                        onBookAppointment={handleBookAppointment}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                      <div className="max-w-md mx-auto">
+                      <div className="text-4xl mb-4 text-[#28B463]">
+                        <i className="fas fa-search text-[#28B463]"></i>
+                      </div>
+                        <h3 className="text-xl font-bold text-[#1E6F5C] mb-3">
+                          No dietitians found
+                        </h3>
+                        <p className="text-gray-600 mb-6 leading-relaxed">
+                          Try adjusting your search terms or clearing some filters to see more results.
+                        </p>
+                        <button
+                          onClick={handleClearFilters}
+                          className="px-6 py-3 bg-[#28B463] text-white font-semibold rounded-full hover:bg-[#1E6F5C] transition-colors shadow-md"
+                        >
+                          Clear All Filters
+                        </button>
+                      </div>
                     </div>
-                      <h3 className="text-xl font-bold text-[#1E6F5C] mb-3">
-                        No dietitians found
-                      </h3>
-                      <p className="text-gray-600 mb-6 leading-relaxed">
-                        Try adjusting your search terms or clearing some filters to see more results.
-                      </p>
-                      <button
-                        onClick={handleClearFilters}
-                        className="px-6 py-3 bg-[#28B463] text-white font-semibold rounded-full hover:bg-[#1E6F5C] transition-colors shadow-md"
-                      >
-                        Clear All Filters
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>

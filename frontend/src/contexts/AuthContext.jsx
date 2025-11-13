@@ -33,7 +33,9 @@ export const AuthProvider = ({ children, currentRole }) => {
           if (!user) {
             await fetchUserDetails(token, currentRole);
           } else {
-            setUser(JSON.parse(user));
+            const parsedUser = JSON.parse(user);
+            // Profile image is not stored in localStorage, so fetch fresh data
+            await fetchUserDetails(token, currentRole);
           }
         } else {
           // No token for this role, clear state
@@ -68,12 +70,8 @@ export const AuthProvider = ({ children, currentRole }) => {
           // Set axios default header
           axios.defaults.headers.common['Authorization'] = `Bearer ${foundToken}`;
           
-          // Fetch fresh user details if token exists
-          if (!foundUser) {
-            await fetchUserDetails(foundToken, foundRole);
-          } else {
-            setUser(foundUser);
-          }
+          // Fetch fresh user details if token exists (since profileImage isn't stored locally)
+          await fetchUserDetails(foundToken, foundRole);
         } else {
           setToken(null);
           setRole(null);
@@ -90,9 +88,9 @@ export const AuthProvider = ({ children, currentRole }) => {
 
   // Sync profile image to role-specific localStorage when user data changes
   useEffect(() => {
-    if (user?.profileImage && role) {
-      localStorage.setItem(`profileImage_${role}`, user.profileImage);
-    }
+    // Don't store profile images in localStorage as they exceed quota limits
+    // Profile images should be fetched from server when needed
+    return;
   }, [user?.profileImage, role]);
 
   // Fetch user details from API
@@ -136,7 +134,12 @@ export const AuthProvider = ({ children, currentRole }) => {
           licenseNumber: response.data.licenseNumber,
         };
         setUser(userData);
-        localStorage.setItem(`authUser_${role}`, JSON.stringify(userData));
+
+        // Store user data in localStorage but exclude profileImage to avoid quota issues
+        const storageData = { ...userData };
+        delete storageData.profileImage; // Remove large profileImage from localStorage
+        localStorage.setItem(`authUser_${role}`, JSON.stringify(storageData));
+
         return userData;
       }
     } catch (error) {
@@ -193,6 +196,7 @@ export const AuthProvider = ({ children, currentRole }) => {
     roles.forEach(r => {
       localStorage.removeItem(`authToken_${r}`);
       localStorage.removeItem(`authUser_${r}`);
+      localStorage.removeItem(`profileImage_${r}`); // Clear any existing profile images
     });
 
     // Clear axios header
