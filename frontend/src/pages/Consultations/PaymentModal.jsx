@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useAuthContext } from "../../hooks/useAuthContext";
+import axios from 'axios';
 
 const PaymentNotificationModal = ({
   isOpen,
@@ -8,17 +10,27 @@ const PaymentNotificationModal = ({
   paymentDetails
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const { user, token } = useAuthContext();
+  
   const {
     register,
     handleSubmit,
     watch,
     reset,
+    setValue,
   } = useForm({
     defaultValues: {
       paymentMethod: "UPI",
       email: "",
     },
   });
+
+  // Auto-fill email when user is available or modal opens
+  useEffect(() => {
+    if (user?.email && isOpen) {
+      setValue('email', user.email);
+    }
+  }, [user, isOpen, setValue]);
 
   const paymentMethod = watch("paymentMethod");
 
@@ -106,34 +118,117 @@ const PaymentNotificationModal = ({
     }
   };
 
-  const handleFormSubmit = async () => {
+  const handleFormSubmit = async (formData) => {
     setIsProcessing(true);
     try {
+      // Get userId from localStorage (primary source)
+      const userIdFromStorage = localStorage.getItem('userId');
+      
+      // Debug logging
+      console.log('====== PaymentModal - handleFormSubmit ======');
+      console.log('User object from context:', user);
+      console.log('UserId from localStorage:', userIdFromStorage);
+      console.log('Payment details prop received:', paymentDetails);
+      console.log('============================================');
+      
       // Validate email
-      const email = watch("email");
+      const email = formData.email || watch("email");
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         alert("Please enter a valid email address");
         setIsProcessing(false);
         return;
       }
 
-      // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Generate payment ID
+      const paymentId = "PAY_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
 
-      // Call onSubmit with email data
-      if (onSubmit) {
-        onSubmit({ email, paymentMethod: watch("paymentMethod"), amount: paymentDetails?.amount, transactionId: "PAYMENT_" + Date.now() });
+      // Prepare booking data - ENSURE ALL REQUIRED FIELDS ARE PRESENT
+      const bookingData = {
+        userId: paymentDetails?.userId || userIdFromStorage || user?.id,
+        username: paymentDetails?.userName || user?.name,
+        email: email,
+        userPhone: paymentDetails?.userPhone || user?.phone || '',
+        userAddress: paymentDetails?.userAddress || user?.address || '',
+        dietitianId: paymentDetails?.dietitianId,
+        dietitianName: paymentDetails?.dietitianName,
+        dietitianEmail: paymentDetails?.dietitianEmail,
+        dietitianPhone: paymentDetails?.dietitianPhone || '',
+        dietitianSpecialization: paymentDetails?.dietitianSpecialization || '',
+        date: paymentDetails?.date,
+        time: paymentDetails?.time,
+        consultationType: paymentDetails?.consultationType || paymentDetails?.type,
+        amount: paymentDetails?.amount,
+        paymentMethod: formData.paymentMethod,
+        paymentId: paymentId,
+      };
+
+      console.log('====== Booking Data Prepared ======');
+      console.log('Booking data:', bookingData);
+      console.log('===================================');
+
+      // Validate all required fields before sending
+      const requiredFields = [
+        'userId', 'username', 'email', 'dietitianId', 'dietitianName', 
+        'dietitianEmail', 'date', 'time', 'consultationType', 'amount', 
+        'paymentMethod', 'paymentId'
+      ];
+      
+      const missingFields = requiredFields.filter(field => !bookingData[field]);
+      if (missingFields.length > 0) {
+        console.error('====== VALIDATION ERROR ======');
+        console.error('Missing required fields:', missingFields);
+        console.error('Booking data:', bookingData);
+        console.error('Payment details received:', paymentDetails);
+        console.error('User data:', user);
+        console.error('==============================');
+        alert(`Missing required information: ${missingFields.join(', ')}. Please close and try booking again.`);
+        setIsProcessing(false);
+        return;
       }
 
-      // Close modal
-      onClose();
+      console.log('✅ All validations passed. Submitting booking...');
 
-      // Reset form
-      reset();
+      // Call booking API
+      const config = token ? {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      } : {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+      const response = await axios.post('/api/bookings/create', bookingData, config);
+
+      if (response.data.success) {
+        console.log('✅ Booking created successfully!', response.data);
+        
+        // Call parent onSubmit for UI updates
+        if (onSubmit) {
+          onSubmit({ 
+            email, 
+            paymentMethod: formData.paymentMethod, 
+            amount: paymentDetails?.amount, 
+            transactionId: paymentId,
+            bookingId: response.data.data._id
+          });
+        }
+
+        // Close modal
+        onClose();
+
+        // Reset form
+        reset();
+      } else {
+        throw new Error(response.data.message || 'Booking failed');
+      }
 
     } catch (error) {
-      console.error("Payment error:", error);
-      alert("Payment processing failed. Please try again.");
+      console.error("❌ Payment/Booking error:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Booking failed. Please try again.";
+      alert(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -222,8 +317,14 @@ const PaymentNotificationModal = ({
                     message: "Please enter a valid email"
                   }
                 })}
-                className={`${inputClasses}`}
+                readOnly={!!user?.email}
+                className={`${inputClasses} ${user?.email ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               />
+              {user?.email && (
+                <p className="text-xs text-emerald-600 mt-1">
+                  ✓ Email auto-filled from your account
+                </p>
+              )}
               {watch("email") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(watch("email")) && (
                 <p className="text-red-500 text-xs mt-1">Please enter a valid email address</p>
               )}

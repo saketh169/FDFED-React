@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { VerifyProvider } from '../contexts/VerifyContext';
+import { AuthProvider } from '../contexts/AuthContext';
 
 import DietitianHome from '../pages/HomePages/DietitianHome';
 import DietitianDashboard from '../pages/Dashboards/Dietitian';
@@ -20,9 +21,10 @@ import BlogPost from '../pages/Blog/BlogPost';
 
 export default function DietitianRoutes() {
   return (
-    <div className="p-6">
-      <Routes>
-        <Route index element={<Navigate to="home" replace />} />
+    <AuthProvider currentRole="dietitian">
+      <div className="p-6">
+        <Routes>
+          <Route index element={<Navigate to="home" replace />} />
 
         {/* All routes are automatically protected by ProtectedProvider in Layout.jsx */}
         <Route path="home" element={<DietitianHome />} />
@@ -68,5 +70,6 @@ export default function DietitianRoutes() {
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>
     </div>
+    </AuthProvider>
   );
 }

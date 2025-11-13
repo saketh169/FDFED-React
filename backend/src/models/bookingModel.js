@@ -19,6 +19,12 @@ const BookingSchema = new Schema({
     lowercase: true, 
     trim: true 
   },
+  userPhone: {
+    type: String
+  },
+  userAddress: {
+    type: String
+  },
   
   // Dietitian Information
   dietitianId: { 
@@ -29,6 +35,18 @@ const BookingSchema = new Schema({
   dietitianName: { 
     type: String, 
     required: true 
+  },
+  dietitianEmail: {
+    type: String,
+    required: true,
+    lowercase: true,
+    trim: true
+  },
+  dietitianPhone: {
+    type: String
+  },
+  dietitianSpecialization: {
+    type: String
   },
   
   // Consultation Details

@@ -16,6 +16,14 @@ const BlogPage = () => {
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [userRole, setUserRole] = useState(null);
+    const [myBlogs, setMyBlogs] = useState([]);
+    const [myBlogsStats, setMyBlogsStats] = useState({ totalLikes: 0, totalViews: 0, totalBlogs: 0 });
+    const [loadingMyBlogs, setLoadingMyBlogs] = useState(false);
+    const [showMyBlogsSection, setShowMyBlogsSection] = useState(false);
+    
+    // Refs for smooth scrolling
+    const blogsGridRef = React.useRef(null);
+    const myBlogsRef = React.useRef(null);
 
     // Get role from URL path
     const getRoleFromPath = () => {
@@ -40,6 +48,8 @@ const BlogPage = () => {
         
         if (token) {
             setIsAuthenticated(true);
+            // Fetch user's blogs if authenticated
+            fetchMyBlogs();
         } else {
             setIsAuthenticated(false);
         }
@@ -101,10 +111,56 @@ const BlogPage = () => {
         }
     };
 
+    const fetchMyBlogs = async () => {
+        try {
+            setLoadingMyBlogs(true);
+            const currentRole = getRoleFromPath();
+            const token = currentRole ? localStorage.getItem(`authToken_${currentRole}`) : null;
+            
+            if (!token) return;
+
+            const config = {
+                headers: { Authorization: `Bearer ${token}` }
+            };
+
+            const response = await axios.get('http://localhost:5000/api/blogs/my/blogs', { 
+                ...config, 
+                params: { limit: 100 } // Get all user's blogs
+            });
+            
+            if (response.data.success) {
+                const blogs = response.data.blogs;
+                setMyBlogs(blogs);
+                
+                // Calculate stats
+                const totalLikes = blogs.reduce((sum, blog) => sum + (blog.likesCount || 0), 0);
+                const totalViews = blogs.reduce((sum, blog) => sum + (blog.views || 0), 0);
+                
+                setMyBlogsStats({
+                    totalLikes,
+                    totalViews,
+                    totalBlogs: blogs.length
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching my blogs:', error);
+        } finally {
+            setLoadingMyBlogs(false);
+        }
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
         setPagination({ ...pagination, page: 1 });
         fetchBlogs();
+    };
+
+    const handleCategoryClick = (category) => {
+        setSelectedCategory(category);
+        // Scroll to blogs grid after a brief delay to allow state update
+        setTimeout(() => {
+            blogsGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     };
 
     const getCategoryColor = (category) => {
@@ -121,7 +177,7 @@ const BlogPage = () => {
 
     const getRoleBadgeColor = (role) => {
         return role === 'dietitian' 
-            ? 'bg-[#1E6F5C] text-white' 
+            ? 'bg-[#28B463] text-white' 
             : 'bg-[#E8B86D] text-gray-800';
     };
 
@@ -143,26 +199,43 @@ const BlogPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-b from-green-50 to-white">
+        <div className="min-h-screen bg-gray-50">
             {/* Header Section */}
-            <div className="bg-[#1E6F5C] text-white py-16 px-4">
+            <div className="bg-white border-b-4 border-[#28B463] py-16 px-4">
                 <div className="max-w-7xl mx-auto">
-                    <h1 className="text-5xl font-bold mb-4 text-center">Nutrition & Wellness Blog</h1>
-                    <p className="text-xl text-center mb-8 text-green-100">
+                    <h1 className="text-5xl font-bold mb-4 text-center text-[#1E6F5C]">Nutrition & Wellness Blog</h1>
+                    <p className="text-xl text-center mb-8 text-gray-600">
                         Discover insights, tips, and stories from our community
                     </p>
                     
-                    {/* Create Blog Button */}
+                    {/* Create Blog and My Blogs Buttons */}
                     {isAuthenticated && (userRole === 'user' || userRole === 'dietitian') && (
-                        <div className="text-center">
+                        <div className="flex justify-center gap-4">
                             <button
                                 onClick={() => {
                                     // Navigate to create blog within the same role context
                                     navigate(`/${userRole}/create-blog`);
                                 }}
-                                className="bg-white text-[#1E6F5C] px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors duration-300 inline-flex items-center gap-2"
+                                className="bg-[#28B463] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#1E6F5C] transition-colors duration-300 inline-flex items-center gap-2 shadow-md"
                             >
                                 <FaPlus /> Create New Blog Post
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowMyBlogsSection(!showMyBlogsSection);
+                                    if (!showMyBlogsSection) {
+                                        setTimeout(() => {
+                                            myBlogsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }, 100);
+                                    }
+                                }}
+                                className={`px-6 py-3 rounded-lg font-semibold transition-colors duration-300 inline-flex items-center gap-2 shadow-md ${
+                                    showMyBlogsSection 
+                                        ? 'bg-[#1E6F5C] text-white hover:bg-[#28B463]' 
+                                        : 'bg-white text-[#1E6F5C] border-2 border-[#28B463] hover:bg-gray-50'
+                                }`}
+                            >
+                                <FaHeart /> My Blogs {myBlogsStats.totalBlogs > 0 && `(${myBlogsStats.totalBlogs})`}
                             </button>
                         </div>
                     )}
@@ -181,11 +254,11 @@ const BlogPage = () => {
                                     placeholder="Search blogs..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E6F5C]"
+                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]"
                                 />
                                 <button
                                     type="submit"
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1E6F5C] hover:text-green-700"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#28B463] hover:text-[#1E6F5C]"
                                 >
                                     <FaSearch size={20} />
                                 </button>
@@ -196,7 +269,7 @@ const BlogPage = () => {
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
-                            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E6F5C]"
+                            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]"
                         >
                             <option value="createdAt">Latest</option>
                             <option value="views">Most Viewed</option>
@@ -208,11 +281,11 @@ const BlogPage = () => {
                     {/* Category Filter */}
                     <div className="mt-4 flex flex-wrap gap-2">
                         <button
-                            onClick={() => setSelectedCategory('all')}
+                            onClick={() => handleCategoryClick('all')}
                             className={`px-4 py-2 rounded-full font-medium transition-colors ${
                                 selectedCategory === 'all'
-                                    ? 'bg-[#1E6F5C] text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    ? 'bg-[#28B463] text-white shadow-md'
+                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#28B463] hover:text-[#28B463]'
                             }`}
                         >
                             All Categories
@@ -220,11 +293,11 @@ const BlogPage = () => {
                         {categories.map((category) => (
                             <button
                                 key={category}
-                                onClick={() => setSelectedCategory(category)}
+                                onClick={() => handleCategoryClick(category)}
                                 className={`px-4 py-2 rounded-full font-medium transition-colors ${
                                     selectedCategory === category
-                                        ? 'bg-[#1E6F5C] text-white'
-                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        ? 'bg-[#28B463] text-white shadow-md'
+                                        : 'bg-white text-gray-700 border border-gray-300 hover:border-[#28B463] hover:text-[#28B463]'
                                 }`}
                             >
                                 {category}
@@ -233,10 +306,152 @@ const BlogPage = () => {
                     </div>
                 </div>
 
+                {/* My Blogs Section */}
+                {isAuthenticated && (userRole === 'user' || userRole === 'dietitian') && showMyBlogsSection && (
+                    <div ref={myBlogsRef} className="mb-8">
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-bold text-[#28B463]">My Blogs</h2>
+                                <button
+                                    onClick={() => setShowMyBlogsSection(false)}
+                                    className="text-gray-500 hover:text-red-600 font-medium px-3 py-1 rounded hover:bg-gray-100 transition-colors"
+                                >
+                                    ✕ Close
+                                </button>
+                            </div>
+
+                            {/* Stats Cards */}
+                            {myBlogs.length > 0 ? (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                        <div className="bg-[#28B463] text-white rounded-lg p-4 shadow-md">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm opacity-90">Total Blogs</p>
+                                                    <p className="text-3xl font-bold mt-1">{myBlogsStats.totalBlogs}</p>
+                                                </div>
+                                                <FaPlus className="text-4xl opacity-50" />
+                                            </div>
+                                        </div>
+                                        <div className="bg-[#1E6F5C] text-white rounded-lg p-4 shadow-md">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm opacity-90">Total Likes</p>
+                                                    <p className="text-3xl font-bold mt-1">{myBlogsStats.totalLikes}</p>
+                                                </div>
+                                                <FaHeart className="text-4xl opacity-50" />
+                                            </div>
+                                        </div>
+                                        <div className="bg-[#E8B86D] text-gray-800 rounded-lg p-4 shadow-md">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm opacity-90">Total Views</p>
+                                                    <p className="text-3xl font-bold mt-1">{myBlogsStats.totalViews}</p>
+                                                </div>
+                                                <FaEye className="text-4xl opacity-50" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* My Blogs Grid */}
+                                    {loadingMyBlogs ? (
+                                        <div className="text-center py-8">
+                                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#28B463]"></div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {myBlogs.slice(0, 6).map((blog) => (
+                                                <div
+                                                    key={blog._id}
+                                                    className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden hover:shadow-lg hover:border-[#28B463] transition-all duration-300 cursor-pointer"
+                                                    onClick={() => navigate(`/${userRole}/blog/${blog._id}`)}
+                                                >
+                                                    {/* Featured Image */}
+                                                    {blog.featuredImage?.url ? (
+                                                        <img
+                                                            src={blog.featuredImage.url}
+                                                            alt={blog.title}
+                                                            className="w-full h-40 object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-40 bg-[#28B463] flex items-center justify-center">
+                                                            <span className="text-white text-3xl font-bold">
+                                                                {blog.title.charAt(0)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="p-4">
+                                                        {/* Category Badge */}
+                                                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${getCategoryColor(blog.category)}`}>
+                                                            {blog.category}
+                                                        </span>
+
+                                                        {/* Title */}
+                                                        <h3 className="text-lg font-bold text-gray-800 mt-2 mb-2 line-clamp-2">
+                                                            {blog.title}
+                                                        </h3>
+
+                                                        {/* Date */}
+                                                        <p className="text-xs text-gray-500 mb-3">
+                                                            {moment(blog.createdAt).format('MMM DD, YYYY')}
+                                                        </p>
+
+                                                        {/* Stats */}
+                                                        <div className="flex items-center gap-3 text-sm text-gray-600 pt-2 border-t border-gray-200">
+                                                            <span className="flex items-center gap-1">
+                                                                <FaHeart className="text-red-500" /> {blog.likesCount || 0}
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <FaComment className="text-blue-500" /> {blog.commentsCount || 0}
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <FaEye className="text-gray-500" /> {blog.views || 0}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* View All My Blogs Link */}
+                                    {myBlogs.length > 6 && (
+                                        <div className="text-center mt-4">
+                                            <button
+                                                onClick={() => navigate(`/${userRole}/my-blogs`)}
+                                                className="text-[#28B463] hover:text-[#1E6F5C] font-semibold"
+                                            >
+                                                View All My Blogs ({myBlogs.length})
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <p className="text-gray-500 text-lg mb-4">You haven't created any blog posts yet</p>
+                                    <button
+                                        onClick={() => navigate(`/${userRole}/create-blog`)}
+                                        className="bg-[#28B463] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#1E6F5C] transition-colors inline-flex items-center gap-2 shadow-md"
+                                    >
+                                        <FaPlus /> Create Your First Blog
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* All Blogs Section - Add ref here for smooth scroll */}
+                <div ref={blogsGridRef}>
+                    <h2 className="text-2xl font-bold text-[#1E6F5C] mb-6">All Blogs</h2>
+                </div>
+
                 {/* Blog Grid */}
                 {loading ? (
                     <div className="text-center py-20">
-                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1E6F5C]"></div>
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#28B463]"></div>
                         <p className="mt-4 text-gray-600">Loading blogs...</p>
                     </div>
                 ) : blogs.length === 0 ? (
@@ -269,7 +484,7 @@ const BlogPage = () => {
                                             className="w-full h-48 object-cover"
                                         />
                                     ) : (
-                                        <div className="w-full h-48 bg-linear-to-br from-[#1E6F5C] to-[#289672] flex items-center justify-center">
+                                        <div className="w-full h-48 bg-[#28B463] flex items-center justify-center">
                                             <span className="text-white text-4xl font-bold">
                                                 {blog.title.charAt(0)}
                                             </span>

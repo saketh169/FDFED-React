@@ -74,6 +74,43 @@ router.get('/dietitians/:id', async (req, res) => {
   }
 });
 
+// Get dietitian profile by ID (for editing - includes all fields)
+router.get('/dietitians/profile/:id', async (req, res) => {
+  try {
+    const dietitian = await Dietitian.findOne({
+      _id: req.params.id,
+      isDeleted: false
+    }).select('-password -files -documents -verificationStatus');
+
+    if (!dietitian) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dietitian not found'
+      });
+    }
+
+    // Convert profileImage buffer to base64 data URL
+    const dietitianObj = dietitian.toObject();
+    if (dietitianObj.profileImage) {
+      dietitianObj.photo = `data:image/jpeg;base64,${dietitianObj.profileImage.toString('base64')}`;
+    } else {
+      dietitianObj.photo = null;
+    }
+    delete dietitianObj.profileImage; // Remove the buffer field
+
+    res.json({
+      success: true,
+      data: dietitianObj
+    });
+  } catch (error) {
+    console.error('Error fetching dietitian profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching dietitian profile'
+    });
+  }
+});
+
 // Update dietitian profile
 router.post('/dietitians/:id', async (req, res) => {
   try {

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import Sidebar from "../../components/Sidebar/Sidebar";
-import { AuthProvider } from "../../contexts/AuthContext";
 import { useAuthContext } from "../../hooks/useAuthContext";
 
 // Mock Data
@@ -96,10 +95,18 @@ const UserDashboard = () => {
 
   // Set profile image from user data when available
   useEffect(() => {
-    if (user && user.profileImage) {
+    if (user?.profileImage) {
       setProfileImage(user.profileImage);
+      // Store with role-specific key to avoid conflicts
+      localStorage.setItem('profileImage_user', user.profileImage);
+    } else {
+      // Check localStorage as fallback with role-specific key
+      const storedImage = localStorage.getItem('profileImage_user');
+      if (storedImage) {
+        setProfileImage(storedImage);
+      }
     }
-  }, [user]);
+  }, [user, user?.profileImage]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -109,8 +116,8 @@ const UserDashboard = () => {
     const reader = new FileReader();
     reader.onload = () => {
       setProfileImage(reader.result);
-      // Store in localStorage for header display
-      localStorage.setItem('profileImage', reader.result);
+      // Store in localStorage with role-specific key
+      localStorage.setItem('profileImage_user', reader.result);
     };
     reader.readAsDataURL(file);
 
@@ -120,8 +127,14 @@ const UserDashboard = () => {
       const formData = new FormData();
       formData.append('profileImage', file);
 
-      // Get token from context
-      if (!token) {
+      // Get token from context or localStorage
+      let authToken = token;
+      if (!authToken) {
+        // Fallback to localStorage if context doesn't have token
+        authToken = localStorage.getItem('authToken_user');
+      }
+
+      if (!authToken) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=user');
         return;
@@ -131,7 +144,7 @@ const UserDashboard = () => {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -139,6 +152,11 @@ const UserDashboard = () => {
       
       if (data.success) {
         alert('Profile photo uploaded successfully!');
+        // Refresh user data from AuthContext to get the updated profileImage
+        if (user?.id) {
+          // Force a re-fetch of user details by triggering a page reload or context refresh
+          window.location.reload();
+        }
       } else {
         alert(`Upload failed: ${data.message || 'Unknown error'}`);
       }
@@ -409,11 +427,4 @@ const UserDashboard = () => {
   );
 };
 
-// Wrap the component with AuthProvider for user role
-const UserDashboardWithAuth = () => (
-  <AuthProvider currentRole="user">
-    <UserDashboard />
-  </AuthProvider>
-);
-
-export default UserDashboardWithAuth;
+export default UserDashboard;

@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from '../../hooks/useAuthContext';
+import axios from 'axios';
 
 // --- Theme Colors ---
 const PRIMARY_GREEN = '#27AE60'; // Main green
@@ -68,8 +70,13 @@ const DIETITIAN_MOCK_BOOKINGS = {
 };
 
 
-const DietitianSchedule = ({ bookingsByDay = DIETITIAN_MOCK_BOOKINGS }) => {
+const DietitianSchedule = () => {
     const navigate = useNavigate();
+    const { user, token } = useAuthContext();
+    
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    
     const weekDates = useMemo(() => generateWeekDates(), []);
     const sortedDays = useMemo(() => Object.entries(weekDates).sort((a, b) => a[1].dateObj - b[1].dateObj), [weekDates]);
 
@@ -80,6 +87,78 @@ const DietitianSchedule = ({ bookingsByDay = DIETITIAN_MOCK_BOOKINGS }) => {
     // Filter State is now for clients
     const [searchClient, setSearchClient] = useState('');
     const [filterDate, setFilterDate] = useState('');
+
+    // Fetch dietitian bookings from API
+    useEffect(() => {
+        const fetchBookings = async () => {
+            // Get userId from localStorage (for dietitian, it's stored the same way)
+            const userId = localStorage.getItem('userId') || user?.id;
+            
+            if (!userId) {
+                console.error('No dietitian ID available');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                console.log('Fetching dietitian bookings for userId:', userId);
+                
+                const config = token ? {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                } : {};
+
+                const response = await axios.get(`/api/bookings/dietitian/${userId}`, config);
+                
+                console.log('Dietitian Bookings API response:', response.data);
+                
+                if (response.data.success) {
+                    console.log('Fetched dietitian bookings:', response.data.data);
+                    setBookings(response.data.data);
+                } else {
+                    console.error('Failed to fetch bookings:', response.data.message);
+                    setBookings([]);
+                }
+            } catch (error) {
+                console.error('Error fetching bookings:', error);
+                setBookings([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBookings();
+    }, [user, token]);
+
+    // Convert bookings array to bookingsByDay object
+    const bookingsByDay = useMemo(() => {
+        const grouped = {};
+        bookings.forEach(booking => {
+            // Fix timezone issue - parse date string directly for IST
+            // The date comes from backend as YYYY-MM-DD, use it directly
+            const dateKey = booking.date.split('T')[0];
+            
+            if (!grouped[dateKey]) {
+                grouped[dateKey] = [];
+            }
+            grouped[dateKey].push({
+                time: booking.time,
+                consultationType: booking.consultationType,
+                specialization: booking.dietitianSpecialization || 'General Consultation',
+                clientName: booking.username,
+                clientEmail: booking.email,
+                clientPhone: booking.userPhone,
+                clientAddress: booking.userAddress,
+                status: booking.status,
+                bookingId: booking._id,
+                amount: booking.amount,
+                profileImage: null // Add if you have client images
+            });
+        });
+        return grouped;
+    }, [bookings]);
 
     const activeDayInfo = weekDates[activeDayKey];
 
@@ -129,6 +208,16 @@ const DietitianSchedule = ({ bookingsByDay = DIETITIAN_MOCK_BOOKINGS }) => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
+            {/* Loading State */}
+            {loading && (
+                <div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
+                    <div className="text-center">
+                        <i className="fas fa-spinner fa-spin text-4xl text-emerald-600 mb-4"></i>
+                        <p className="text-gray-600">Loading your appointments...</p>
+                    </div>
+                </div>
+            )}
+            
             {/* Back Button */}
             <button
                 onClick={() => navigate(-1)}
@@ -240,8 +329,13 @@ const DietitianSchedule = ({ bookingsByDay = DIETITIAN_MOCK_BOOKINGS }) => {
                                     <div className="appointment-time text-sm text-gray-500 mb-2 flex items-center gap-1">
                                         <i className="fas fa-clock text-[#27AE60] text-sm"></i>
                                         <span className="font-bold text-gray-800">{appointment.time || 'N/A'}</span>
-                                        <span className={`px-2 py-0.5 ml-auto text-xs font-bold rounded uppercase tracking-tight whitespace-nowrap ${appointment.consultationType.toLowerCase() === 'consultation' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                                            {appointment.consultationType}
+                                        <span className={`px-2 py-0.5 ml-auto text-xs font-bold rounded uppercase tracking-tight whitespace-nowrap ${
+                                            appointment.status === 'confirmed' ? 'bg-green-100 text-green-700' : 
+                                            appointment.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                            appointment.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-gray-100 text-gray-700'
+                                        }`}>
+                                            {appointment.status || appointment.consultationType}
                                         </span>
                                     </div>
                                     <h3 className="appointment-title text-base font-bold text-gray-800 mb-1">
@@ -268,10 +362,51 @@ const DietitianSchedule = ({ bookingsByDay = DIETITIAN_MOCK_BOOKINGS }) => {
                                                 {appointment.clientName.charAt(0)}
                                             </div>
                                         )}
-                                        <span className="client-name text-sm font-semibold text-gray-800 truncate">
-                                            {appointment.clientName}
-                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="client-name text-sm font-semibold text-gray-800 truncate block">
+                                                {appointment.clientName}
+                                            </span>
+                                            {appointment.clientEmail && (
+                                                <a 
+                                                    href={`mailto:${appointment.clientEmail}`}
+                                                    className="text-xs text-emerald-600 hover:underline truncate block"
+                                                    title={appointment.clientEmail}
+                                                >
+                                                    <i className="fas fa-envelope mr-1"></i>
+                                                    Contact
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
+                                    
+                                    {/* Additional Client Info */}
+                                    {(appointment.clientPhone || appointment.clientAddress) && (
+                                        <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-600 space-y-1">
+                                            {appointment.clientPhone && (
+                                                <div className="flex items-center gap-1">
+                                                    <i className="fas fa-phone text-emerald-600"></i>
+                                                    <a href={`tel:${appointment.clientPhone}`} className="hover:underline">
+                                                        {appointment.clientPhone}
+                                                    </a>
+                                                </div>
+                                            )}
+                                            {appointment.clientAddress && (
+                                                <div className="flex items-start gap-1">
+                                                    <i className="fas fa-map-marker-alt text-emerald-600 mt-0.5"></i>
+                                                    <span className="line-clamp-2">{appointment.clientAddress}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {appointment.amount && (
+                                        <div className="mt-2 pt-2 border-t border-gray-100">
+                                            <span className="text-xs text-gray-600">
+                                                <i className="fas fa-rupee-sign mr-1 text-emerald-600"></i>
+                                                Fee: <span className="font-semibold text-gray-800">₹{appointment.amount}</span>
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         )}
