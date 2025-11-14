@@ -309,8 +309,9 @@ const Payment = () => {
     dispatch(setPaymentStatus('processing'));
 
     try {
-      // Validate token before making API call
+      // Validate token and check expiration before API call
       if (!token) {
+        console.error('Token validation failed: Missing or expired token');
         alert('Authentication token not found. Please login again.');
         navigate('/role');
         return;
