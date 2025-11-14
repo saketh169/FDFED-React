@@ -1,6 +1,8 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useContext } from 'react';
 import { ChevronLeft, ChevronRight, Utensils, Users, X, Plus, Save, Trash2, Loader2, Calendar, Search, Check, Edit, Clipboard, CheckCircle, BarChart, Home, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import AuthContext from '../../contexts/AuthContext';
 
 // --- Utility Functions ---
 
@@ -22,15 +24,6 @@ const MOCK_CLIENTS = [
     { id: 'client2', name: 'Robert Lee', goal: 'Muscle Gain (3000 kcal)', recentPlan: 'High-Protein' },
     { id: 'client3', name: 'Maria Garcia', goal: 'Energy & Wellness (2000 kcal)', recentPlan: 'Mediterranean' },
 ];
-
-// Mock Data Structure: { [clientId]: { [dateKey]: planObject, ... }, ... }
-const INITIAL_PLANS = {
-    'client1': {
-        [dateToKey(new Date())]: {
-            id: dateToKey(new Date()) + '-1', planName: 'Today\'s Keto', dietType: 'Keto', calories: 1500, notes: 'Stay hydrated.', meals: []
-        }
-    }
-};
 
 // --- Custom Icon Component (using Lucide icons) ---
 
@@ -70,6 +63,10 @@ const DayCell = ({ day, date, plan, isCurrentMonth, isToday, isSelected, onSelec
             case 'High-Protein': return { bg: 'bg-blue-50', border: 'border-green-100', text: 'text-blue-700', accent: 'bg-blue-500' };
             case 'Mediterranean': return { bg: 'bg-orange-50', border: 'border-green-100', text: 'text-orange-700', accent: 'bg-orange-500' };
             case 'Keto': return { bg: 'bg-purple-50', border: 'border-green-100', text: 'text-purple-700', accent: 'bg-purple-500' };
+            case 'Vegan': return { bg: 'bg-green-50', border: 'border-green-100', text: 'text-green-700', accent: 'bg-green-500' };
+            case 'Vegetarian': return { bg: 'bg-lime-50', border: 'border-green-100', text: 'text-lime-700', accent: 'bg-lime-500' };
+            case 'Low-Carb': return { bg: 'bg-cyan-50', border: 'border-green-100', text: 'text-cyan-700', accent: 'bg-cyan-500' };
+            case 'Anything': return { bg: 'bg-gray-50', border: 'border-green-100', text: 'text-gray-700', accent: 'bg-gray-500' };
             default: return { bg: 'bg-slate-50', border: 'border-green-100', text: 'text-slate-700', accent: 'bg-slate-500' };
         }
     };
@@ -148,6 +145,27 @@ const PlanDetailModal = ({ plan, onClose, date }) => {
                             <Icon name="ChevronLeft" className="text-green-600" />
                         </button>
                     </div>
+
+                    {/* Plan Image */}
+                    {plan.imageUrl && (
+                        <div className="mb-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-slate-100 max-w-md mx-auto">
+                                <img
+                                    src={plan.imageUrl}
+                                    alt={plan.planName}
+                                    className="w-full h-48 object-contain object-center rounded-lg"
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextElementSibling.style.display = 'flex';
+                                    }}
+                                />
+                                <div className="hidden w-full h-48 items-center justify-center text-slate-400 text-sm">
+                                    <Icon name="Utensils" className="mr-2 text-xl" />
+                                    Image unavailable
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Plan Info */}
                     <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -254,8 +272,13 @@ const CalendarView = ({
     const getAssignedPlan = useCallback((date) => {
         if (!selectedClient) return null;
         const dateKey = dateToKey(date);
-        const clientPlans = plans[selectedClient.id] || {};
-        return clientPlans[dateKey] || null;
+        
+        // Find a plan that has this date in its assignedDates
+        const assignedPlan = plans.find(plan => 
+            plan.assignedDates && plan.assignedDates.includes(dateKey)
+        );
+        
+        return assignedPlan || null;
     }, [selectedClient, plans]);
 
     const isDaySelected = useCallback((date) => {
@@ -331,11 +354,69 @@ const CalendarView = ({
 // --- Core Component: DietitianAddPlanForm ---
 const DietitianAddPlanForm = () => {
     const navigate = useNavigate();
+    const { user, token } = useContext(AuthContext);
     // --- State Management ---
     const [view, setView] = useState('CLIENT_LIST'); // 'CLIENT_LIST' | 'CLIENT_DASHBOARD' | 'CREATE_PLAN' | 'ASSIGN_PLAN' | 'DELETE_PLAN'
-    const [clients] = useState(MOCK_CLIENTS);
+    const [clients, setClients] = useState([]);
+    const [loadingClients, setLoadingClients] = useState(true);
+    const [clientsError, setClientsError] = useState(null);
+
+    // Scroll to top on component mount (page refresh)
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, []);
+
+    // Log dietitian name and ID for debugging
+    useEffect(() => {
+        if (user) {
+            console.log('Dietitian Name:', user.name);
+            console.log('Dietitian ID:', user.id);
+        }
+    }, [user]);
+
+    // Fetch clients on component mount
+    useEffect(() => {
+        const fetchClients = async () => {
+            if (!user?.id || !token) {
+                setLoadingClients(false);
+                return;
+            }
+
+            try {
+                setLoadingClients(true);
+                setClientsError(null);
+
+                const response = await axios.get(`/api/dietitians/${user.id}/clients`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.data.success) {
+                    // Transform API response to match expected format
+                    const transformedClients = response.data.data.map(client => ({
+                        id: client.id,
+                        name: client.name,
+                        goal: client.goal || 'General Wellness (2000 kcal)',
+                        recentPlan: client.recentPlan || 'Balanced Diet'
+                    }));
+                    setClients(transformedClients);
+                } else {
+                    throw new Error(response.data.message || 'Failed to fetch clients');
+                }
+            } catch (error) {
+                console.error('Error fetching clients:', error);
+                setClientsError(error.response?.data?.message || error.message || 'Failed to load clients');
+                // Fallback to mock data if API fails
+                setClients(MOCK_CLIENTS);
+            } finally {
+                setLoadingClients(false);
+            }
+        };
+
+        fetchClients();
+    }, [user?.id, token]);
     const [selectedClient, setSelectedClient] = useState(null);
-    const [plans, setPlans] = useState(INITIAL_PLANS);
     const [availablePlans, setAvailablePlans] = useState([]); // List of created plans for the client
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedPlan, setSelectedPlan] = useState(null);
@@ -350,15 +431,37 @@ const DietitianAddPlanForm = () => {
     const [selectedDateForModal, setSelectedDateForModal] = useState('');
 
     // --- Navigation Handlers ---
-    const handleSelectClient = (client) => {
+    const handleSelectClient = async (client) => {
         setSelectedClient(client);
-        // Load existing plans for this client
-        const clientPlans = plans[client.id] || {};
-        const planList = Object.values(clientPlans).map(plan => ({
-            ...plan,
-            assignedDates: Object.keys(clientPlans).filter(date => clientPlans[date].id === plan.id)
-        }));
-        setAvailablePlans(planList);
+        setLoading(true);
+        
+        try {
+            // Fetch existing plans for this client (now returns assignments with populated meal plan data)
+            const response = await axios.get(`/api/meal-plans/dietitian/${user.id}/client/${client.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data.success) {
+                // Transform API response to match expected format
+                const plansData = response.data.data.map(plan => ({
+                    ...plan,
+                    id: plan.id || plan._id,
+                    assignedDates: plan.assignedDates || []
+                }));
+                setAvailablePlans(plansData);
+            } else {
+                throw new Error(response.data.message || 'Failed to fetch meal plans');
+            }
+        } catch (error) {
+            console.error('Error fetching meal plans:', error);
+            setAvailablePlans([]);
+            alert('Failed to load existing meal plans for this client');
+        } finally {
+            setLoading(false);
+        }
+        
         setView('CLIENT_DASHBOARD');
     };
 
@@ -373,21 +476,28 @@ const DietitianAddPlanForm = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleDeletePlan = (planId) => {
-        setAvailablePlans(prev => prev.filter(p => p.id !== planId));
-        // Also remove from all assigned dates
-        setPlans(prevPlans => {
-            const newPlans = { ...prevPlans };
-            Object.keys(newPlans).forEach(clientId => {
-                Object.keys(newPlans[clientId]).forEach(dateKey => {
-                    if (newPlans[clientId][dateKey].id === planId) {
-                        delete newPlans[clientId][dateKey];
-                    }
-                });
+    const handleDeletePlan = async (planId) => {
+        if (!confirm('Are you sure you want to delete this meal plan? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const response = await axios.delete(`/api/meal-plans/${planId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
-            return newPlans;
-        });
-        alert(`Plan deleted successfully!`);
+
+            if (response.data.success) {
+                setAvailablePlans(prev => prev.filter(p => p.id !== planId));
+                alert(`Plan deleted successfully!`);
+            } else {
+                throw new Error(response.data.message || 'Failed to delete meal plan');
+            }
+        } catch (error) {
+            console.error('Error deleting meal plan:', error);
+            alert(error.response?.data?.message || error.message || 'Failed to delete meal plan');
+        }
     };
 
     // --- Calendar Handlers ---
@@ -395,39 +505,85 @@ const DietitianAddPlanForm = () => {
         setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
     };
 
-    const handleCalendarAssignPlan = (date, showAlert = true) => {
+    const handleCalendarAssignPlan = async (date, showAlert = true) => {
         if (!selectedPlan) return;
         const dateKey = dateToKey(date);
-        setPlans(prevPlans => {
-            const clientId = selectedClient.id;
-            const currentSchedule = prevPlans[clientId] || {};
-            return {
-                ...prevPlans,
-                [clientId]: {
-                    ...currentSchedule,
-                    [dateKey]: selectedPlan,
+        
+        try {
+            const response = await axios.post(`/api/meal-plans/${selectedPlan.id}/assign`, {
+                userId: selectedClient.id,
+                dates: [dateKey]
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
-            };
-        });
-        if (showAlert) {
-            alert(`Plan "${selectedPlan.planName}" assigned to ${selectedClient.name} for ${dateKey}!`);
+            });
+
+            if (response.data.success) {
+                // Update availablePlans to reflect the new assignment
+                setAvailablePlans(prevPlans => 
+                    prevPlans.map(plan => 
+                        plan.id === selectedPlan.id 
+                            ? { 
+                                ...plan, 
+                                assignedDates: [...(plan.assignedDates || []), dateKey] 
+                            }
+                            : plan
+                    )
+                );
+                
+                if (showAlert) {
+                    alert(`Plan "${selectedPlan.planName}" assigned to ${selectedClient.name} for ${dateKey}!`);
+                }
+            } else {
+                throw new Error(response.data.message || 'Failed to assign meal plan');
+            }
+        } catch (error) {
+            console.error('Error assigning meal plan:', error);
+            alert(error.response?.data?.message || error.message || 'Failed to assign meal plan');
         }
     };
 
-    const handleRemovePlan = (dateKey, showAlert = true) => {
+    const handleRemovePlan = async (dateKey, showAlert = true) => {
         if (!selectedClient) return;
-        setPlans(prevPlans => {
-            const clientId = selectedClient.id;
-            const currentSchedule = prevPlans[clientId] || {};
-            const updatedSchedule = { ...currentSchedule };
-            delete updatedSchedule[dateKey];
-            return {
-                ...prevPlans,
-                [clientId]: updatedSchedule
-            };
-        });
-        if (showAlert) {
-            alert(`Plan removed for ${selectedClient.name} on ${dateKey}.`);
+        
+        try {
+            // Find the plan assigned to this date
+            const planToRemove = availablePlans.find(plan => 
+                plan.assignedDates && plan.assignedDates.includes(dateKey)
+            );
+            
+            if (!planToRemove) return;
+            
+            const response = await axios.delete(`/api/meal-plans/${planToRemove.id}/dates`, {
+                data: { 
+                    userId: selectedClient.id,
+                    dietitianId: user.id,
+                    dates: [dateKey] 
+                },
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data.success) {
+                // Update availablePlans to reflect the removal
+                setAvailablePlans(prevPlans => 
+                    prevPlans.map(plan => ({
+                        ...plan,
+                        assignedDates: (plan.assignedDates || []).filter(date => date !== dateKey)
+                    }))
+                );
+                
+                if (showAlert) {
+                    alert(`Plan removed for ${selectedClient.name} on ${dateKey}.`);
+                }
+            } else {
+                throw new Error(response.data.message || 'Failed to remove meal plan');
+            }
+        } catch (error) {
+            console.error('Error removing meal plan:', error);
+            alert(error.response?.data?.message || error.message || 'Failed to remove meal plan');
         }
     };
 
@@ -453,13 +609,22 @@ const DietitianAddPlanForm = () => {
     };
 
     // --- Plan Creation Handler ---
-    const handleSavePlan = (planFormState, mealEntries) => {
+    const handleSavePlan = async (planFormState, mealEntries, setErrors) => {
         if (!selectedClient) return;
 
+        // Check if a plan with the same name already exists
+        const existingPlan = availablePlans.find(plan => 
+            plan.planName.toLowerCase() === planFormState.planName.trim().toLowerCase()
+        );
+        
+        if (existingPlan) {
+            setErrors(prev => ({ ...prev, planName: 'A plan with this name already exists. Please choose a different name.' }));
+            return;
+        }
+
         setLoading(true);
-        setTimeout(() => {
-            const newPlan = {
-                id: Date.now().toString(),
+        try {
+            const planData = {
                 planName: planFormState.planName.trim(),
                 dietType: planFormState.dietType,
                 calories: parseInt(planFormState.calories) || 0,
@@ -470,14 +635,35 @@ const DietitianAddPlanForm = () => {
                     calories: parseInt(m.calories) || 0,
                     details: m.details,
                 })),
-                createdAt: new Date().toISOString(),
+                dietitianId: user.id,
+                userId: selectedClient.id
             };
 
-            setAvailablePlans(prev => [...prev, { ...newPlan, assignedDates: [] }]);
+            const response = await axios.post('/api/meal-plans', planData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data.success) {
+                // Add the new plan to availablePlans
+                const newPlan = {
+                    ...response.data.data,
+                    id: response.data.data._id,
+                    assignedDates: []
+                };
+                setAvailablePlans(prev => [...prev, newPlan]);
+                setView('CLIENT_DASHBOARD');
+                alert(`Plan "${response.data.data.planName}" created successfully!`);
+            } else {
+                throw new Error(response.data.message || 'Failed to create meal plan');
+            }
+        } catch (error) {
+            console.error('Error creating meal plan:', error);
+            setErrors(prev => ({ ...prev, general: error.response?.data?.message || error.message || 'Failed to create meal plan' }));
+        } finally {
             setLoading(false);
-            setView('CLIENT_DASHBOARD');
-            alert(`Plan "${newPlan.planName}" created successfully!`);
-        }, 800);
+        }
     };
 
     // --- UI Components ---
@@ -511,38 +697,62 @@ const DietitianAddPlanForm = () => {
 
                 {/* Client List */}
                 <div className="space-y-4">
-                    {clients.map(client => (
-                        <div
-                            key={client.id}
-                            className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 hover:shadow-xl transition-all duration-300"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                    <div className="p-3 bg-emerald-100 rounded-xl">
-                                        <Icon name="Users" className="text-emerald-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-800">{client.name}</h3>
-                                        <p className="text-sm text-slate-500">Active Client</p>
-                                        <div className="flex items-center space-x-4 mt-1">
-                                            <span className="text-xs text-slate-600">
-                                                <span className="font-semibold">Goal:</span> {client.goal}
-                                            </span>
-                                            <span className="text-xs text-slate-600">
-                                                <span className="font-semibold">Recent Plan:</span> {client.recentPlan}
-                                            </span>
+                    {loadingClients ? (
+                        <div className="text-center py-12">
+                            <Loader2 className="text-4xl text-emerald-300 animate-spin mb-4 mx-auto" />
+                            <p className="text-slate-500 text-lg">Loading your clients...</p>
+                        </div>
+                    ) : clientsError ? (
+                        <div className="text-center py-12">
+                            <p className="text-red-500 text-lg mb-4">Error loading clients</p>
+                            <p className="text-slate-400 text-sm">{clientsError}</p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    ) : clients.length === 0 ? (
+                        <div className="text-center py-12">
+                            <Users className="text-4xl text-slate-300 mb-4" />
+                            <p className="text-slate-500 text-lg">No clients found</p>
+                            <p className="text-slate-400 text-sm mt-2">Clients will appear here once they book consultations with you</p>
+                        </div>
+                    ) : (
+                        clients.map(client => (
+                            <div
+                                key={client.id}
+                                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 hover:shadow-xl transition-all duration-300"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="p-3 bg-emerald-100 rounded-xl">
+                                            <Icon name="Users" className="text-emerald-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-800">{client.name}</h3>
+                                            <p className="text-sm text-slate-500">Active Client</p>
+                                            <div className="flex items-center space-x-4 mt-1">
+                                                <span className="text-xs text-slate-600">
+                                                    <span className="font-semibold">Goal:</span> {client.goal}
+                                                </span>
+                                                <span className="text-xs text-slate-600">
+                                                    <span className="font-semibold">Recent Plan:</span> {client.recentPlan}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
+                                    <button
+                                        onClick={() => handleSelectClient(client)}
+                                        className="px-6 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors duration-200 font-medium shadow-md"
+                                    >
+                                        Assign Plans
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => handleSelectClient(client)}
-                                    className="px-6 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors duration-200 font-medium shadow-md"
-                                >
-                                    Assign Plans
-                                </button>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
         </div>
@@ -606,7 +816,7 @@ const DietitianAddPlanForm = () => {
                                             <img
                                                 src={plan.imageUrl}
                                                 alt={plan.planName}
-                                                className="w-full h-32 object-cover rounded-lg"
+                                                className="w-full h-32 object-contain rounded-lg"
                                                 onError={(e) => {
                                                     e.target.style.display = 'none';
                                                 }}
@@ -701,7 +911,7 @@ const DietitianAddPlanForm = () => {
 
                     <CalendarView
                         currentDate={currentDate}
-                        plans={plans}
+                        plans={availablePlans}
                         selectedClient={selectedClient}
                         changeMonth={changeMonth}
                         setCurrentDate={setCurrentDate}
@@ -729,16 +939,25 @@ const DietitianAddPlanForm = () => {
             notes: '',
         });
         const [mealEntries, setMealEntries] = useState([{ mealName: '', calories: '', details: '' }]);
+        const [errors, setErrors] = useState({});
 
         const handleFormChange = (e) => {
             const { id, value } = e.target;
             setFormState(prev => ({ ...prev, [id]: value }));
+            // Clear error when user starts typing
+            if (errors[id]) {
+                setErrors(prev => ({ ...prev, [id]: null }));
+            }
         };
 
         const handleMealChange = (index, field, value) => {
             const newMeals = [...mealEntries];
             newMeals[index][field] = value;
             setMealEntries(newMeals);
+            // Clear meal errors when user starts typing
+            if (errors[`meal_${index}_${field}`]) {
+                setErrors(prev => ({ ...prev, [`meal_${index}_${field}`]: null }));
+            }
         };
 
         const addMealEntry = () => {
@@ -747,15 +966,48 @@ const DietitianAddPlanForm = () => {
 
         const removeMealEntry = (index) => {
             setMealEntries(prev => prev.filter((_, i) => i !== index));
+            // Clear any errors for this meal
+            const newErrors = { ...errors };
+            Object.keys(newErrors).forEach(key => {
+                if (key.startsWith(`meal_${index}_`)) {
+                    delete newErrors[key];
+                }
+            });
+            setErrors(newErrors);
+        };
+
+        const validateForm = () => {
+            const newErrors = {};
+
+            // Validate plan name
+            if (!formState.planName.trim()) {
+                newErrors.planName = 'Plan name is required';
+            }
+
+            // Validate calories
+            const calories = parseInt(formState.calories);
+            if (!calories || calories < 500 || calories > 5000) {
+                newErrors.calories = 'Calories must be between 500 and 5000';
+            }
+
+            // Validate meal entries
+            mealEntries.forEach((meal, index) => {
+                if (!meal.mealName.trim()) {
+                    newErrors[`meal_${index}_mealName`] = 'Meal name is required';
+                }
+            });
+
+            // Check if at least one meal is defined
+            if (mealEntries.length === 0 || mealEntries.every(m => !m.mealName.trim())) {
+                newErrors.meals = 'At least one meal with a name is required';
+            }
+
+            setErrors(newErrors);
+            return Object.keys(newErrors).length === 0;
         };
 
         const handleSubmit = () => {
-            if (!formState.planName.trim()) {
-                alert("Plan Name is required.");
-                return;
-            }
-            if (mealEntries.length === 0 || mealEntries.some(m => !m.mealName.trim())) {
-                alert("All meal entries must have a name.");
+            if (!validateForm()) {
                 return;
             }
 
@@ -798,10 +1050,15 @@ const DietitianAddPlanForm = () => {
                                         id="planName"
                                         value={formState.planName}
                                         onChange={handleFormChange}
-                                        className="w-full mt-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                        className={`w-full mt-1 p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                            errors.planName ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                        }`}
                                         placeholder="e.g., Daily High Protein"
                                         required
                                     />
+                                    {errors.planName && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.planName}</p>
+                                    )}
                                 </label>
                                 <label className="block">
                                     <span className="text-sm font-medium text-slate-700">Diet Type *</span>
@@ -809,10 +1066,15 @@ const DietitianAddPlanForm = () => {
                                         id="dietType"
                                         value={formState.dietType}
                                         onChange={handleFormChange}
-                                        className="w-full mt-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                        className={`w-full mt-1 p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                            errors.dietType ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                        }`}
                                     >
                                         {mealTypes.map(type => <option key={type} value={type}>{type}</option>)}
                                     </select>
+                                    {errors.dietType && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.dietType}</p>
+                                    )}
                                 </label>
                                 <label className="block">
                                     <span className="text-sm font-medium text-slate-700">Daily Calories (kcal) *</span>
@@ -821,10 +1083,15 @@ const DietitianAddPlanForm = () => {
                                         id="calories"
                                         value={formState.calories}
                                         onChange={handleFormChange}
-                                        className="w-full mt-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                        className={`w-full mt-1 p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                            errors.calories ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                        }`}
                                         min="500"
                                         max="5000"
                                     />
+                                    {errors.calories && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.calories}</p>
+                                    )}
                                 </label>
                             </div>
                             <div className="grid md:grid-cols-2 gap-4 mt-4">
@@ -905,10 +1172,15 @@ const DietitianAddPlanForm = () => {
                                                     type="text"
                                                     value={meal.mealName}
                                                     onChange={(e) => handleMealChange(index, 'mealName', e.target.value)}
-                                                    className="w-full mt-1 p-2 border border-slate-300 rounded-lg text-sm"
+                                                    className={`w-full mt-1 p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                                        errors[`meal_${index}_mealName`] ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                                    }`}
                                                     placeholder="e.g., Chicken Salad"
                                                     required
                                                 />
+                                                {errors[`meal_${index}_mealName`] && (
+                                                    <p className="text-red-500 text-xs mt-1">{errors[`meal_${index}_mealName`]}</p>
+                                                )}
                                             </label>
                                             <label className="block">
                                                 <span className="text-xs font-medium text-slate-700">Approx. Calories</span>
@@ -916,9 +1188,14 @@ const DietitianAddPlanForm = () => {
                                                     type="number"
                                                     value={meal.calories}
                                                     onChange={(e) => handleMealChange(index, 'calories', e.target.value)}
-                                                    className="w-full mt-1 p-2 border border-slate-300 rounded-lg text-sm"
+                                                    className={`w-full mt-1 p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                                        errors[`meal_${index}_calories`] ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                                    }`}
                                                     min="0"
                                                 />
+                                                {errors[`meal_${index}_calories`] && (
+                                                    <p className="text-red-500 text-xs mt-1">{errors[`meal_${index}_calories`]}</p>
+                                                )}
                                             </label>
                                         </div>
                                         <label className="block mt-2">
@@ -926,10 +1203,15 @@ const DietitianAddPlanForm = () => {
                                             <textarea
                                                 value={meal.details}
                                                 onChange={(e) => handleMealChange(index, 'details', e.target.value)}
-                                                className="w-full mt-1 p-2 border border-slate-300 rounded-lg text-sm resize-y"
+                                                className={`w-full mt-1 p-2 border rounded-lg text-sm resize-y focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                                    errors[`meal_${index}_details`] ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                                }`}
                                                 rows="2"
                                                 placeholder="Recipe or ingredients: 150g chicken, 50g lettuce, dressing."
                                             />
+                                            {errors[`meal_${index}_details`] && (
+                                                <p className="text-red-500 text-xs mt-1">{errors[`meal_${index}_details`]}</p>
+                                            )}
                                         </label>
                                     </div>
                                 ))}
@@ -954,37 +1236,146 @@ const DietitianAddPlanForm = () => {
     };
 
     const DeletePlanView = () => {
-        const handleBulkRemove = () => {
+        const handleBulkRemove = async () => {
             if (selectedDays.length === 0) return;
-            selectedDays.forEach(date => {
-                const dateKey = dateToKey(date);
-                handleRemovePlan(dateKey, false);
-            });
-            alert(`Plans removed from ${selectedDays.length} selected days!`);
-            setSelectedDays([]);
-        };
-
-        const handleMonthRemove = () => {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(year, month, day);
-                const dateKey = dateToKey(date);
-                handleRemovePlan(dateKey, false);
+            
+            try {
+                const dateKeys = selectedDays.map(date => dateToKey(date));
+                
+                // Find all plans that have assignments on these dates
+                const plansToUpdate = availablePlans.filter(plan => 
+                    plan.assignedDates && plan.assignedDates.some(date => dateKeys.includes(date))
+                );
+                
+                // Remove from each plan
+                for (const plan of plansToUpdate) {
+                    const datesToRemove = plan.assignedDates.filter(date => dateKeys.includes(date));
+                    if (datesToRemove.length > 0) {
+                        await axios.delete(`/api/meal-plans/${plan.id}/dates`, {
+                            data: { 
+                                userId: selectedClient.id,
+                                dietitianId: user.id,
+                                dates: datesToRemove 
+                            },
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    }
+                }
+                
+                // Update local state
+                setAvailablePlans(prevPlans => 
+                    prevPlans.map(plan => ({
+                        ...plan,
+                        assignedDates: (plan.assignedDates || []).filter(date => !dateKeys.includes(date))
+                    }))
+                );
+                
+                alert(`Plans removed from ${selectedDays.length} selected days!`);
+                setSelectedDays([]);
+            } catch (error) {
+                console.error('Error removing meal plans:', error);
+                alert(error.response?.data?.message || error.message || 'Failed to remove meal plans');
             }
-            alert(`Plans removed from entire month!`);
         };
 
-        const handleRangeRemove = (start, end) => {
+        const handleMonthRemove = async () => {
+            try {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const dateKeys = [];
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(year, month, day);
+                    dateKeys.push(dateToKey(date));
+                }
+                
+                // Find all plans that have assignments in this month
+                const plansToUpdate = availablePlans.filter(plan => 
+                    plan.assignedDates && plan.assignedDates.some(date => dateKeys.includes(date))
+                );
+                
+                // Remove from each plan
+                for (const plan of plansToUpdate) {
+                    const datesToRemove = plan.assignedDates.filter(date => dateKeys.includes(date));
+                    if (datesToRemove.length > 0) {
+                        await axios.delete(`/api/meal-plans/${plan.id}/dates`, {
+                            data: { 
+                                userId: selectedClient.id,
+                                dietitianId: user.id,
+                                dates: datesToRemove 
+                            },
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    }
+                }
+                
+                // Update local state
+                setAvailablePlans(prevPlans => 
+                    prevPlans.map(plan => ({
+                        ...plan,
+                        assignedDates: (plan.assignedDates || []).filter(date => !dateKeys.includes(date))
+                    }))
+                );
+                
+                alert(`Plans removed from entire month!`);
+            } catch (error) {
+                console.error('Error removing meal plans:', error);
+                alert(error.response?.data?.message || error.message || 'Failed to remove meal plans');
+            }
+        };
+
+        const handleRangeRemove = async (start, end) => {
             if (!start || !end) return;
-            const startDate = new Date(start);
-            const endDate = new Date(end);
-            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                const dateKey = dateToKey(new Date(d));
-                handleRemovePlan(dateKey, false);
+            
+            try {
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                const dateKeys = [];
+                
+                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    dateKeys.push(dateToKey(new Date(d)));
+                }
+                
+                // Find all plans that have assignments in this range
+                const plansToUpdate = availablePlans.filter(plan => 
+                    plan.assignedDates && plan.assignedDates.some(date => dateKeys.includes(date))
+                );
+                
+                // Remove from each plan
+                for (const plan of plansToUpdate) {
+                    const datesToRemove = plan.assignedDates.filter(date => dateKeys.includes(date));
+                    if (datesToRemove.length > 0) {
+                        await axios.delete(`/api/meal-plans/${plan.id}/dates`, {
+                            data: { 
+                                userId: selectedClient.id,
+                                dietitianId: user.id,
+                                dates: datesToRemove 
+                            },
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    }
+                }
+                
+                // Update local state
+                setAvailablePlans(prevPlans => 
+                    prevPlans.map(plan => ({
+                        ...plan,
+                        assignedDates: (plan.assignedDates || []).filter(date => !dateKeys.includes(date))
+                    }))
+                );
+                
+                alert(`Plans removed from the selected range!`);
+            } catch (error) {
+                console.error('Error removing meal plans:', error);
+                alert(error.response?.data?.message || error.message || 'Failed to remove meal plans');
             }
-            alert(`Plans removed from the selected range!`);
         };
 
         return (
@@ -1123,7 +1514,7 @@ const DietitianAddPlanForm = () => {
                     <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
                         <CalendarView
                             currentDate={currentDate}
-                            plans={plans}
+                            plans={availablePlans}
                             selectedClient={selectedClient}
                             changeMonth={changeMonth}
                             setCurrentDate={setCurrentDate}
@@ -1146,25 +1537,88 @@ const DietitianAddPlanForm = () => {
     };
 
     const AssignPlanView = () => {
-        const handleBulkAssign = () => {
+        const handleBulkAssign = async () => {
             if (selectedDays.length === 0 || !selectedPlan) return;
-            selectedDays.forEach(date => {
-                handleCalendarAssignPlan(date, false);
-            });
-            alert(`Plan "${selectedPlan.planName}" assigned to ${selectedDays.length} selected days!`);
-            setSelectedDays([]);
+            
+            try {
+                const dateKeys = selectedDays.map(date => dateToKey(date));
+                const response = await axios.post(`/api/meal-plans/${selectedPlan.id}/assign`, {
+                    userId: selectedClient.id,
+                    dates: dateKeys
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.data.success) {
+                    // Update availablePlans to reflect the new assignments
+                    setAvailablePlans(prevPlans => 
+                        prevPlans.map(plan => 
+                            plan.id === selectedPlan.id 
+                                ? { 
+                                    ...plan, 
+                                    assignedDates: [...(plan.assignedDates || []), ...dateKeys] 
+                                }
+                                : plan
+                        )
+                    );
+                    
+                    alert(`Plan "${selectedPlan.planName}" assigned to ${selectedDays.length} selected days!`);
+                    setSelectedDays([]);
+                } else {
+                    throw new Error(response.data.message || 'Failed to assign meal plan');
+                }
+            } catch (error) {
+                console.error('Error assigning meal plan:', error);
+                alert(error.response?.data?.message || error.message || 'Failed to assign meal plan');
+            }
         };
 
-        const handleMonthAssign = () => {
+        const handleMonthAssign = async () => {
             if (!selectedPlan) return;
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(year, month, day);
-                handleCalendarAssignPlan(date, false);
+            
+            try {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const dateKeys = [];
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(year, month, day);
+                    dateKeys.push(dateToKey(date));
+                }
+                
+                const response = await axios.post(`/api/meal-plans/${selectedPlan.id}/assign`, {
+                    userId: selectedClient.id,
+                    dates: dateKeys
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.data.success) {
+                    // Update availablePlans to reflect the new assignments
+                    setAvailablePlans(prevPlans => 
+                        prevPlans.map(plan => 
+                            plan.id === selectedPlan.id 
+                                ? { 
+                                    ...plan, 
+                                    assignedDates: [...(plan.assignedDates || []), ...dateKeys] 
+                                }
+                                : plan
+                        )
+                    );
+                    
+                    alert(`Plan "${selectedPlan.planName}" assigned to entire month!`);
+                } else {
+                    throw new Error(response.data.message || 'Failed to assign meal plan');
+                }
+            } catch (error) {
+                console.error('Error assigning meal plan:', error);
+                alert(error.response?.data?.message || error.message || 'Failed to assign meal plan');
             }
-            alert(`Plan "${selectedPlan.planName}" assigned to entire month!`);
         };
 
         const handleSingleDayAssign = (date) => {
@@ -1172,14 +1626,48 @@ const DietitianAddPlanForm = () => {
             handleCalendarAssignPlan(date);
         };
 
-        const handleRangeAssign = (start, end) => {
+        const handleRangeAssign = async (start, end) => {
             if (!start || !end || !selectedPlan) return;
-            const startDate = new Date(start);
-            const endDate = new Date(end);
-            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                handleCalendarAssignPlan(new Date(d), false);
+            
+            try {
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                const dateKeys = [];
+                
+                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    dateKeys.push(dateToKey(new Date(d)));
+                }
+                
+                const response = await axios.post(`/api/meal-plans/${selectedPlan.id}/assign`, {
+                    userId: selectedClient.id,
+                    dates: dateKeys
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.data.success) {
+                    // Update availablePlans to reflect the new assignments
+                    setAvailablePlans(prevPlans => 
+                        prevPlans.map(plan => 
+                            plan.id === selectedPlan.id 
+                                ? { 
+                                    ...plan, 
+                                    assignedDates: [...(plan.assignedDates || []), ...dateKeys] 
+                                }
+                                : plan
+                        )
+                    );
+                    
+                    alert(`Plan "${selectedPlan.planName}" assigned to the selected range!`);
+                } else {
+                    throw new Error(response.data.message || 'Failed to assign meal plan');
+                }
+            } catch (error) {
+                console.error('Error assigning meal plan:', error);
+                alert(error.response?.data?.message || error.message || 'Failed to assign meal plan');
             }
-            alert(`Plan "${selectedPlan.planName}" assigned to the selected range!`);
         };
 
         return (
@@ -1342,7 +1830,7 @@ const DietitianAddPlanForm = () => {
                     <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
                         <CalendarView
                             currentDate={currentDate}
-                            plans={plans}
+                            plans={availablePlans}
                             selectedClient={selectedClient}
                             changeMonth={changeMonth}
                             setCurrentDate={setCurrentDate}

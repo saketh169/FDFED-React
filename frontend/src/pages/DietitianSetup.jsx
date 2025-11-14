@@ -6,7 +6,6 @@ import { useAuthContext } from '../hooks/useAuthContext';
 
 const DietitianSetup = () => {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');

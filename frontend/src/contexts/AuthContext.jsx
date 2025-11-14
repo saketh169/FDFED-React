@@ -33,7 +33,6 @@ export const AuthProvider = ({ children, currentRole }) => {
           if (!user) {
             await fetchUserDetails(token, currentRole);
           } else {
-            const parsedUser = JSON.parse(user);
             // Profile image is not stored in localStorage, so fetch fresh data
             await fetchUserDetails(token, currentRole);
           }
@@ -50,15 +49,12 @@ export const AuthProvider = ({ children, currentRole }) => {
         const roles = ['user', 'admin', 'organization', 'corporatepartner', 'dietitian'];
         let foundToken = null;
         let foundRole = null;
-        let foundUser = null;
 
         for (const r of roles) {
           const token = localStorage.getItem(`authToken_${r}`);
-          const user = localStorage.getItem(`authUser_${r}`);
           if (token) {
             foundToken = token;
             foundRole = r;
-            foundUser = user ? JSON.parse(user) : null;
             break;
           }
         }
@@ -162,21 +158,37 @@ export const AuthProvider = ({ children, currentRole }) => {
       const data = response.data;
 
       if (data.token) {
+        const loginRole = data.role || role;
+
+        // Clear all previous JWT sessions for this role completely
+        localStorage.removeItem(`authToken_${loginRole}`);
+        localStorage.removeItem(`authUser_${loginRole}`);
+        localStorage.removeItem(`profileImage_${loginRole}`);
+
+        // Clear axios header for any previous session
+        delete axios.defaults.headers.common['Authorization'];
+
+        // Clear current context state to ensure clean slate
+        setToken(null);
+        setRole(null);
+        setUser(null);
+        setIsAuthenticated(false);
+
         // Store in context
         setToken(data.token);
-        setRole(data.role || role);
+        setRole(loginRole);
         setIsAuthenticated(true);
 
         // Store in localStorage for persistence with role-specific keys
-        localStorage.setItem(`authToken_${data.role || role}`, data.token);
+        localStorage.setItem(`authToken_${loginRole}`, data.token);
 
         // Set axios default header
         axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
 
         // Fetch user details after successful login
-        await fetchUserDetails(data.token, data.role || role);
+        await fetchUserDetails(data.token, loginRole);
 
-        return { success: true, role: data.role || role };
+        return { success: true, role: loginRole };
       }
     } catch (error) {
       console.error('Login error:', error);

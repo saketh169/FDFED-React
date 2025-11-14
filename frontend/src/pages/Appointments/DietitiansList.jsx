@@ -3,98 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../hooks/useAuthContext';
 import axios from 'axios';
 
-// Mock data for dietitians that a client has booked
-const mockDietitians = [
-  {
-    id: '1',
-    name: 'Dr. Priya Sharma',
-    specialization: 'Weight Management & Nutrition',
-    experience: '8 years',
-    rating: 4.9,
-    totalReviews: 156,
-    consultationFee: 75,
-    nextAppointment: '2025-11-15 10:00 AM',
-    status: 'Active',
-    profileImage: 'https://via.placeholder.com/80x80/10B981/ffffff?text=PS',
-    location: 'New York, NY',
-    languages: ['English', 'Hindi'],
-    qualifications: 'RD, CDN, MS in Nutrition',
-    lastConsultation: '2025-11-08',
-    totalSessions: 5,
-    upcomingSessions: 3,
-    consultationMode: 'Both Online & Offline'
-  },
-  {
-    id: '2',
-    name: 'Dr. James Wilson',
-    specialization: 'Sports Nutrition & Fitness',
-    experience: '12 years',
-    rating: 4.8,
-    totalReviews: 203,
-    consultationFee: 90,
-    nextAppointment: '2025-11-18 2:30 PM',
-    status: 'Active',
-    profileImage: 'https://via.placeholder.com/80x80/059669/ffffff?text=JW',
-    location: 'Los Angeles, CA',
-    languages: ['English'],
-    qualifications: 'RD, CSSD, PhD in Exercise Physiology',
-    lastConsultation: '2025-11-10',
-    totalSessions: 8,
-    upcomingSessions: 2,
-    consultationMode: 'Online Preferred'
-  },
-  {
-    id: '3',
-    name: 'Dr. Maria Gonzalez',
-    specialization: 'Diabetes & Metabolic Health',
-    experience: '10 years',
-    rating: 4.9,
-    totalReviews: 178,
-    consultationFee: 85,
-    nextAppointment: '2025-11-20 11:15 AM',
-    status: 'Active',
-    profileImage: 'https://via.placeholder.com/80x80/047857/ffffff?text=MG',
-    location: 'Chicago, IL',
-    languages: ['English', 'Spanish'],
-    qualifications: 'RD, CDE, MS in Clinical Nutrition',
-    lastConsultation: '2025-11-12',
-    totalSessions: 6,
-    upcomingSessions: 4,
-    consultationMode: 'Both Online & Offline'
-  },
-  {
-    id: '4',
-    name: 'Dr. Ahmed Hassan',
-    specialization: 'Cardiac Nutrition & Heart Health',
-    experience: '15 years',
-    rating: 4.7,
-    totalReviews: 142,
-    consultationFee: 95,
-    nextAppointment: '2025-11-22 9:00 AM',
-    status: 'Pending',
-    profileImage: 'https://via.placeholder.com/80x80/065F46/ffffff?text=AH',
-    location: 'Houston, TX',
-    languages: ['English', 'Arabic'],
-    qualifications: 'RD, LD, PhD in Cardiovascular Nutrition',
-    lastConsultation: null,
-    totalSessions: 0,
-    upcomingSessions: 1,
-    consultationMode: 'Online Only'
-  }
-];
-
 const DietitiansList = () => {
   const navigate = useNavigate();
   const { user, token } = useAuthContext();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDietitian, setSelectedDietitian] = useState(null);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [dietitianProfiles, setDietitianProfiles] = useState({});
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedDietitian, setSelectedDietitian] = useState(null);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [dietitianProfiles, setDietitianProfiles] = useState({});
 
-  const handleViewProfile = (dietitian) => {
+    // Console log the current user name and ID once on mount
+    useEffect(() => {
+        console.log('Current user name:', user?.name);
+        console.log('Current user ID:', user?.id);
+    }, [user?.name, user?.id]);
+
+    const handleViewProfile = (dietitian) => {
     setSelectedDietitian(dietitian);
     setShowProfileModal(true);
   };
@@ -354,149 +280,156 @@ const DietitiansList = () => {
         </div>
 
         {/* Enhanced Dietitians Grid */}
-        <div className="space-y-5">
-          {filteredDietitians.map((dietitian) => (
-            <div 
-              key={dietitian.id} 
-              className="bg-white rounded-2xl shadow-lg border border-emerald-100/50 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-            >
-              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                {/* Enhanced Profile Image with Gradient Border */}
-                <div className="shrink-0">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-linear-to-r from-emerald-400 to-teal-500 rounded-full blur-sm opacity-75"></div>
-                    <img
-                      src={dietitian.profileImage}
-                      alt={dietitian.name}
-                      className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
-                    />
-                  </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="flex-1 space-y-4">
-                  {/* Name and Status Row */}
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-2xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                          {dietitian.name}
-                        </h3>
-                        <span className={`px-4 py-1.5 text-sm font-semibold rounded-full shadow-sm ${getStatusColor(dietitian.status)}`}>
-                          {dietitian.status}
-                        </span>
-                      </div>
-                      <p className="text-emerald-600 font-semibold text-lg flex items-center gap-2">
-                        <i className="fas fa-stethoscope text-sm"></i>
-                        {dietitian.specialization}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
-                        <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
-                          <i className="fas fa-map-marker-alt text-emerald-500"></i>
-                          <span className="font-medium">{dietitian.location}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
-                          <i className="fas fa-clock text-emerald-500"></i>
-                          <span className="font-medium">{dietitian.experience} exp.</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-yellow-50 px-3 py-1.5 rounded-lg">
-                          <span className="flex gap-0.5">{renderStars(dietitian.rating)}</span>
-                          <span className="font-bold text-gray-900">{dietitian.rating}</span>
-                          <span className="text-gray-500">({dietitian.totalReviews})</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Price Card */}
-                    <div className="bg-linear-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border-2 border-emerald-200 shadow-sm text-center md:min-w-40">
-                      <div className="text-3xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                        ₹{dietitian.fees}
-                      </div>
-                      <div className="text-sm text-teal-700 font-medium mt-1">per consultation</div>
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+            <p className="mt-4 text-gray-600">Loading dietitians...</p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {filteredDietitians.map((dietitian) => (
+              <div 
+                key={dietitian.id} 
+                className="bg-white rounded-2xl shadow-lg border border-emerald-100/50 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              >
+                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                  {/* Enhanced Profile Image with Gradient Border */}
+                  <div className="shrink-0">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-linear-to-r from-emerald-400 to-teal-500 rounded-full blur-sm opacity-75"></div>
+                      <img
+                        src={dietitian.profileImage}
+                        alt={dietitian.name}
+                        className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
+                      />
                     </div>
                   </div>
 
-                  {/* Stats Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-linear-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-                          <i className="fas fa-calendar-alt text-white"></i>
+                  {/* Main Content */}
+                  <div className="flex-1 space-y-4">
+                    {/* Name and Status Row */}
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <h3 className="text-2xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                            {dietitian.name}
+                          </h3>
+                          <span className={`px-4 py-1.5 text-sm font-semibold rounded-full shadow-sm ${getStatusColor(dietitian.status)}`}>
+                            {dietitian.status}
+                          </span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs text-teal-700 font-medium mb-0.5">Next Appointment</div>
-                          <div className="font-bold text-emerald-700 truncate">
-                            {dietitian.nextAppointment || 'Not scheduled'}
+                        <p className="text-emerald-600 font-semibold text-lg flex items-center gap-2">
+                          <i className="fas fa-stethoscope text-sm"></i>
+                          {dietitian.specialization}
+                        </p>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                          <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
+                            <i className="fas fa-map-marker-alt text-emerald-500"></i>
+                            <span className="font-medium">{dietitian.location}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
+                            <i className="fas fa-clock text-emerald-500"></i>
+                            <span className="font-medium">{dietitian.experience} exp.</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-yellow-50 px-3 py-1.5 rounded-lg">
+                            <span className="flex gap-0.5">{renderStars(dietitian.rating)}</span>
+                            <span className="font-bold text-gray-900">{dietitian.rating}</span>
+                            <span className="text-gray-500">({dietitian.totalReviews})</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Price Card */}
+                      <div className="bg-linear-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border-2 border-emerald-200 shadow-sm text-center md:min-w-40">
+                        <div className="text-3xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                          ₹{dietitian.fees}
+                        </div>
+                        <div className="text-sm text-teal-700 font-medium mt-1">per consultation</div>
+                      </div>
+                    </div>
+
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-linear-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                            <i className="fas fa-calendar-alt text-white"></i>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-teal-700 font-medium mb-0.5">Next Appointment</div>
+                            <div className="font-bold text-emerald-700 truncate">
+                              {dietitian.nextAppointment || 'Not scheduled'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-linear-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <i className="fas fa-history text-white"></i>
+                          </div>
+                          <div>
+                            <div className="text-xs text-blue-700 font-medium mb-0.5">Total Sessions</div>
+                            <div className="font-bold text-blue-700 text-xl">{dietitian.totalSessions}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-linear-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <i className="fas fa-arrow-up text-white"></i>
+                          </div>
+                          <div>
+                            <div className="text-xs text-purple-700 font-medium mb-0.5">Upcoming</div>
+                            <div className="font-bold text-purple-700 text-xl">{dietitian.upcomingSessions} sessions</div>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-linear-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                          <i className="fas fa-history text-white"></i>
-                        </div>
-                        <div>
-                          <div className="text-xs text-blue-700 font-medium mb-0.5">Total Sessions</div>
-                          <div className="font-bold text-blue-700 text-xl">{dietitian.totalSessions}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-linear-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                          <i className="fas fa-arrow-up text-white"></i>
-                        </div>
-                        <div>
-                          <div className="text-xs text-purple-700 font-medium mb-0.5">Upcoming</div>
-                          <div className="font-bold text-purple-700 text-xl">{dietitian.upcomingSessions} sessions</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-4 py-1.5 bg-linear-to-r from-blue-100 to-blue-200 text-blue-800 text-sm font-semibold rounded-full border border-blue-300/50 shadow-sm">
-                      <i className="fas fa-award mr-1.5"></i>
-                      {dietitian.qualifications}
-                    </span>
-                    {dietitian.languages.map((lang, index) => (
-                      <span key={index} className="px-4 py-1.5 bg-linear-to-r from-green-100 to-emerald-200 text-green-800 text-sm font-semibold rounded-full border border-green-300/50 shadow-sm">
-                        <i className="fas fa-language mr-1.5"></i>
-                        {lang}
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-4 py-1.5 bg-linear-to-r from-blue-100 to-blue-200 text-blue-800 text-sm font-semibold rounded-full border border-blue-300/50 shadow-sm">
+                        <i className="fas fa-award mr-1.5"></i>
+                        {dietitian.qualifications}
                       </span>
-                    ))}
-                  </div>
+                      {dietitian.languages.map((lang, index) => (
+                        <span key={index} className="px-4 py-1.5 bg-linear-to-r from-green-100 to-emerald-200 text-green-800 text-sm font-semibold rounded-full border border-green-300/50 shadow-sm">
+                          <i className="fas fa-language mr-1.5"></i>
+                          {lang}
+                        </span>
+                      ))}
+                    </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                    <button 
-                      onClick={() => handleBookNextSession(dietitian)}
-                      className="flex-1 px-6 py-3 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                    >
-                      <i className="fas fa-calendar-check"></i>
-                      <span>Book Next Session</span>
-                    </button>
-                    <button className="px-6 py-3 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
-                      <i className="fas fa-comments"></i>
-                      <span>Message</span>
-                    </button>
-                    <button 
-                      onClick={() => handleViewProfile(dietitian)}
-                      className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                    >
-                      <i className="fas fa-user-md"></i>
-                      <span>View Profile</span>
-                    </button>
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                      <button 
+                        onClick={() => handleBookNextSession(dietitian)}
+                        className="flex-1 px-6 py-3 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                      >
+                        <i className="fas fa-calendar-check"></i>
+                        <span>Book Next Session</span>
+                      </button>
+                      <button className="px-6 py-3 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                        <i className="fas fa-comments"></i>
+                        <span>Message</span>
+                      </button>
+                      <button 
+                        onClick={() => handleViewProfile(dietitian)}
+                        className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                      >
+                        <i className="fas fa-user-md"></i>
+                        <span>View Profile</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {filteredDietitians.length === 0 && (
+        {!loading && filteredDietitians.length === 0 && (
           <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-emerald-200 shadow-lg">
             <div className="max-w-md mx-auto">
               <div className="w-20 h-20 mx-auto mb-6 bg-linear-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center">
@@ -634,7 +567,7 @@ const DietitiansList = () => {
                   </p>
                   <div className="flex gap-2 flex-wrap">
                     {selectedDietitian.languages.map((lang, i) => (
-                      <span key={i} className="px-4 py-2 bg-linear-to-r from-green-600 to-emerald-600 text-white text-sm font-semibold rounded-full shadow-md">
+                      <span key={`${selectedDietitian.id}-lang-${i}`} className="px-4 py-2 bg-linear-to-r from-green-600 to-emerald-600 text-white text-sm font-semibold rounded-full shadow-md">
                         {lang}
                       </span>
                     ))}

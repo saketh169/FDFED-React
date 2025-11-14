@@ -47,7 +47,6 @@ const getValidationSchema = (fields) => {
 const EditProfile = () => {
   const navigate = useNavigate();
   const {
-    profileData,
     originalData,
     isLoading,
     isFetching,

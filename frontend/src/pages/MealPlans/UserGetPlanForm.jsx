@@ -1,6 +1,8 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useContext } from 'react';
 import { ChevronLeft, ChevronRight, Utensils, Calendar, Search, Flame, Clock, User, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import AuthContext from '../../contexts/AuthContext';
 
 // --- Utility Functions ---
 
@@ -160,6 +162,10 @@ const DayCell = ({ day, date, plan, isCurrentMonth, isToday, onViewPlan }) => {
             case 'High-Protein': return { bg: 'bg-blue-50', border: 'border-green-100', text: 'text-blue-700', accent: 'bg-blue-500' };
             case 'Mediterranean': return { bg: 'bg-orange-50', border: 'border-green-100', text: 'text-orange-700', accent: 'bg-orange-500' };
             case 'Keto': return { bg: 'bg-purple-50', border: 'border-green-100', text: 'text-purple-700', accent: 'bg-purple-500' };
+            case 'Vegan': return { bg: 'bg-green-50', border: 'border-green-100', text: 'text-green-700', accent: 'bg-green-500' };
+            case 'Vegetarian': return { bg: 'bg-lime-50', border: 'border-green-100', text: 'text-lime-700', accent: 'bg-lime-500' };
+            case 'Low-Carb': return { bg: 'bg-cyan-50', border: 'border-green-100', text: 'text-cyan-700', accent: 'bg-cyan-500' };
+            case 'Anything': return { bg: 'bg-gray-50', border: 'border-green-100', text: 'text-gray-700', accent: 'bg-gray-500' };
             default: return { bg: 'bg-slate-50', border: 'border-green-100', text: 'text-slate-700', accent: 'bg-slate-500' };
         }
     };
@@ -337,6 +343,20 @@ const PlanDetailModal = ({ plan, onClose, date }) => {
                         </button>
                     </div>
 
+                    {/* Plan Image */}
+                    {plan.imageUrl && (
+                        <div className="mb-6">
+                            <img
+                                src={plan.imageUrl}
+                                alt={plan.planName}
+                                className="w-full h-48 object-contain object-center rounded-xl shadow-lg"
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                }}
+                            />
+                        </div>
+                    )}
+
                     {/* Plan Info */}
                     <div className="grid md:grid-cols-2 gap-4 mb-6">
                         <div className="bg-slate-50 rounded-xl p-4">
@@ -345,7 +365,7 @@ const PlanDetailModal = ({ plan, onClose, date }) => {
                                 <p><span className="font-medium">Diet Type:</span> {plan.dietType}</p>
                                 <p><span className="font-medium">Total Calories:</span> {plan.calories} kcal</p>
                                 <p><span className="font-medium">Assigned by:</span> {plan.assignedBy}</p>
-                                <p><span className="font-medium">Assigned on:</span> {plan.assignedDate}</p>
+                                <p><span className="font-medium">Assigned on:</span> {new Date(plan.assignedDate).toLocaleDateString()}</p>
                             </div>
                         </div>
 
@@ -358,25 +378,27 @@ const PlanDetailModal = ({ plan, onClose, date }) => {
                     </div>
 
                     {/* Meals */}
-                    <div className="space-y-4">
-                        <h3 className="text-xl font-bold text-slate-800 flex items-center">
-                            <Icon name="Utensils" className="mr-2 text-green-600" />
-                            Daily Meals
-                        </h3>
+                    {plan.meals && plan.meals.length > 0 && (
+                        <div className="space-y-4">
+                            <h3 className="text-xl font-bold text-slate-800 flex items-center">
+                                <Icon name="Utensils" className="mr-2 text-green-600" />
+                                Daily Meals
+                            </h3>
 
-                        {plan.meals.map((meal, index) => (
-                            <div key={index} className="bg-linear-to-br from-slate-50 to-green-50 rounded-xl p-4 border border-green-100">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="font-semibold text-slate-800">{meal.name}</h4>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm text-green-700 font-medium">{meal.calories} kcal</span>
-                                        <Icon name="Flame" className="text-orange-500" />
+                            {plan.meals.map((meal, index) => (
+                                <div key={index} className="bg-linear-to-br from-slate-50 to-green-50 rounded-xl p-4 border border-green-100">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="font-semibold text-slate-800">{meal.name}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-green-700 font-medium">{meal.calories} kcal</span>
+                                            <Icon name="Flame" className="text-orange-500" />
+                                        </div>
                                     </div>
+                                    <p className="text-slate-700">{meal.details}</p>
                                 </div>
-                                <p className="text-slate-700">{meal.details}</p>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Close Button */}
                     <div className="flex justify-end mt-6">
@@ -396,14 +418,67 @@ const PlanDetailModal = ({ plan, onClose, date }) => {
 // --- Core Component: UserGetPlanForm ---
 const UserGetPlanForm = () => {
     const navigate = useNavigate();
+    const { user, token } = useContext(AuthContext);
+    
     // --- State Management ---
-    const [plans] = useState(MOCK_USER_PLANS); // In real app, fetch from API
+    const [plans, setPlans] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
     const [showPlanModal, setShowPlanModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState('');
+
+    // Fetch meal plans on component mount
+    useEffect(() => {
+        const fetchMealPlans = async () => {
+            if (!user?.id || !token) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                const response = await axios.get(`/api/meal-plans/user/${user.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.data.success) {
+                    // Transform API response to the expected format
+                    const plansMap = {};
+                    response.data.data.forEach(plan => {
+                        // For each assigned date, add the plan
+                        plan.assignedDates.forEach(date => {
+                            plansMap[date] = {
+                                ...plan,
+                                assignedBy: plan.dietitianId?.name || 'Dietitian',
+                                assignedDate: plan.createdAt,
+                                imageUrl: plan.imageUrl // Include image URL
+                            };
+                        });
+                    });
+                    setPlans(plansMap);
+                } else {
+                    throw new Error(response.data.message || 'Failed to fetch meal plans');
+                }
+            } catch (error) {
+                console.error('Error fetching meal plans:', error);
+                setError(error.response?.data?.message || error.message || 'Failed to load meal plans');
+                // Fallback to mock data if API fails
+                setPlans(MOCK_USER_PLANS);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMealPlans();
+    }, [user?.id, token]);
 
     // --- Navigation Handlers ---
     const changeMonth = (delta) => {
@@ -451,85 +526,110 @@ const UserGetPlanForm = () => {
                     </div>
                 </div>
 
-                {/* Calendar Section */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6 mb-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-slate-800 flex items-center">
-                            <Icon name="Calendar" className="mr-3 text-green-600" />
-                            Your Meal Schedule
-                        </h2>
+                {loading ? (
+                    <div className="text-center py-12">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                            <Icon name="Utensils" className="text-4xl text-green-600 animate-pulse" />
+                        </div>
+                        <p className="text-slate-500 text-lg">Loading your meal plans...</p>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-12">
+                        <p className="text-red-500 text-lg mb-4">Error loading meal plans</p>
+                        <p className="text-slate-400 text-sm">{error}</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        {/* Calendar Section */}
+                        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6 mb-8">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
+                                    <Icon name="Calendar" className="mr-3 text-green-600" />
+                                    Your Meal Schedule
+                                </h2>
 
-                        {/* Filter Options */}
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <Icon name="Filter" className="text-green-600" />
-                                <input
-                                    type="date"
-                                    value={filterStartDate}
-                                    onChange={(e) => setFilterStartDate(e.target.value)}
-                                    className="px-3 py-1 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    placeholder="Start Date"
-                                />
-                                <span className="text-slate-500">to</span>
-                                <input
-                                    type="date"
-                                    value={filterEndDate}
-                                    onChange={(e) => setFilterEndDate(e.target.value)}
-                                    className="px-3 py-1 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    placeholder="End Date"
-                                />
-                                {(filterStartDate || filterEndDate) && (
-                                    <button
-                                        onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }}
-                                        className="px-3 py-1 text-slate-500 hover:text-slate-700 text-sm"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
+                                {/* Filter Options */}
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <Icon name="Filter" className="text-green-600" />
+                                        <input
+                                            type="date"
+                                            value={filterStartDate}
+                                            onChange={(e) => setFilterStartDate(e.target.value)}
+                                            className="px-3 py-1 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                            placeholder="Start Date"
+                                        />
+                                        <span className="text-slate-500">to</span>
+                                        <input
+                                            type="date"
+                                            value={filterEndDate}
+                                            onChange={(e) => setFilterEndDate(e.target.value)}
+                                            className="px-3 py-1 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                            placeholder="End Date"
+                                        />
+                                        {(filterStartDate || filterEndDate) && (
+                                            <button
+                                                onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }}
+                                                className="px-3 py-1 text-slate-500 hover:text-slate-700 text-sm"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <CalendarView
+                                currentDate={currentDate}
+                                plans={plans}
+                                changeMonth={changeMonth}
+                                onViewPlan={(plan) => handleViewPlan(plan)}
+                                setCurrentDate={setCurrentDate}
+                                filterStartDate={filterStartDate}
+                                filterEndDate={filterEndDate}
+                            />
+                        </div>
+
+                        {/* Quick Stats */}
+                        <div className="grid md:grid-cols-3 gap-6">
+                            <div className="bg-linear-to-br from-green-50 to-emerald-50 backdrop-blur-sm rounded-3xl shadow-xl border border-green-200 p-6 text-center">
+                                <Icon name="Calendar" className="text-3xl text-green-600 mb-2 mx-auto" />
+                                <h3 className="text-lg font-bold text-slate-800">Total Plans</h3>
+                                <p className="text-2xl font-bold text-green-600">{Object.keys(plans).length}</p>
+                            </div>
+
+                            <div className="bg-linear-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-3xl shadow-xl border border-orange-200 p-6 text-center">
+                                <Icon name="Flame" className="text-3xl text-orange-600 mb-2 mx-auto" />
+                                <h3 className="text-lg font-bold text-slate-800">Avg. Calories</h3>
+                                <p className="text-2xl font-bold text-orange-600">
+                                    {Object.keys(plans).length > 0
+                                        ? Math.round(Object.values(plans).reduce((sum, plan) => sum + plan.calories, 0) / Object.keys(plans).length)
+                                        : 0
+                                    } kcal
+                                </p>
+                            </div>
+
+                            <div className="bg-linear-to-br from-purple-50 to-indigo-50 backdrop-blur-sm rounded-3xl shadow-xl border border-purple-200 p-6 text-center">
+                                <Icon name="Clock" className="text-3xl text-purple-600 mb-2 mx-auto" />
+                                <h3 className="text-lg font-bold text-slate-800">This Week</h3>
+                                <p className="text-2xl font-bold text-purple-600">
+                                    {Object.keys(plans).filter(date => {
+                                        const planDate = new Date(date);
+                                        const today = new Date();
+                                        const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                                        return planDate >= today && planDate <= weekFromNow;
+                                    }).length} plans
+                                </p>
                             </div>
                         </div>
-                    </div>
-
-                    <CalendarView
-                        currentDate={currentDate}
-                        plans={plans}
-                        changeMonth={changeMonth}
-                        onViewPlan={(plan) => handleViewPlan(plan)}
-                        setCurrentDate={setCurrentDate}
-                        filterStartDate={filterStartDate}
-                        filterEndDate={filterEndDate}
-                    />
-                </div>
-
-                {/* Quick Stats */}
-                <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-linear-to-br from-green-50 to-emerald-50 backdrop-blur-sm rounded-3xl shadow-xl border border-green-200 p-6 text-center">
-                        <Icon name="Calendar" className="text-3xl text-green-600 mb-2 mx-auto" />
-                        <h3 className="text-lg font-bold text-slate-800">Total Plans</h3>
-                        <p className="text-2xl font-bold text-green-600">{Object.keys(plans).length}</p>
-                    </div>
-
-                    <div className="bg-linear-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-3xl shadow-xl border border-orange-200 p-6 text-center">
-                        <Icon name="Flame" className="text-3xl text-orange-600 mb-2 mx-auto" />
-                        <h3 className="text-lg font-bold text-slate-800">Avg. Calories</h3>
-                        <p className="text-2xl font-bold text-orange-600">
-                            {Math.round(Object.values(plans).reduce((sum, plan) => sum + plan.calories, 0) / Object.keys(plans).length)} kcal
-                        </p>
-                    </div>
-
-                    <div className="bg-linear-to-br from-purple-50 to-indigo-50 backdrop-blur-sm rounded-3xl shadow-xl border border-purple-200 p-6 text-center">
-                        <Icon name="Clock" className="text-3xl text-purple-600 mb-2 mx-auto" />
-                        <h3 className="text-lg font-bold text-slate-800">This Week</h3>
-                        <p className="text-2xl font-bold text-purple-600">
-                            {Object.keys(plans).filter(date => {
-                                const planDate = new Date(date);
-                                const today = new Date();
-                                const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-                                return planDate >= today && planDate <= weekFromNow;
-                            }).length} plans
-                        </p>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
 
             {/* Plan Detail Modal */}

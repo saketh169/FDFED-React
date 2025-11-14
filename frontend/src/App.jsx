@@ -13,6 +13,7 @@ import Contactus from './pages/Contactus';
 
 import Signin from './pages/Auth/Signin';
 import Signup from './pages/Auth/Signup';
+import ForgotPassword from './pages/Auth/ForgotPassword';
 import ChatbotPage from './pages/Chatbot';
 import RoleModal from './pages/RoleModal';
 import DocUpload from './pages/Auth/DocUpload';
@@ -20,7 +21,7 @@ import DocUpload from './pages/Auth/DocUpload';
 import PrivacyPolicy from './components/extras/PrivacyPolicy';
 import TermsOfUse  from './components/extras/TermsOfUse';
 
-import Layout from './Layout'; 
+import Layout from './Layout';
 
 // NotFound component for 404 pages
 const NotFound = () => (
@@ -36,33 +37,10 @@ const NotFound = () => (
 );
 
 const App = () => {
-  // Comment out splash screen state and logic
-  /*
-  const [showSplash, setShowSplash] = useState(() => {
-      return sessionStorage.getItem('splashShown') !== 'true';
-  });
-
-  useEffect(() => {
-      if (showSplash) {
-          const timer = setTimeout(() => {
-              setShowSplash(false);
-              sessionStorage.setItem('splashShown', 'true');
-          }, 5000);
-
-          return () => clearTimeout(timer);
-      }
-  }, [showSplash]);
-  */
 
   return (
     <Router>
       <div className="app-container">
-        {/* Comment out splash screen conditional rendering */}
-        {/*
-        {showSplash ? (
-            <SplashScreen />
-        ) : (
-        */}
         <div className="main-layout">
           <Header />
           <Suspense fallback={<div className="text-center p-8">Loading...</div>}>
@@ -75,6 +53,7 @@ const App = () => {
               <Route path="/contact-us" element={<Contactus />} />
               <Route path="/signin" element={<Signin />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/role" element={<RoleModal />} />
               <Route path="/upload-documents" element={<DocUpload />} />
 
@@ -91,7 +70,6 @@ const App = () => {
           </Suspense>
           <Footer />
         </div>
-        {/* )} */}
       </div>
     </Router>
   );

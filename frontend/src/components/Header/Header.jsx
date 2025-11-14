@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NavHeader from '../Navbar/NavHeader';
-import { useAuthContext } from '../../hooks/useAuthContext';
+import { useAuth } from '../../hooks/useAuth';
+import axios from 'axios';
 
 // Utility function to get the base role path (e.g., '/user', '/dietitian', or '/')
 const getBasePath = (currentPath) => {
@@ -55,18 +56,6 @@ const Header = () => {
   const currentPath = location.pathname;
   const handleScrollToTop = () => window.scrollTo(0, 0);
 
-  // Always call useAuthContext (hooks must be called unconditionally)
-  // It will return null values when outside provider, which is fine
-  const { user } = useAuthContext();
-
-  // Check if we're in a logged-in area first
-  const isLoggedInArea = 
-    currentPath.startsWith('/user') || 
-    currentPath.startsWith('/dietitian') ||
-    currentPath.startsWith('/admin') ||
-    currentPath.startsWith('/organization') ||
-    currentPath.startsWith('/corporatepartner');
-
   // Get current role from path
   const getCurrentRoleFromPath = () => {
     if (currentPath.startsWith('/admin')) return 'admin';
@@ -77,29 +66,62 @@ const Header = () => {
     return null;
   };
 
-  // Get profile image from user context with role-specific localStorage fallback
   const currentRole = getCurrentRoleFromPath();
-  const profileImage = user?.profileImage || (currentRole ? localStorage.getItem(`profileImage_${currentRole}`) : null);
+  const { token, isAuthenticated } = useAuth(currentRole);
+  const [profileImage, setProfileImage] = useState(null);
 
-  // Determine which GET endpoint to use based on current path
-  const getProfileImageEndpoint = React.useCallback(() => {
-    if (currentPath.startsWith('/admin')) return '/api/getadmin';
-    if (currentPath.startsWith('/organization')) return '/api/getorganization';
-    if (currentPath.startsWith('/corporatepartner')) return '/api/getcorporatepartner';
-    if (currentPath.startsWith('/dietitian')) return '/api/getdietitian';
-    if (currentPath.startsWith('/user')) return '/api/getuser';
-    return null;
-  }, [currentPath]);
+  // Fetch profile data when authenticated
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!isAuthenticated || !token || !currentRole) {
+        setProfileImage(null);
+        return;
+      }
 
-  // Get the current role based on path
-  const getCurrentRole = React.useCallback(() => {
-    if (currentPath.startsWith('/admin')) return 'admin';
-    if (currentPath.startsWith('/organization')) return 'organization';
-    if (currentPath.startsWith('/corporatepartner')) return 'corporatepartner';
-    if (currentPath.startsWith('/dietitian')) return 'dietitian';
-    if (currentPath.startsWith('/user')) return 'user';
-    return null;
-  }, [currentPath]);
+      try {
+        // Role-specific API endpoints for profile data
+        const apiEndpoints = {
+          user: '/api/getuserdetails',
+          dietitian: '/api/getdietitiandetails',
+          organization: '/api/getorganizationdetails',
+          admin: '/api/getadmindetails',
+          corporatepartner: '/api/getcorporatepartnerdetails'
+        };
+
+        const endpoint = apiEndpoints[currentRole];
+        if (!endpoint) {
+          return;
+        }
+
+        const response = await axios.get(endpoint, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.data.success && response.data.profileImage) {
+          setProfileImage(response.data.profileImage);
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        // Fallback to localStorage if API fails
+        const storedImage = localStorage.getItem(`profileImage_${currentRole}`);
+        if (storedImage) {
+          setProfileImage(storedImage);
+        }
+      }
+    };
+
+    fetchProfileData();
+  }, [isAuthenticated, token, currentRole]);
+
+  // Check if we're in a logged-in area first
+  const isLoggedInArea = 
+    currentPath.startsWith('/user') || 
+    currentPath.startsWith('/dietitian') ||
+    currentPath.startsWith('/admin') ||
+    currentPath.startsWith('/organization') ||
+    currentPath.startsWith('/corporatepartner');
 
   // Check if user is on a profile page
   const isProfilePage = 
@@ -192,7 +214,10 @@ const Header = () => {
                 src={profileImage}
                 alt="Profile"
                 className="w-9 h-9 rounded-full object-cover"
-                onError={(e) => e.currentTarget.style.display = 'none'}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  // Fallback to icon if image fails to load
+                }}
               />
             ) : (
               <i className="fas fa-user-circle text-3xl"></i>

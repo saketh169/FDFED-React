@@ -12,6 +12,7 @@ const contactusRoutes = require('./routes/contactusRoutes');
 const crudRoutes = require('./routes/crudRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const dietitianRoutes = require('./routes/dietitianRoutes');
+const mealPlanRoutes = require('./routes/mealPlanRoutes');
 
 // Load environment variables from .env file
 require('dotenv').config();
@@ -26,8 +27,12 @@ connectDB();
 // Enable CORS
 app.use(cors());
 
-// Parse incoming JSON requests
-app.use(express.json()); 
+// Parse incoming JSON requests with increased limits for image uploads
+app.use(express.json({ limit: '10mb' })); 
+app.use(express.urlencoded({ limit: '10mb', extended: true })); 
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
 
 // --- API Routes ---
 // Auth routes mounted at '/api' for signup and signin
@@ -62,6 +67,9 @@ app.use('/api', crudRoutes);
 
 // Dietitian routes mounted at '/api'
 app.use('/api', dietitianRoutes);
+
+// Meal plan routes mounted at '/api/meal-plans'
+app.use('/api/meal-plans', mealPlanRoutes);
 
 // Simple test route (kept from your original code)
 app.get('/', (req, res) => {
