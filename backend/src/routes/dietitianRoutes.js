@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Dietitian } = require('../models/userModel');
+const Booking = require('../models/bookingModel');
 
 // Get all verified dietitians
 router.get('/dietitians', async (req, res) => {
@@ -107,6 +108,74 @@ router.get('/dietitians/profile/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching dietitian profile'
+    });
+  }
+});
+
+// Get clients for a dietitian
+router.get('/dietitians/:id/clients', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get all bookings for this dietitian
+    const bookings = await Booking.find({ dietitianId: id }).sort({ createdAt: -1 });
+
+    // Group by userId to get unique clients with aggregated data
+    const clientMap = new Map();
+
+    bookings.forEach(booking => {
+      const clientId = booking.userId.toString();
+      const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
+      const now = new Date();
+      const hoursSinceAppointment = (now - bookingDateTime) / (1000 * 60 * 60);
+      const isRelevant = bookingDateTime > now || (hoursSinceAppointment < 24 && booking.status !== 'completed');
+
+      if (clientMap.has(clientId)) {
+        const existing = clientMap.get(clientId);
+        existing.totalSessions += 1;
+        
+        // Update next appointment if this booking is in the future and earlier
+        if (bookingDateTime > now && (!existing.nextAppointment || bookingDateTime < new Date(existing.nextAppointment))) {
+          existing.nextAppointment = `${booking.date} ${booking.time}`;
+        }
+        
+        // Update last consultation if this is more recent
+        if (new Date(booking.date) > new Date(existing.lastConsultation)) {
+          existing.lastConsultation = booking.date;
+        }
+      } else {
+        const isUpcoming = bookingDateTime > now;
+        
+        clientMap.set(clientId, {
+          id: clientId,
+          name: booking.username,
+          email: booking.email,
+          phone: booking.userPhone || 'N/A',
+          age: 'N/A', // Not available in booking
+          location: booking.userAddress || 'N/A',
+          consultationType: booking.consultationType || 'General Consultation',
+          nextAppointment: isUpcoming ? `${booking.date} ${booking.time}` : null,
+          status: booking.status === 'confirmed' ? 'Active' : booking.status === 'cancelled' ? 'Completed' : 'Pending',
+          profileImage: `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.username)}&background=28B463&color=fff&size=128`,
+          lastConsultation: booking.date,
+          totalSessions: 1,
+          goals: [booking.dietitianSpecialization || 'General Health']
+        });
+      }
+    });
+
+    // Filter to show only relevant clients (with upcoming appointments or recent past)
+    const clients = Array.from(clientMap.values()); // Show all clients with bookings
+
+    res.json({
+      success: true,
+      data: clients
+    });
+  } catch (error) {
+    console.error('Error fetching dietitian clients:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching clients'
     });
   }
 });

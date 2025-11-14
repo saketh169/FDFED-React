@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Booking = require('../models/bookingModel');
-const { sendBookingConfirmationToUser, sendBookingNotificationToDietitian } = require('../utils/emailService');
+const { sendBookingConfirmationToUser, sendBookingNotificationToDietitian } = require('../services/bookingService');
 
 /**
  * Create a new booking
@@ -237,6 +237,7 @@ exports.getDietitianBookings = async (req, res) => {
   }
 };
 
+
 /**
  * Get a specific booking by ID
  * GET /api/bookings/:bookingId
@@ -261,6 +262,7 @@ exports.getBookingById = async (req, res) => {
         message: 'Booking not found'
       });
     }
+
 
     res.status(200).json({
       success: true,

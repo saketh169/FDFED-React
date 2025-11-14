@@ -14,6 +14,8 @@ export const useProfile = () => {
   return context;
 };
 
+/* eslint-disable react-refresh/only-export-components */
+
 // Role-specific configuration
 const roleConfig = {
   user: {
@@ -184,7 +186,6 @@ export const ProfileProvider = ({ children }) => {
         setOriginalData(data);
         
         // Update localStorage authUser data so AuthContext picks up the changes
-        const token = localStorage.getItem(roleConfiguration.tokenKey);
         const currentAuthUser = localStorage.getItem(`authUser_${currentRole}`);
         
         if (currentAuthUser) {

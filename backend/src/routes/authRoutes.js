@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const forgotPasswordController = require('../controllers/forgotPasswordController');
 const upload = require('../middlewares/uploadMiddleware');
 
 /**
@@ -100,5 +101,11 @@ router.get('/verify-token', authController.verifyTokenController);
 
 // 15. Change Password: POST /api/change-password (Update user password)
 router.post('/change-password', authController.changePasswordController);
+
+// 16. Forgot Password: POST /api/forgot-password/:role (Send OTP to email for specific role)
+router.post('/forgot-password/:role', forgotPasswordController.forgotPasswordController);
+
+// 17. Reset Password: POST /api/reset-password/:role (Reset password with OTP for specific role)
+router.post('/reset-password/:role', forgotPasswordController.resetPasswordController);
 
 module.exports = router;

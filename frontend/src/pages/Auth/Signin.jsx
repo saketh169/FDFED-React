@@ -247,7 +247,7 @@ const Signin = () => {
                 {roleFields}
                 <div className="flex items-center justify-between">
                     <RememberMe />
-                    <Link to="/forgot-password" className="text-sm font-medium text-[#1E6F5C] hover:text-[#155345]">
+                    <Link to={`/forgot-password?role=${role}${corporateType === 'corporate_employee' ? '&corporateType=corporate_employee' : ''}`} className="text-sm font-medium text-[#1E6F5C] hover:text-[#155345]">
                         Forgot Password?
                     </Link>
                 </div>
