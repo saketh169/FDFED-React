@@ -11,6 +11,7 @@ import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
 import DietitianAddPlanForm from '../pages/MealPlans/DietitianAddPlanForm';
 import ClientsList from '../pages/Appointments/ClientsList';
+import ChatPage from '../pages/Chat/ChatPage';
 
 import Blog from '../pages/Blog';
 import Contact from '../pages/Contactus';
@@ -66,7 +67,10 @@ export default function DietitianRoutes() {
         {/* Optional: Public pages */}
          <Route path="blog" element={<Blog/>} />
          <Route path="contact-us" element={<Contact/>} />
-
+         
+         {/* Chat Route */}
+         <Route path="chat/:conversationId" element={<ChatPage />} />
+        
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>
     </div>

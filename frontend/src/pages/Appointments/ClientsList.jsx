@@ -16,7 +16,7 @@ const ClientsList = () => {
   }, [user]);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('Active');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -25,6 +25,38 @@ const ClientsList = () => {
   const handleViewDetails = (client) => {
     setSelectedClient(client);
     setShowClientModal(true);
+  };
+
+  const handleMessageClient = async (client) => {
+    try {
+      // Create or get conversation
+      const response = await axios.post('/api/chat/conversation', {
+        clientId: client.id,
+        dietitianId: user.id
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        const conversation = response.data.data;
+        navigate(`/dietitian/chat/${conversation._id}`, {
+          state: {
+            otherParticipant: {
+              id: client.id,
+              name: client.name,
+              email: client.email
+            },
+            bookingInfo: {
+              date: client.nextAppointment?.split(' ')[0] || client.lastConsultation,
+              time: client.nextAppointment?.split(' ')[1] || '10:00'
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      alert('Failed to start chat');
+    }
   };
 
   // Fetch dietitian's clients from API
@@ -57,24 +89,41 @@ const ClientsList = () => {
     fetchClients();
   }, [user?.id, token]);
 
-  // Use clients data directly from API
+  // Use clients data directly from API and update status based on appointment time
   const clientsFromBookings = useMemo(() => {
-    // The API already returns processed client data
-    return bookings.map(client => ({
-      id: client.id,
-      name: client.name,
-      email: client.email,
-      phone: client.phone || 'N/A',
-      age: client.age || 'N/A',
-      location: client.location || 'N/A',
-      consultationType: client.consultationType || 'General Consultation',
-      nextAppointment: client.nextAppointment || null,
-      status: client.status || 'Active',
-      profileImage: client.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name)}&background=28B463&color=fff&size=128`,
-      lastConsultation: client.lastConsultation || null,
-      totalSessions: client.totalSessions || 1,
-      goals: client.goals || ['General Health']
-    }));
+    const now = new Date();
+    return bookings.map(client => {
+      let status = client.status || 'Active';
+      
+      // Check if appointment is past
+      if (client.nextAppointment) {
+        const appointmentDate = new Date(client.nextAppointment);
+        if (appointmentDate < now) {
+          status = 'Completed';
+        }
+      } else if (client.lastConsultation) {
+        const lastDate = new Date(client.lastConsultation);
+        if (lastDate < now) {
+          status = 'Completed';
+        }
+      }
+      
+      return {
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        phone: client.phone || 'N/A',
+        age: client.age || 'N/A',
+        location: client.location || 'N/A',
+        consultationType: client.consultationType || 'General Consultation',
+        nextAppointment: client.nextAppointment || null,
+        status: status,
+        profileImage: client.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name)}&background=28B463&color=fff&size=128`,
+        lastConsultation: client.lastConsultation || null,
+        totalSessions: client.totalSessions || 1,
+        goals: client.goals || ['General Health']
+      };
+    });
   }, [bookings]);
 
   // Combine mock data with real bookings
@@ -293,7 +342,10 @@ const ClientsList = () => {
                         <i className="fas fa-calendar-check"></i>
                         <span>View Details</span>
                       </button>
-                      <button className="px-6 py-3 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => handleMessageClient(client)}
+                        className="px-6 py-3 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                      >
                         <i className="fas fa-comments"></i>
                         <span>Message</span>
                       </button>

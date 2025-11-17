@@ -235,7 +235,7 @@ const BlogPage = () => {
                                         : 'bg-white text-[#1E6F5C] border-2 border-[#28B463] hover:bg-gray-50'
                                 }`}
                             >
-                                <FaHeart /> My Blogs {myBlogsStats.totalBlogs > 0 && `(${myBlogsStats.totalBlogs})`}
+                                My Blogs {myBlogsStats.totalBlogs > 0 && `(${myBlogsStats.totalBlogs})`}
                             </button>
                         </div>
                     )}

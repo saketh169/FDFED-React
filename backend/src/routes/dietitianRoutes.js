@@ -128,7 +128,11 @@ router.get('/dietitians/:id/clients', async (req, res) => {
       const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
       const now = new Date();
       const hoursSinceAppointment = (now - bookingDateTime) / (1000 * 60 * 60);
-      const isRelevant = bookingDateTime > now || (hoursSinceAppointment < 24 && booking.status !== 'completed');
+      
+      // Skip only if appointment was more than 12 hours ago
+      if (hoursSinceAppointment > 12 && bookingDateTime < now) {
+        return; // Skip old past appointments (more than 12 hours ago)
+      }
 
       if (clientMap.has(clientId)) {
         const existing = clientMap.get(clientId);
@@ -145,6 +149,17 @@ router.get('/dietitians/:id/clients', async (req, res) => {
         }
       } else {
         const isUpcoming = bookingDateTime > now;
+        const isPast = bookingDateTime < now;
+        
+        // Determine status: Active for upcoming/current, Completed for past
+        let clientStatus = 'Active';
+        if (isPast && booking.status === 'completed') {
+          clientStatus = 'Completed';
+        } else if (isPast) {
+          clientStatus = 'Completed';
+        } else if (booking.status === 'cancelled') {
+          clientStatus = 'Completed';
+        }
         
         clientMap.set(clientId, {
           id: clientId,
@@ -155,17 +170,18 @@ router.get('/dietitians/:id/clients', async (req, res) => {
           location: booking.userAddress || 'N/A',
           consultationType: booking.consultationType || 'General Consultation',
           nextAppointment: isUpcoming ? `${booking.date} ${booking.time}` : null,
-          status: booking.status === 'confirmed' ? 'Active' : booking.status === 'cancelled' ? 'Completed' : 'Pending',
+          status: clientStatus,
           profileImage: `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.username)}&background=28B463&color=fff&size=128`,
           lastConsultation: booking.date,
           totalSessions: 1,
-          goals: [booking.dietitianSpecialization || 'General Health']
+          goals: [booking.dietitianSpecialization || 'General Health'],
+          isPast: isPast
         });
       }
     });
 
-    // Filter to show only relevant clients (with upcoming appointments or recent past)
-    const clients = Array.from(clientMap.values()); // Show all clients with bookings
+    // Return all clients that have relevant bookings
+    const clients = Array.from(clientMap.values());
 
     res.json({
       success: true,

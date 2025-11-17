@@ -13,6 +13,8 @@ const crudRoutes = require('./routes/crudRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const dietitianRoutes = require('./routes/dietitianRoutes');
 const mealPlanRoutes = require('./routes/mealPlanRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+
 
 // Load environment variables from .env file
 require('dotenv').config();
@@ -70,6 +72,11 @@ app.use('/api', dietitianRoutes);
 
 // Meal plan routes mounted at '/api/meal-plans'
 app.use('/api/meal-plans', mealPlanRoutes);
+
+// Chat routes mounted at '/api/chat'
+app.use('/api/chat', chatRoutes);
+
+
 
 // Simple test route (kept from your original code)
 app.get('/', (req, res) => {
