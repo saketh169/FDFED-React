@@ -7,7 +7,7 @@ const DietitiansList = () => {
   const navigate = useNavigate();
   const { user, token } = useAuthContext();
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('All');
+    const [statusFilter, setStatusFilter] = useState('Active');
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedDietitian, setSelectedDietitian] = useState(null);
@@ -43,6 +43,39 @@ const DietitiansList = () => {
         openBooking: true
       }
     });
+  };
+
+  const handleMessageDietitian = async (dietitian) => {
+    try {
+      // Get user ID from localStorage or context
+      const userId = localStorage.getItem('userId') || user?.id;
+      
+      // Create or get conversation
+      const response = await axios.post('/api/chat/conversation', {
+        clientId: userId,
+        dietitianId: dietitian.id
+      });
+
+      if (response.data.success) {
+        const conversation = response.data.data;
+        navigate(`/user/chat/${conversation._id}`, {
+          state: {
+            otherParticipant: {
+              id: dietitian.id,
+              name: dietitian.name,
+              email: dietitian.email
+            },
+            bookingInfo: {
+              date: dietitian.nextAppointmentDate || dietitian.lastConsultation,
+              time: dietitian.nextAppointmentTime || '10:00'
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      alert('Failed to start chat');
+    }
   };
 
   // Fetch user's bookings from API
@@ -105,12 +138,11 @@ const DietitiansList = () => {
       const dietitianId = booking.dietitianId;
       const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
       
-      // Only include if appointment is upcoming or recently completed (within 24 hours)
+      // Skip only if appointment was more than 12 hours ago
       const hoursSinceAppointment = (now - bookingDateTime) / (1000 * 60 * 60);
-      const isRelevant = bookingDateTime > now || (hoursSinceAppointment < 24 && booking.status !== 'completed');
       
-      if (!isRelevant && booking.status === 'completed') {
-        return; // Skip completed past appointments
+      if (hoursSinceAppointment > 12 && bookingDateTime < now) {
+        return; // Skip old past appointments (more than 12 hours ago)
       }
       
       // Get dietitian profile data
@@ -135,6 +167,15 @@ const DietitiansList = () => {
         }
       } else {
         const isUpcoming = bookingDateTime > now;
+        const isPast = bookingDateTime < now;
+        
+        // Determine status based on appointment time
+        let status = 'Active';
+        if (isPast) {
+          status = 'Completed';
+        } else if (booking.status === 'cancelled') {
+          status = 'Completed';
+        }
         
         // Use dietitian profile data if available, otherwise fallback to booking data
         dietitianMap.set(dietitianId, {
@@ -149,7 +190,7 @@ const DietitiansList = () => {
           nextAppointmentDate: isUpcoming ? booking.date : null,
           nextAppointmentTime: isUpcoming ? booking.time : null,
           nextAppointmentDateTime: isUpcoming ? bookingDateTime : null,
-          status: booking.status === 'confirmed' ? 'Active' : booking.status === 'cancelled' ? 'Completed' : 'Pending',
+          status: status,
           profileImage: dietitianProfile.photo || `https://via.placeholder.com/80x80/10B981/ffffff?text=${(dietitianProfile.name || booking.dietitianName).charAt(0)}`,
           totalSessions: 1,
           upcomingSessions: isUpcoming ? 1 : 0,
@@ -160,12 +201,13 @@ const DietitiansList = () => {
           location: dietitianProfile.location || 'N/A',
           languages: dietitianProfile.languages || ['English'],
           qualifications: dietitianProfile.education?.[0] || 'Professional Dietitian',
-          lastConsultation: booking.date
+          lastConsultation: booking.date,
+          isPast: isPast
         });
       }
     });
     
-    return Array.from(dietitianMap.values()).filter(d => d.upcomingSessions > 0 || d.status === 'Active');
+    return Array.from(dietitianMap.values());
   }, [bookings, dietitianProfiles]);
 
   // Combine mock data with real bookings
@@ -410,7 +452,10 @@ const DietitiansList = () => {
                         <i className="fas fa-calendar-check"></i>
                         <span>Book Next Session</span>
                       </button>
-                      <button className="px-6 py-3 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => handleMessageDietitian(dietitian)}
+                        className="px-6 py-3 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                      >
                         <i className="fas fa-comments"></i>
                         <span>Message</span>
                       </button>

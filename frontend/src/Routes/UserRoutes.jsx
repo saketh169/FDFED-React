@@ -21,6 +21,7 @@ import AllDietitiansPage from '../pages/AllDietitiansPage';
 import DietitianProfilesPage from '../pages/DietitianProfilesPage';
 import DietitianProfile from '../pages/Consultations/DietitianProfile';
 import DietitiansList from '../pages/Appointments/DietitiansList';
+import ChatPage from '../pages/Chat/ChatPage';
 
 
 
@@ -51,6 +52,11 @@ export default function UserRoutes() {
         <Route path="blog" element={<Blog/>} />
         <Route path="contact-us" element={<Contact/>} />
         <Route path="chatbot" element={<Chatbot/>} />
+        
+        {/* Chat Route */}
+        <Route path="chat/:conversationId" element={<ChatPage />} />
+        
+       
         
         {/* Dietitian Routes */}
         <Route path="dietitian-profiles" element={<AllDietitiansPage />} />
