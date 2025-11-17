@@ -1,5 +1,5 @@
 // src/pages/DietitianProfilesPage.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import FilterSidebar from "./Consultations/FilterSidebar";
 import BookingSidebar from "./Consultations/BookingSidebar";
 import PaymentModal from "./Consultations/PaymentModal";
@@ -115,7 +115,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  const specializationData = getSpecializationData(specializationType);
+  const specializationData = useMemo(() => getSpecializationData(specializationType), [specializationType]);
 
   const showNotification = (message, type = "success") => {
     setNotification({ show: true, message, type });
@@ -175,7 +175,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
     };
 
     loadDietitians();
-  }, [specializationType, specializationData.filters]);
+  }, [specializationType]);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -339,47 +339,31 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header Section */}
-      <div className="border-b-2 bg-white border-emerald-600 fixed top-20 left-0 right-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 py-1">
+      <div className="border-b-2 bg-white border-[#28B463] pt-2 fixed top-16 left-0 right-0 z-20">
+        <div className="max-w-screen-2xl mx-auto px-6 py-1">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-emerald-600 mb-0">
+            <h1 className="text-3xl font-bold text-[#1E6F5C] mb-0">
               {specializationData.title}
             </h1>
             <p className="text-gray-600 font-medium max-w-2xl mx-auto">
               {specializationData.subtitle}
             </p>
-            <div className="w-16 h-0.5 bg-emerald-600 mx-auto mt-1 rounded-full" />
-          </div>
-        </div>
-      </div>
-
-      {/* Search Bar Section */}
-     <div className="fixed top-36 left-80 right-0 z-10 bg-gray-100 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="relative max-w-2xl">
-            <input
-              type="text"
-              placeholder="Search by name, location, or specialties..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-gray-700"
-            />
-            <i className="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-600"></i>
+            <div className="w-16 h-0.5 bg-[#28B463] mx-auto mt-1 rounded-full" />
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 pt-20 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-screen-2xl mx-auto px-6 pt-17 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-48">
+            <div className="sticky top-24">
               {/* Back Button */}
               <div className="mb-6">
                 <button
                   onClick={() => window.location.href = '/user/dietitian-profiles'}
-                  className="w-full inline-flex items-center justify-center px-4 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                  className="w-full inline-flex items-center justify-center px-4 py-3 bg-[#28B463] text-white font-semibold rounded-lg hover:bg-[#1E6F5C] transition-colors"
                 >
                   <i className="fas fa-chevron-left mr-2"></i>
                   Browse All
@@ -396,44 +380,68 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <div className="rounded-lg p-6 bg-white shadow-sm">
+              {/* Search Bar */}
+              <div className="mb-6">
+                <div className="relative max-w-2xl">
+                  <input
+                    type="text"
+                    placeholder="Search by name, location, or specialties..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]/30 focus:border-[#28B463] text-gray-700"
+                  />
+                  <i className="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-[#28B463]"></i>
+                </div>
+              </div>
+
               {/* Results Count */}
-              <div className="mb-6 flex justify-between items-center pb-4 border-b border-gray-200">
-                <p className="text-gray-600 font-medium">
-                  Found{" "}
-                  <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded">
-                    {filteredDietitians.length}
-                  </span>{" "}
-                  dietitian{filteredDietitians.length !== 1 ? "s" : ""}
-                </p>
+              <div className=" mb-6 flex justify-between items-center pb-4 border-b border-gray-200">
+                <div className="flex items-center gap-3 ">
+                  <div className="w-3 h-3 bg-[#28B463] rounded-full"></div>
+                  <p className="text-gray-600 font-medium">
+                    Found{" "}
+                    <span className="text-[#1E6F5C] font-bold bg-[#E8F5E9] px-2 py-1 rounded">
+                      {filteredDietitians.length}
+                    </span>{" "}
+                    dietitian{filteredDietitians.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+                {filteredDietitians.length > 0 && (
+                  <p className="text-sm text-gray-600">
+                    Sorted by relevance
+                  </p>
+                )}
               </div>
 
               {/* Results Grid */}
-              <div className="space-y-6">
-                {filteredDietitians.length > 0 ? (
-                  filteredDietitians.map((dietitian) => (
-                    <DietitianCard
-                      key={dietitian._id}
-                      dietitian={dietitian}
-                      onBookAppointment={handleBookAppointment}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                    <div className="max-w-md mx-auto">
-                      <div className="text-4xl mb-4 text-emerald-600">
-                        <i className="fas fa-search text-emerald-600"></i>
+              <div className="h-[1200px] overflow-y-auto">
+                <div className="space-y-6">
+                  {filteredDietitians.length > 0 ? (
+                    filteredDietitians.map((dietitian) => (
+                      <DietitianCard
+                        key={dietitian._id}
+                        dietitian={dietitian}
+                        onBookAppointment={handleBookAppointment}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                      <div className="max-w-md mx-auto">
+                        <div className="text-4xl mb-4 text-[#28B463]">
+                          <i className="fas fa-search text-[#28B463]"></i>
+                        </div>
+                        <h3 className="text-xl font-bold text-[#1E6F5C] mb-3">
+                          No dietitians found
+                        </h3>
+                        <p className="text-gray-600 mb-6 leading-relaxed">
+                          Try adjusting your search or filters
+                        </p>
                       </div>
-                      <h3 className="text-xl font-bold text-teal-900 mb-3">
-                        No dietitians found
-                      </h3>
-                      <p className="text-gray-600 mb-6 leading-relaxed">
-                        Try adjusting your search or filters
-                      </p>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
