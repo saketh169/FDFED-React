@@ -25,7 +25,10 @@ const buildValidationSchema = (role) => {
     // Base schema for all roles
     let schema = Yup.object().shape({
         email: Yup.string()
-            .email('Invalid email address.')
+            .matches(
+                /^[a-zA-Z][a-zA-Z0-9._]{2,}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                'Invalid email address.'
+            )
             .required('Email is required.')
             .min(5, 'Email must be at least 5 characters.')
             .max(50, 'Email must not exceed 50 characters.'),

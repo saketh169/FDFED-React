@@ -28,6 +28,74 @@ exports.createMealPlan = async (req, res) => {
       });
     }
 
+    // Detailed validation
+    if (typeof planName !== 'string' || planName.trim().length < 2 || planName.trim().length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Plan name must be between 2 and 100 characters'
+      });
+    }
+
+    const validDietTypes = ['Vegan', 'Vegetarian', 'Keto', 'Mediterranean', 'High-Protein', 'Low-Carb', 'Anything'];
+    if (!validDietTypes.includes(dietType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid diet type. Must be one of: ' + validDietTypes.join(', ')
+      });
+    }
+
+    const caloriesNum = parseInt(calories);
+    if (isNaN(caloriesNum) || caloriesNum < 500 || caloriesNum > 5000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Calories must be a number between 500 and 5000'
+      });
+    }
+
+    if (notes && (typeof notes !== 'string' || notes.length > 500)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Notes must be less than 500 characters'
+      });
+    }
+
+    if (imageUrl && (typeof imageUrl !== 'string' || !/^https?:\/\/.+/.test(imageUrl))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image URL must be a valid HTTP/HTTPS URL'
+      });
+    }
+
+    // Validate meals array
+    if (!Array.isArray(meals) || meals.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one meal is required'
+      });
+    }
+
+    for (let i = 0; i < meals.length; i++) {
+      const meal = meals[i];
+      if (!meal.name || typeof meal.name !== 'string' || meal.name.trim().length < 2 || meal.name.trim().length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: `Meal ${i + 1}: Name must be between 2 and 100 characters`
+        });
+      }
+      if (meal.calories && (isNaN(parseInt(meal.calories)) || parseInt(meal.calories) < 0 || parseInt(meal.calories) > 2000)) {
+        return res.status(400).json({
+          success: false,
+          message: `Meal ${i + 1}: Calories must be a number between 0 and 2000`
+        });
+      }
+      if (meal.details && (typeof meal.details !== 'string' || meal.details.length > 500)) {
+        return res.status(400).json({
+          success: false,
+          message: `Meal ${i + 1}: Details must be less than 500 characters`
+        });
+      }
+    }
+
     // Validate dietitianId and userId
     if (!mongoose.Types.ObjectId.isValid(dietitianId) || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
@@ -40,10 +108,14 @@ exports.createMealPlan = async (req, res) => {
     const mealPlan = new MealPlan({
       planName: planName.trim(),
       dietType,
-      calories: parseInt(calories),
+      calories: caloriesNum,
       notes: notes?.trim() || '',
       imageUrl: imageUrl?.trim() || '',
-      meals: meals || [],
+      meals: meals.map(m => ({
+        name: m.name.trim(),
+        calories: parseInt(m.calories) || 0,
+        details: m.details?.trim() || ''
+      })),
       dietitianId,
       userId
     });

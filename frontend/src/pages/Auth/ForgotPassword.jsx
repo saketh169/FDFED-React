@@ -26,12 +26,12 @@ const resetValidationSchema = Yup.object().shape({
         .length(6, 'OTP must be 6 digits.')
         .matches(/^[0-9]+$/, 'OTP must contain only numbers.'),
     newPassword: Yup.string()
-        .required('New password is required.')
+        .required('Enter your password.')
         .min(6, 'Password must be at least 6 characters.')
         .max(20, 'Password must not exceed 20 characters.'),
     confirmPassword: Yup.string()
-        .required('Please confirm your password.')
-        .oneOf([Yup.ref('newPassword'), null], 'Passwords must match.'),
+        .required('Confirm password is required.')
+        .oneOf([Yup.ref('newPassword')], 'Passwords do not match.'),
 });
 
 // --- Initial Form Values ---
@@ -323,8 +323,19 @@ const ForgotPassword = () => {
                         validationSchema={resetValidationSchema}
                         onSubmit={handleResetSubmit}
                     >
-                        {({ isSubmitting }) => (
+                        {({ isSubmitting, errors, submitCount }) => (
                             <Form className="space-y-4" noValidate>
+                                {/* Validation error message */}
+                                {submitCount > 0 && Object.keys(errors).length > 0 && !message && (
+                                    <div
+                                        aria-live="polite"
+                                        className="p-3 mb-5 text-center text-base font-medium rounded-lg shadow-sm w-full text-red-800 bg-red-100 border border-red-300"
+                                        role="alert"
+                                    >
+                                        Please fill all the fields
+                                    </div>
+                                )}
+
                                 {renderResetForm()}
 
                                 {/* Submit Button with Loading State */}

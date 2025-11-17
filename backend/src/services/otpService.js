@@ -24,38 +24,27 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Clean up expired OTPs (older than 1 minute)
+// Clean up expired OTPs (disabled - no expiry)
 const cleanupExpiredOTPs = () => {
-  const now = Date.now();
-  for (const [email, data] of otpStore.entries()) {
-    if (now - data.timestamp > 60000) { // 1 minute = 60000ms
-      otpStore.delete(email);
-    }
-  }
+  // OTP expiry disabled - no cleanup needed
 };
 
-// Store OTP with email and timestamp
+// Store OTP with email and timestamp (no expiry)
 const storeOTP = (email, otp) => {
   otpStore.set(email, {
     otp,
     timestamp: Date.now()
   });
 
-  // Clean up expired OTPs periodically
-  setTimeout(cleanupExpiredOTPs, 60000);
+  // OTP expiry disabled - no cleanup timeout needed
 };
 
-// Get stored OTP for email
+// Get stored OTP for email (no expiry)
 const getStoredOTP = (email) => {
   const data = otpStore.get(email);
   if (!data) return null;
 
-  // Check if OTP is expired (1 minute)
-  if (Date.now() - data.timestamp > 60000) {
-    otpStore.delete(email);
-    return null;
-  }
-
+  // OTP expiry disabled - always return stored OTP
   return data.otp;
 };
 
@@ -81,7 +70,7 @@ const sendOTPEmail = async (email, otp) => {
           ${otp}
         </div>
         <p style="margin-top: 15px; color: #666; font-size: 14px;">
-          This code will expire in 1 minute for security reasons.
+          Please use this code to reset your password.
         </p>
       </div>
 

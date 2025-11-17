@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NavHeader from '../Navbar/NavHeader';
 import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
+import RoleModal from '../../pages/RoleModal';
 
 // Utility function to get the base role path (e.g., '/user', '/dietitian', or '/')
 const getBasePath = (currentPath) => {
@@ -69,6 +70,7 @@ const Header = () => {
   const currentRole = getCurrentRoleFromPath();
   const { token, isAuthenticated } = useAuth(currentRole);
   const [profileImage, setProfileImage] = useState(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
 
   // Fetch profile data when authenticated
   useEffect(() => {
@@ -203,9 +205,8 @@ const Header = () => {
       return (
         
         <div className="flex space-x-3 items-center -mr-20">
-          <NavLink
-            to={profileLink}
-            onClick={() => isMobile && handleScrollToTop()}
+          <button
+            onClick={() => navigate(getProfilePath())}
             className={`${iconButtonBaseClass} border border-[#28B463] text-[#28B463] hover:bg-[#28B463] hover:text-white overflow-visible`}
             aria-label="Profile"
           >
@@ -223,7 +224,7 @@ const Header = () => {
               <i className="fas fa-user-circle text-3xl"></i>
             )}
             <span className={tooltipTextClass}>Profile</span>
-          </NavLink>
+          </button>
 
           <button
             onClick={handleLogout}
@@ -240,15 +241,13 @@ const Header = () => {
 
     // If not logged in (base path), show Log In and Contact Us buttons
     return (
-      
-        <div className="flex space-x-3 items-center -mr-20">
-        <NavLink
-          to="/role"
-          onClick={handleScrollToTop}
+      <div className="flex space-x-3 items-center -mr-20">
+        <button
+          onClick={() => currentPath === '/' ? setShowRoleModal(true) : navigate('/role')}
           className={outlineButtonClass}
         >
           Log In
-        </NavLink>
+        </button>
         <Link
           // **UPDATED link to use dynamic contactPath**
           to={contactPath}
@@ -258,7 +257,6 @@ const Header = () => {
           Contact Us
         </Link>
       </div>
-      
     );
   };
 
@@ -298,6 +296,11 @@ const Header = () => {
           // **PASSING the dynamic contact path to the FloatingContactButton**
           contactPath={getContactPath()}
         />
+      )}
+
+      {/* Role Selection Modal */}
+      {showRoleModal && (
+        <RoleModal isModal={true} onClose={() => setShowRoleModal(false)} />
       )}
     </>
   );

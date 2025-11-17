@@ -13,7 +13,10 @@ const contactSchema = Yup.object().shape({
     .required('Full Name is required.')
     .min(3, 'Name must be at least 3 characters.'),
   email: Yup.string()
-    .email('Invalid email address.')
+    .matches(
+      /^[a-zA-Z][a-zA-Z0-9._]{2,}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      'Invalid email address.'
+    )
     .required('Email Address is required.'),
   role: Yup.string()
     .required('Please select your role.'),
