@@ -17,6 +17,7 @@ import Blog from '../pages/Blog';
 import Contact from '../pages/Contactus';
 import CreateBlog from '../pages/Blog/CreateBlog';
 import BlogPost from '../pages/Blog/BlogPost';
+import DietitianLabReportViewer from '../pages/LabReports/DietitianLabReportViewer';
 
 
 
@@ -70,8 +71,9 @@ export default function DietitianRoutes() {
          
          {/* Chat Route */}
          <Route path="chat/:conversationId" element={<ChatPage />} />
-        
-        <Route path="*" element={<Navigate to="home" replace />} />
+         
+         {/* Lab Reports Route */}
+         <Route path="lab-reports" element={<DietitianLabReportViewer />} />
       </Routes>
     </div>
     </AuthProvider>

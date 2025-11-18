@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const forgotPasswordController = require('../controllers/forgotPasswordController');
-const upload = require('../middlewares/uploadMiddleware');
+const { upload } = require('../middlewares/uploadMiddleware');
 
 /**
  * Middleware utility to explicitly set req.params.role based on the route path.

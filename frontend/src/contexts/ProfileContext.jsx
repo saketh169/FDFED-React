@@ -14,7 +14,7 @@ export const useProfile = () => {
   return context;
 };
 
-/* eslint-disable react-refresh/only-export-components */
+ 
 
 // Role-specific configuration
 const roleConfig = {
