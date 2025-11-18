@@ -23,6 +23,10 @@ import DietitianProfile from '../pages/Consultations/DietitianProfile';
 import DietitiansList from '../pages/Appointments/DietitiansList';
 import ChatPage from '../pages/Chat/ChatPage';
 
+import ClientLabReportViewer from '../pages/LabReports/ClientLabReportViewer';
+import LabReportUploader from '../pages/LabReports/LabReportUploader';
+
+
 
 
 export default function UserRoutes() {
@@ -56,8 +60,11 @@ export default function UserRoutes() {
         {/* Chat Route */}
         <Route path="chat/:conversationId" element={<ChatPage />} />
         
-       
+        {/* Lab Reports Routes */}
+        <Route path="lab-reports/:dietitianId" element={<ClientLabReportViewer />} />
+        <Route path="submit-lab-report/:dietitianId" element={<LabReportUploader />} />
         
+       
         {/* Dietitian Routes */}
         <Route path="dietitian-profiles" element={<AllDietitiansPage />} />
         <Route

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../../contexts/AuthContext';
 import axios from 'axios';
@@ -16,12 +16,10 @@ const ChatPage = () => {
   
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [conversation, setConversation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editContent, setEditContent] = useState('');
-  const [shouldScroll, setShouldScroll] = useState(false);
   
   // Video link modal state
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -31,7 +29,6 @@ const ChatPage = () => {
     scheduledTime: ''
   });
   
-  const messagesEndRef = useRef(null);
   const pollingIntervalRef = useRef(null);
   
   // Get other participant info from location state
@@ -58,6 +55,13 @@ const ChatPage = () => {
 
   const messagesContainerRef = useRef(null);
 
+  // Scroll to top for initial load
+  const scrollToTop = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
+  };
+
   // Scroll to bottom only when sending new message
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -66,7 +70,7 @@ const ChatPage = () => {
   };
 
   // Fetch conversation and messages
-  const fetchMessages = async (isInitialLoad = false) => {
+  const fetchMessages = useCallback(async () => {
     if (!conversationId || conversationId.length !== 24) {
       console.error('Invalid conversation ID:', conversationId);
       return;
@@ -79,14 +83,11 @@ const ChatPage = () => {
       
       if (response.data.success) {
         setMessages(response.data.data);
-        if (isInitialLoad) {
-          setShouldScroll(true);
-        }
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
-  };
+  }, [conversationId, token]);
 
   // Initial load
   useEffect(() => {
@@ -97,15 +98,11 @@ const ChatPage = () => {
       }
 
       try {
-        await fetchMessages(true);
+        await fetchMessages();
         
         // If conversation info not in state, we can derive it from messages
-        if (otherParticipant) {
-          setConversation({
-            _id: conversationId,
-            otherParticipant
-          });
-        }
+        setTimeout(scrollToTop, 100);
+        window.scrollTo(0, 0); // Scroll to top of page
       } catch (error) {
         console.error('Error initializing chat:', error);
       } finally {
@@ -126,7 +123,7 @@ const ChatPage = () => {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [conversationId, token, user]);
+  }, [conversationId, token, user, fetchMessages]);
 
   // Send message
   const handleSendMessage = async (e) => {
@@ -285,8 +282,8 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50/30 to-teal-50/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 100px)' }}>
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50/30 to-teal-50/30">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col mx-auto" style={{ height: '580px' }}>
       {/* Chat Header */}
       <div className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 shadow-md">
         <div className="px-6">
@@ -319,7 +316,7 @@ const ChatPage = () => {
               {userType === 'dietitian' && (
                 <button
                   onClick={() => setShowVideoModal(true)}
-                  className="px-4 py-2 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all flex items-center gap-2"
+                  className="px-4 py-2 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all flex items-center gap-2"
                 >
                   <i className="fas fa-video"></i>
                   <span className="hidden sm:inline">Video Link</span>
@@ -329,20 +326,15 @@ const ChatPage = () => {
               {userType === 'client' && (
                 <>
                   <button
-                    onClick={() => navigate('/reports/upload', { 
-                      state: { 
-                        dietitianId: otherParticipant?._id || otherParticipant?.id,
-                        conversationId: conversationId 
-                      } 
-                    })}
-                    className="px-4 py-2 bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2"
+                    onClick={() => navigate(`/user/submit-lab-report/${otherParticipant?._id || otherParticipant?.id}`)}
+                    className="px-4 py-2 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all flex items-center gap-2"
                   >
                     <i className="fas fa-file-upload"></i>
                     <span className="hidden sm:inline">Upload Report</span>
                   </button>
                   <button
-                    onClick={() => navigate('/reports/history')}
-                    className="px-4 py-2 bg-linear-to-r from-orange-600 to-red-600 text-white rounded-lg hover:from-orange-700 hover:to-red-700 transition-all flex items-center gap-2"
+                    onClick={() => navigate(`/user/lab-reports/${otherParticipant?._id || otherParticipant?.id}`)}
+                    className="px-4 py-2 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all flex items-center gap-2"
                   >
                     <i className="fas fa-file-medical"></i>
                     <span className="hidden sm:inline">My Reports</span>
@@ -352,11 +344,11 @@ const ChatPage = () => {
               
               {userType === 'dietitian' && (
                 <button
-                  onClick={() => navigate('/reports/viewer')}
+                  onClick={() => navigate('/dietitian/lab-reports')}
                   className="px-4 py-2 bg-linear-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all flex items-center gap-2"
                 >
-                  <i className="fas fa-file-medical-alt"></i>
-                  <span className="hidden sm:inline">View Reports</span>
+                  <i className="fas fa-file-medical"></i>
+                  <span className="hidden sm:inline">Client Reports</span>
                 </button>
               )}
             </div>
@@ -393,8 +385,8 @@ const ChatPage = () => {
                         {message.messageType === 'video-link' ? (
                           <div className={`p-4 rounded-2xl shadow-md ${
                             isOwnMessage 
-                              ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white' 
-                              : 'bg-blue-50 border border-blue-200'
+                              ? 'bg-linear-to-r from-emerald-500 to-teal-500 text-white' 
+                              : 'bg-emerald-50 border border-emerald-200'
                           }`}>
                             <div className="flex items-center gap-2 mb-2">
                               <i className="fas fa-video"></i>
@@ -412,8 +404,8 @@ const ChatPage = () => {
                               rel="noopener noreferrer"
                               className={`inline-block px-4 py-2 rounded-lg font-medium ${
                                 isOwnMessage 
-                                  ? 'bg-white text-blue-600 hover:bg-gray-100' 
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                                  ? 'bg-white text-emerald-600 hover:bg-gray-100' 
+                                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
                               }`}
                             >
                               Join Meeting
@@ -495,7 +487,6 @@ const ChatPage = () => {
                 );
               })
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Message Input */}
@@ -545,7 +536,7 @@ const ChatPage = () => {
                   value={videoLinkData.url}
                   onChange={(e) => setVideoLinkData({ ...videoLinkData, url: e.target.value })}
                   placeholder="https://meet.google.com/..."
-                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all"
                 />
               </div>
               
@@ -557,7 +548,7 @@ const ChatPage = () => {
                   type="date"
                   value={videoLinkData.scheduledDate}
                   onChange={(e) => setVideoLinkData({ ...videoLinkData, scheduledDate: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all"
                 />
               </div>
               
@@ -569,7 +560,7 @@ const ChatPage = () => {
                   type="time"
                   value={videoLinkData.scheduledTime}
                   onChange={(e) => setVideoLinkData({ ...videoLinkData, scheduledTime: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all"
                 />
               </div>
               
@@ -582,7 +573,7 @@ const ChatPage = () => {
                 </button>
                 <button
                   onClick={handleSendVideoLink}
-                  className="flex-1 px-4 py-2 bg-linear-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700"
+                  className="flex-1 px-4 py-2 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700"
                 >
                   Send Link
                 </button>
