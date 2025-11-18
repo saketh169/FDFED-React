@@ -1,6 +1,9 @@
-const mongoose = require('mongoose');
-const Booking = require('../models/bookingModel');
-const { sendBookingConfirmationToUser, sendBookingNotificationToDietitian } = require('../services/bookingService');
+const mongoose = require("mongoose");
+const Booking = require("../models/bookingModel");
+const {
+  sendBookingConfirmationToUser,
+  sendBookingNotificationToDietitian,
+} = require("../services/bookingService");
 
 /**
  * Create a new booking
@@ -28,28 +31,41 @@ exports.createBooking = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!userId || !username || !email || !dietitianId || !dietitianName || !dietitianEmail || !date || !time || !consultationType || !amount || !paymentMethod || !paymentId) {
+    if (
+      !userId ||
+      !username ||
+      !email ||
+      !dietitianId ||
+      !dietitianName ||
+      !dietitianEmail ||
+      !date ||
+      !time ||
+      !consultationType ||
+      !amount ||
+      !paymentMethod ||
+      !paymentId
+    ) {
       // Log which fields are missing
       const missingFields = [];
-      if (!userId) missingFields.push('userId');
-      if (!username) missingFields.push('username');
-      if (!email) missingFields.push('email');
-      if (!dietitianId) missingFields.push('dietitianId');
-      if (!dietitianName) missingFields.push('dietitianName');
-      if (!dietitianEmail) missingFields.push('dietitianEmail');
-      if (!date) missingFields.push('date');
-      if (!time) missingFields.push('time');
-      if (!consultationType) missingFields.push('consultationType');
-      if (!amount) missingFields.push('amount');
-      if (!paymentMethod) missingFields.push('paymentMethod');
-      if (!paymentId) missingFields.push('paymentId');
-      
-      console.error('Missing required fields:', missingFields);
-      console.error('Received data:', req.body);
-      
+      if (!userId) missingFields.push("userId");
+      if (!username) missingFields.push("username");
+      if (!email) missingFields.push("email");
+      if (!dietitianId) missingFields.push("dietitianId");
+      if (!dietitianName) missingFields.push("dietitianName");
+      if (!dietitianEmail) missingFields.push("dietitianEmail");
+      if (!date) missingFields.push("date");
+      if (!time) missingFields.push("time");
+      if (!consultationType) missingFields.push("consultationType");
+      if (!amount) missingFields.push("amount");
+      if (!paymentMethod) missingFields.push("paymentMethod");
+      if (!paymentId) missingFields.push("paymentId");
+
+      console.error("Missing required fields:", missingFields);
+      console.error("Received data:", req.body);
+
       return res.status(400).json({
         success: false,
-        message: `Missing required fields: ${missingFields.join(', ')}`
+        message: `Missing required fields: ${missingFields.join(", ")}`,
       });
     }
 
@@ -58,19 +74,60 @@ exports.createBooking = async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid email format'
+        message: "Invalid email format",
       });
     }
 
     // Validate date is in the future
     const bookingDate = new Date(date);
+    bookingDate.setHours(0, 0, 0, 0);
     const now = new Date();
-    now.setHours(0, 0, 0, 0); // Reset to start of day for comparison
-    
+    now.setHours(0, 0, 0, 0);
+
     if (bookingDate < now) {
       return res.status(400).json({
         success: false,
-        message: 'Booking date must be today or in the future'
+        message: "Booking date must be today or in the future",
+      });
+    }
+
+    const dayStart = new Date(bookingDate);
+    const dayEnd = new Date(bookingDate);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    // **NEW: Check if the user already has a booking at this time (with any dietitian)**
+    const userConflictingBooking = await Booking.findOne({
+      userId,
+      date: { $gte: dayStart, $lt: dayEnd },
+      time,
+      status: { $in: ["confirmed", "completed"] },
+    });
+
+    if (userConflictingBooking) {
+      return res.status(409).json({
+        success: false,
+        message: `You already have an appointment with ${userConflictingBooking.dietitianName} at ${time} on this date. Please select a different time slot.`,
+        conflictingBooking: {
+          dietitianName: userConflictingBooking.dietitianName,
+          time: userConflictingBooking.time,
+          date: userConflictingBooking.date,
+        },
+      });
+    }
+
+    // Check if the slot is already booked with this specific dietitian
+    const dietitianSlotBooked = await Booking.findOne({
+      dietitianId,
+      date: { $gte: dayStart, $lt: dayEnd },
+      time,
+      status: { $in: ["confirmed", "completed"] },
+    });
+
+    if (dietitianSlotBooked) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This time slot is already booked with this dietitian. Please select another slot.",
       });
     }
 
@@ -79,7 +136,7 @@ exports.createBooking = async (req, res) => {
     if (existingPayment) {
       return res.status(400).json({
         success: false,
-        message: 'This payment ID has already been used'
+        message: "This payment ID has already been used",
       });
     }
 
@@ -95,14 +152,14 @@ exports.createBooking = async (req, res) => {
       dietitianEmail,
       dietitianPhone,
       dietitianSpecialization,
-      date: bookingDate,
+      date: bookingDate, // Use normalized date
       time,
       consultationType,
       amount,
       paymentMethod,
       paymentId,
-      paymentStatus: 'completed',
-      status: 'confirmed'
+      paymentStatus: "completed",
+      status: "confirmed",
     });
 
     // Save to database
@@ -124,7 +181,7 @@ exports.createBooking = async (req, res) => {
         consultationType,
         amount,
         paymentId,
-        bookingId: savedBooking._id
+        bookingId: savedBooking._id,
       };
 
       // Send to user
@@ -133,22 +190,22 @@ exports.createBooking = async (req, res) => {
       // Send to dietitian
       await sendBookingNotificationToDietitian(emailData);
 
-      console.log('Confirmation emails sent successfully');
+      console.log("Confirmation emails sent successfully");
     } catch (emailErr) {
-      console.error('Error sending confirmation emails:', emailErr);
+      console.error("Error sending confirmation emails:", emailErr);
       // Don't fail the request if email fails
     }
 
     res.status(201).json({
       success: true,
-      message: 'Booking created successfully',
-      data: savedBooking
+      message: "Booking created successfully",
+      data: savedBooking,
     });
   } catch (error) {
-    console.error('Error creating booking:', error);
+    console.error("Error creating booking:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to create booking'
+      message: error.message || "Failed to create booking",
     });
   }
 };
@@ -160,13 +217,13 @@ exports.createBooking = async (req, res) => {
 exports.getUserBookings = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { status, sort = '-createdAt' } = req.query;
+    const { status, sort = "-createdAt" } = req.query;
 
     // Validate userId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid user ID'
+        message: "Invalid user ID",
       });
     }
 
@@ -177,20 +234,18 @@ exports.getUserBookings = async (req, res) => {
       query.status = status;
     }
 
-    const bookings = await Booking.find(query)
-      .sort(sort)
-      .exec();
+    const bookings = await Booking.find(query).sort(sort).exec();
 
     res.status(200).json({
       success: true,
       data: bookings,
-      count: bookings.length
+      count: bookings.length,
     });
   } catch (error) {
-    console.error('Error fetching user bookings:', error);
+    console.error("Error fetching user bookings:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to fetch bookings'
+      message: error.message || "Failed to fetch bookings",
     });
   }
 };
@@ -202,13 +257,13 @@ exports.getUserBookings = async (req, res) => {
 exports.getDietitianBookings = async (req, res) => {
   try {
     const { dietitianId } = req.params;
-    const { status, sort = '-createdAt' } = req.query;
+    const { status, sort = "-createdAt" } = req.query;
 
     // Validate dietitianId
     if (!mongoose.Types.ObjectId.isValid(dietitianId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid dietitian ID'
+        message: "Invalid dietitian ID",
       });
     }
 
@@ -219,24 +274,21 @@ exports.getDietitianBookings = async (req, res) => {
       query.status = status;
     }
 
-    const bookings = await Booking.find(query)
-      .sort(sort)
-      .exec();
+    const bookings = await Booking.find(query).sort(sort).exec();
 
     res.status(200).json({
       success: true,
       data: bookings,
-      count: bookings.length
+      count: bookings.length,
     });
   } catch (error) {
-    console.error('Error fetching dietitian bookings:', error);
+    console.error("Error fetching dietitian bookings:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to fetch bookings'
+      message: error.message || "Failed to fetch bookings",
     });
   }
 };
-
 
 /**
  * Get a specific booking by ID
@@ -250,7 +302,7 @@ exports.getBookingById = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid booking ID'
+        message: "Invalid booking ID",
       });
     }
 
@@ -259,20 +311,19 @@ exports.getBookingById = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
-
     res.status(200).json({
       success: true,
-      data: booking
+      data: booking,
     });
   } catch (error) {
-    console.error('Error fetching booking:', error);
+    console.error("Error fetching booking:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to fetch booking'
+      message: error.message || "Failed to fetch booking",
     });
   }
 };
@@ -290,16 +341,16 @@ exports.updateBookingStatus = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid booking ID'
+        message: "Invalid booking ID",
       });
     }
 
     // Validate status value
-    const validStatuses = ['confirmed', 'cancelled', 'completed', 'no-show'];
+    const validStatuses = ["confirmed", "cancelled", "completed", "no-show"];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+        message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
       });
     }
 
@@ -312,20 +363,20 @@ exports.updateBookingStatus = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Booking status updated successfully',
-      data: booking
+      message: "Booking status updated successfully",
+      data: booking,
     });
   } catch (error) {
-    console.error('Error updating booking status:', error);
+    console.error("Error updating booking status:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to update booking'
+      message: error.message || "Failed to update booking",
     });
   }
 };
@@ -342,7 +393,7 @@ exports.cancelBooking = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid booking ID'
+        message: "Invalid booking ID",
       });
     }
 
@@ -351,33 +402,146 @@ exports.cancelBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
     // Check if booking can be cancelled
-    if (booking.status === 'completed' || booking.status === 'cancelled') {
+    if (booking.status === "completed" || booking.status === "cancelled") {
       return res.status(400).json({
         success: false,
-        message: `Cannot cancel a ${booking.status} booking`
+        message: `Cannot cancel a ${booking.status} booking`,
       });
     }
 
     // Update booking status
-    booking.status = 'cancelled';
+    booking.status = "cancelled";
     booking.updatedAt = Date.now();
     await booking.save();
 
     res.status(200).json({
       success: true,
-      message: 'Booking cancelled successfully',
-      data: booking
+      message: "Booking cancelled successfully",
+      data: booking,
     });
   } catch (error) {
-    console.error('Error cancelling booking:', error);
+    console.error("Error cancelling booking:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to cancel booking'
+      message: error.message || "Failed to cancel booking",
+    });
+  }
+};
+
+/**
+ * Get booked slots for a dietitian on a specific date
+ * GET /api/bookings/dietitian/:dietitianId/booked-slots?date=YYYY-MM-DD&userId=xxx
+ */
+exports.getBookedSlots = async (req, res) => {
+  try {
+    const { dietitianId } = req.params;
+    const { date, userId } = req.query; // Add userId to query params
+
+    if (!dietitianId || !date) {
+      return res.status(400).json({
+        success: false,
+        message: "Dietitian ID and date are required",
+      });
+    }
+
+    // Parse and normalize the date
+    const queryDate = new Date(date);
+    queryDate.setHours(0, 0, 0, 0);
+
+    const nextDay = new Date(queryDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // Find all confirmed/completed bookings for this dietitian on this date
+    const bookings = await Booking.find({
+      dietitianId,
+      date: { $gte: queryDate, $lt: nextDay },
+      status: { $in: ["confirmed", "completed"] },
+    }).select("time userId");
+
+    // Separate user's bookings from others' bookings
+    const bookedSlots = [];
+    const userBookings = [];
+
+    bookings.forEach((booking) => {
+      if (userId && booking.userId === userId) {
+        userBookings.push(booking.time);
+      } else {
+        bookedSlots.push(booking.time);
+      }
+    });
+
+    console.log(`Booked slots for dietitian ${dietitianId} on ${date}:`);
+    console.log("- Other users:", bookedSlots);
+    console.log("- Current user:", userBookings);
+
+    res.status(200).json({
+      success: true,
+      bookedSlots, // Slots booked by other users
+      userBookings, // Slots booked by current user
+      date: queryDate,
+    });
+  } catch (error) {
+    console.error("Error fetching booked slots:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch booked slots",
+    });
+  }
+};
+
+/**
+ * Get user's booked slots for a specific date (to check conflicts)
+ * GET /api/bookings/user/:userId/booked-slots?date=YYYY-MM-DD
+ */
+exports.getUserBookedSlots = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { date } = req.query;
+
+    if (!userId || !date) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID and date are required",
+      });
+    }
+
+    // Parse and normalize the date
+    const queryDate = new Date(date);
+    queryDate.setHours(0, 0, 0, 0);
+
+    const nextDay = new Date(queryDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // Find all confirmed/completed bookings for this user on this date
+    const bookings = await Booking.find({
+      userId,
+      date: { $gte: queryDate, $lt: nextDay },
+      status: { $in: ["confirmed", "completed"] },
+    }).select("time dietitianName");
+
+    // Extract time slots with dietitian info
+    const bookedSlots = bookings.map((booking) => ({
+      time: booking.time,
+      dietitianName: booking.dietitianName,
+    }));
+
+    console.log(`User ${userId} booked slots on ${date}:`, bookedSlots);
+
+    res.status(200).json({
+      success: true,
+      bookedSlots,
+      date: queryDate,
+    });
+  } catch (error) {
+    console.error("Error fetching user booked slots:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch booked slots",
     });
   }
 };
