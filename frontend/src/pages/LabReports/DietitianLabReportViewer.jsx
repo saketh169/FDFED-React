@@ -1,212 +1,314 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { useAuthContext } from '../../hooks/useAuthContext';
+import { Utensils, Heart, Activity, Pill, FileText, Eye, Download, Zap } from 'lucide-react';
 
 const DietitianLabReportViewer = () => {
   const navigate = useNavigate();
-  const { token, isAuthenticated } = useAuthContext();
 
-  // State for lab reports and loading
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Fetch all client lab reports on component mount
-  useEffect(() => {
-    const fetchLabReports = async () => {
-      if (!isAuthenticated || !token) {
-        setError('Authentication required. Please log in again.');
-        setLoading(false);
-        return;
+  // Static data for demonstration - sorted by date (recent first)
+  const [reports] = useState([
+    {
+      _id: '1',
+      clientName: 'John Doe',
+      clientEmail: 'john.doe@example.com',
+      dateOfReport: '2024-11-15',
+      createdAt: '2024-11-15T10:30:00Z',
+      status: 'reviewed',
+      meals: {
+        data: { breakfast: 'Oatmeal with fruits', lunch: 'Grilled chicken salad', dinner: 'Fish with vegetables' },
+        files: [{ filename: 'meal-plan.pdf', mimetype: 'application/pdf' }]
+      },
+      healthMetrics: {
+        data: { weight: '70kg', height: '175cm', bloodPressure: '120/80' },
+        files: [{ filename: 'health-metrics.jpg', mimetype: 'image/jpeg' }]
+      },
+      activity: {
+        data: { exercise: '30 mins daily', steps: '8000 steps' },
+        files: []
+      },
+      supplements: {
+        data: { vitaminD: '1000 IU daily', omega3: '2g daily' },
+        files: [{ filename: 'supplements-list.pdf', mimetype: 'application/pdf' }]
       }
-
-      try {
-        const response = await axios.get('/api/lab-reports/dietitian/all', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        setReports(response.data.labReports || []);
-      } catch (error) {
-        console.error('Error fetching lab reports:', error);
-        setError(error.response?.data?.message || error.message || 'Failed to load lab reports');
-      } finally {
-        setLoading(false);
+    },
+    {
+      _id: '2',
+      clientName: 'Jane Smith',
+      clientEmail: 'jane.smith@example.com',
+      dateOfReport: '2024-11-10',
+      createdAt: '2024-11-10T14:20:00Z',
+      status: 'pending',
+      meals: {
+        data: { breakfast: 'Smoothie', lunch: 'Quinoa bowl' },
+        files: []
+      },
+      healthMetrics: {
+        data: { weight: '65kg', bloodSugar: '95 mg/dL' },
+        files: [{ filename: 'blood-test.pdf', mimetype: 'application/pdf' }]
+      },
+      activity: {
+        data: { yoga: '45 mins', walking: '20 mins' },
+        files: []
+      },
+      supplements: {
+        data: {},
+        files: []
       }
-    };
-
-    fetchLabReports();
-  }, [token, isAuthenticated]);
-
-  const handleViewReport = (reportId, fileName) => {
-    // Open file in new tab
-    window.open(`/uploads/lab-reports/${fileName}`, '_blank');
-  };
-
-  const handleDownloadReport = (reportId, fileName) => {
-    // Create download link
-    const link = document.createElement('a');
-    link.href = `/uploads/lab-reports/${fileName}`;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleUpdateStatus = async (reportId, newStatus, notes = '') => {
-    if (!isAuthenticated || !token) {
-      alert('Authentication required. Please log in again.');
-      return;
+    },
+    {
+      _id: '3',
+      clientName: 'Mike Johnson',
+      clientEmail: 'mike.johnson@example.com',
+      dateOfReport: '2024-11-08',
+      createdAt: '2024-11-08T09:15:00Z',
+      status: 'reviewed',
+      meals: {
+        data: { breakfast: 'Eggs and toast', dinner: 'Steak and potatoes' },
+        files: []
+      },
+      healthMetrics: {
+        data: { cholesterol: '180 mg/dL', triglycerides: '150 mg/dL' },
+        files: [{ filename: 'lipid-profile.pdf', mimetype: 'application/pdf' }]
+      },
+      activity: {
+        data: { gym: '1 hour weights', cardio: '20 mins' },
+        files: []
+      },
+      supplements: {
+        data: { protein: '25g post-workout', creatine: '5g daily' },
+        files: []
+      }
     }
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))); // Sort by recent first
 
-    try {
-      await axios.put(`/api/lab-reports/${reportId}/status`, {
-        status: newStatus,
-        notes: notes
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  const [selectedReport, setSelectedReport] = useState(reports[0]);
 
-      // Update local state
-      setReports(reports.map(report =>
-        report._id === reportId
-          ? { ...report, status: newStatus, notes: notes }
-          : report
-      ));
-
-      alert(`Report status updated to ${newStatus}`);
-    } catch (error) {
-      console.error('Error updating status:', error);
-      alert('Failed to update report status');
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending':
+        return <Zap className="w-4 h-4 text-yellow-500" />;
+      case 'reviewed':
+        return <FileText className="w-4 h-4 text-green-500" />;
+      default:
+        return <FileText className="w-4 h-4 text-gray-500" />;
     }
   };
 
-  if (loading) {
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'meals':
+        return <Utensils className="w-5 h-5 text-emerald-600" />;
+      case 'healthMetrics':
+        return <Heart className="w-5 h-5 text-emerald-600" />;
+      case 'activity':
+        return <Activity className="w-5 h-5 text-emerald-600" />;
+      case 'supplements':
+        return <Pill className="w-5 h-5 text-emerald-600" />;
+      default:
+        return <FileText className="w-5 h-5 text-emerald-600" />;
+    }
+  };
+
+  const formatCategoryName = (category) => {
+    switch (category) {
+      case 'meals':
+        return 'Meals';
+      case 'healthMetrics':
+        return 'Health Metrics';
+      case 'activity':
+        return 'Activity';
+      case 'supplements':
+        return 'Supplements';
+      default:
+        return category;
+    }
+  };
+
+  const renderCategoryCard = (category, data) => {
+    if (!data || (!data.data && (!data.files || data.files.length === 0))) return null;
+
     return (
-      <div className="min-h-screen bg-gray-100 p-4 sm:p-8 font-sans flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading client lab reports...</p>
+      <div key={category} className="bg-white rounded-lg border border-emerald-100 p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center mb-4">
+          {getCategoryIcon(category)}
+          <h3 className="text-lg font-semibold text-gray-800 ml-3 capitalize">
+            {formatCategoryName(category)}
+          </h3>
         </div>
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-4 sm:p-8 font-sans flex items-center justify-center">
-        <div className="text-center">
-          <i className="fas fa-exclamation-triangle text-6xl text-red-400 mb-4"></i>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Back to Chat
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-8 font-sans">
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-6 md:p-10">
-        <header className="text-center mb-10">
-          <h1 className="text-3xl font-extrabold text-green-700">
-            Client Lab Reports
-          </h1>
-          <p className="text-gray-500 mt-2">
-            View and manage lab reports submitted by your clients
-          </p>
-        </header>
-
-        {reports.length === 0 ? (
-          <div className="text-center py-12">
-            <i className="fas fa-file-medical text-6xl text-gray-300 mb-4"></i>
-            <p className="text-gray-500">No lab reports found from your clients.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {reports.map((report) => (
-              <div key={report._id} className="border border-gray-200 rounded-xl p-6 bg-gray-50">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800">
-                      {report.clientId?.name || report.clientName}
-                    </h3>
-                    <p className="text-gray-600">{report.clientId?.email || 'N/A'}</p>
-                    <p className="text-gray-600">
-                      Submitted on: {new Date(report.createdAt).toLocaleDateString()}
-                    </p>
-                    <p className="text-gray-600">
-                      Categories: {report.submittedCategories.join(', ')}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <select
-                      value={report.status}
-                      onChange={(e) => handleUpdateStatus(report._id, e.target.value)}
-                      className="px-3 py-1 rounded-full text-sm border border-gray-300 mb-2"
-                    >
-                      <option value="submitted">Submitted</option>
-                      <option value="pending">Pending Review</option>
-                      <option value="reviewed">Reviewed</option>
-                    </select>
-                    {report.reviewedBy && (
-                      <p className="text-xs text-gray-500">
-                        Reviewed by {report.reviewedBy.dietitianName}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {report.uploadedFiles && report.uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                      <span className="text-sm font-medium">{file.originalName}</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleViewReport(report._id, file.filename)}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          <i className="fas fa-eye"></i> View
-                        </button>
-                        <button
-                          onClick={() => handleDownloadReport(report._id, file.filename)}
-                          className="text-green-600 hover:text-green-800 text-sm"
-                        >
-                          <i className="fas fa-download"></i> Download
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {report.notes && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-800">
-                      <strong>Dietitian Notes:</strong> {report.notes}
-                    </p>
-                  </div>
-                )}
+        {data.data && Object.keys(data.data).length > 0 && (
+          <div className="space-y-2 mb-4">
+            {Object.entries(data.data).map(([key, value]) => (
+              <div key={key} className="flex justify-between items-center py-1">
+                <span className="text-sm font-medium text-gray-600 capitalize">
+                  {key.replace(/([A-Z])/g, ' $1').trim()}:
+                </span>
+                <span className="text-sm text-gray-800">{value}</span>
               </div>
             ))}
           </div>
         )}
 
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 mr-4"
-          >
-            Back to Chat
-          </button>
-        </div>
+        {data.files && data.files.length > 0 && (
+          <div className="border-t border-emerald-50 pt-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Uploaded Files:</h4>
+            <div className="space-y-2">
+              {data.files.map((file, index) => (
+                <div key={index} className="flex items-center justify-between bg-emerald-50 rounded p-2">
+                  <div className="flex items-center">
+                    <FileText className="w-4 h-4 text-emerald-600 mr-2" />
+                    <span className="text-sm text-gray-700">{file.filename}</span>
+                    <span className="text-xs text-gray-500 ml-2">({file.mimetype})</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="text-emerald-600 hover:text-emerald-800 text-sm">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button className="text-emerald-600 hover:text-emerald-800 text-sm">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 to-teal-50 pt-0 pb-6 px-6">
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border-2 border-emerald-200 overflow-hidden">
+        <header className="bg-linear-to-r from-emerald-500 to-teal-600 text-white p-6">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 bg-emerald-700 text-white rounded-xl hover:bg-emerald-800 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
+            >
+              Back to Chat
+            </button>
+            <div className="text-center flex-1">
+              <h1 className="text-4xl font-bold mb-2">
+                Client Lab Reports Dashboard
+              </h1>
+              <p className="text-emerald-100 text-lg">
+                Monitor and review lab reports from all your clients
+              </p>
+            </div>
+            <div className="w-32"></div> {/* Spacer for centering */}
+          </div>
+        </header>
+
+        {reports.length === 0 ? (
+          <div className="text-center py-16">
+            <FileText className="w-16 h-16 text-emerald-300 mx-auto mb-4" />
+            <p className="text-teal-900 text-lg font-bold">No lab reports found from your clients.</p>
+            <p className="text-emerald-600 mt-2">New reports will appear here as clients submit them.</p>
+          </div>
+        ) : (
+          <div className="flex gap-6 p-6">
+            {/* Left Sidebar - Narrow */}
+            <div className="w-80 bg-white shadow-xl h-[calc(100vh-300px)] overflow-y-auto p-4 border-r-2 border-emerald-200 rounded-tr-2xl rounded-br-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-linear-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                  <i className="fas fa-file-medical text-white text-lg"></i>
+                </div>
+                <h3 className="text-lg font-bold text-teal-900">Client Submissions ({reports.length})</h3>
+              </div>
+              <div className="border-t-2 border-emerald-200 mb-4"></div>
+              <div className="space-y-3">
+                {reports.map((report) => (
+                  <div
+                    key={report._id}
+                    onClick={() => setSelectedReport(report)}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all duration-300 flex items-center gap-3 transform hover:scale-105 ${
+                      selectedReport?._id === report._id
+                        ? 'active shadow-lg border-emerald-300'
+                        : 'hover:shadow-md border-gray-200'
+                    }`}
+                    style={{
+                      color: selectedReport?._id === report._id ? 'white' : '#0F766E',
+                      backgroundColor: selectedReport?._id === report._id ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'white',
+                      borderLeft: selectedReport?._id === report._id ? `4px solid #34D399` : '2px solid #E5E7EB',
+                      background: selectedReport?._id === report._id ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'white',
+                    }}
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 bg-emerald-100 rounded-lg">
+                      {getStatusIcon(report.status)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-bold text-sm ${selectedReport?._id === report._id ? 'text-white' : 'text-teal-900'}`}>
+                        {report.clientName}
+                      </div>
+                      <div className={`text-xs ${selectedReport?._id === report._id ? 'text-emerald-100' : 'text-gray-600'}`}>
+                        {new Date(report.dateOfReport).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Main Panel */}
+            <div className="flex-1 bg-transparent p-6 overflow-y-auto">
+              {selectedReport ? (
+                <>
+                  {/* Report Header */}
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-emerald-800 mb-2">
+                      {selectedReport.clientName}'s Lab Report
+                    </h2>
+                    <div className="flex items-center gap-4 text-sm text-emerald-600">
+                      <span>Report Date: {new Date(selectedReport.dateOfReport).toLocaleDateString()}</span>
+                      <span>Submitted: {new Date(selectedReport.createdAt).toLocaleDateString()}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${
+                        selectedReport.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        selectedReport.status === 'reviewed' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {getStatusIcon(selectedReport.status)}
+                        {selectedReport.status || 'Submitted'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Category Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    {renderCategoryCard('meals', selectedReport.meals)}
+                    {renderCategoryCard('healthMetrics', selectedReport.healthMetrics)}
+                    {renderCategoryCard('activity', selectedReport.activity)}
+                    {renderCategoryCard('supplements', selectedReport.supplements)}
+                  </div>
+
+                  {/* Dietitian Notes & Feedback Section */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-blue-800 mb-4">
+                      Dietitian Notes & Feedback
+                    </h3>
+                    {selectedReport.feedback ? (
+                      <div className="text-blue-700">
+                        <p>{selectedReport.feedback}</p>
+                      </div>
+                    ) : (
+                      <div className="text-blue-600">
+                        <p className="italic">No feedback provided yet.</p>
+                        <button className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                          Add Feedback
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-16">
+                  <FileText className="w-12 h-12 text-emerald-300 mx-auto mb-4" />
+                  <p className="text-emerald-700">Select a report from the sidebar to view details</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
