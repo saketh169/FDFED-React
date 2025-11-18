@@ -36,8 +36,8 @@ const PaymentSuccess = () => {
       return;
     }
 
-    // Verify payment using Redux thunk
-    dispatch(verifyPayment(transactionId));
+    // Verify payment using Redux thunk with error handling
+    dispatch(verifyPayment(transactionId)).catch(err => console.error('Payment verification failed:', err));
   }, [transactionId, isAuthenticated, navigate, dispatch]);
 
   if (loading) {
