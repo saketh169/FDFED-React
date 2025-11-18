@@ -2,8 +2,6 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { User, Heart, Leaf, TestTube, Factory, Activity, Upload, Scale, TrendingUp, Calendar, Droplet, Eye } from 'lucide-react';
-import axios from 'axios';
-import { useAuthContext } from '../../hooks/useAuthContext';
 
 // --- Icon components for the category buttons ---
 const CategoryIcon = ({ icon, label, isActive, onClick }) => {
@@ -14,12 +12,12 @@ const CategoryIcon = ({ icon, label, isActive, onClick }) => {
       className={`
       flex flex-col items-center justify-center p-4 m-2 w-36 h-36 md:w-40 md:h-40 text-center rounded-xl transition-all duration-300 transform shadow-lg
       ${isActive
-        ? 'bg-[#27AE60] text-white ring-4 ring-[#27AE60]/30 scale-[1.02] shadow-[#27AE60]/50'
-        : 'bg-white text-gray-700 hover:bg-[#27AE60]/10 hover:shadow-xl'
+        ? 'bg-emerald-600 text-white ring-4 ring-emerald-300 scale-[1.02] shadow-emerald-500/50'
+        : 'bg-white text-gray-700 hover:bg-emerald-50 hover:shadow-xl border border-emerald-100'
       }
       `}
     >
-      <Icon className={`w-8 h-8 mb-2 ${isActive ? 'text-white' : 'text-[#27AE60]'}`} />
+      <Icon className={`w-12 h-12 mb-2 ${isActive ? 'text-white' : 'text-emerald-600'}`} />
       <span className="text-sm font-semibold mt-1">{label}</span>
     </button>
   );
@@ -38,7 +36,7 @@ const FormInput = ({ label, type = 'text', required = false, unit = '', ...regis
         <div className="flex flex-col space-y-2">
           <input
             type="file"
-            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#27AE60]/10 file:text-[#27AE60] hover:file:bg-[#27AE60]/20"
+            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-100 file:text-emerald-700 hover:file:bg-emerald-200"
             required={required}
             {...registerProps}
           />
@@ -46,7 +44,7 @@ const FormInput = ({ label, type = 'text', required = false, unit = '', ...regis
       ) : (
         <input
           type={type}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#27AE60] transition duration-150"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-150"
           required={required}
           {...registerProps}
         />
@@ -58,15 +56,9 @@ const LabReportUploader = () => {
   // Initialize the form using React Hook Form
   const { register, handleSubmit } = useForm();
   const navigate = useNavigate();
-  const { token, isAuthenticated } = useAuthContext();
  
   // === NEW STATE: Array to track active forms in order of selection ===
   const [activeFormsOrder, setActiveFormsOrder] = useState([]);
-
-  // === NEW STATE: Loading and error states ===
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const categories = useMemo(() => [
     { id: 'Hormonal_Issues', label: 'Hormonal Issues', icon: TrendingUp, description: 'Enter specific metrics for endocrine and reproductive health.' },
@@ -103,115 +95,16 @@ const LabReportUploader = () => {
 
 
   // Submission handler function
-  const onSubmit = async (data) => {
-    if (!isAuthenticated) {
-      setSubmitError('Authentication required. Please log in again.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(false);
-
-    try {
-      // Get auth token from AuthContext
-      if (!token) {
-        throw new Error('Authentication required. Please log in again.');
-      }
-
-      // Create FormData for multipart upload
-      const formData = new FormData();
-
-      // Add submitted categories
-      formData.append('submittedCategories', JSON.stringify(activeFormsOrder));
-
-      // Add category data objects
-      const categoryDataMap = {
-        Hormonal_Issues: {
-          testosteroneTotal: data.testosteroneTotal,
-          dheaS: data.dheaS,
-          cortisol: data.cortisol,
-          vitaminD: data.vitaminD
-        },
-        Fitness_Metrics: {
-          heightCm: data.heightCm,
-          currentWeight: data.currentWeight,
-          bodyFatPercentage: data.bodyFatPercentage,
-          activityLevel: data.activityLevel,
-          additionalInfo: data.additionalInfo
-        },
-        General_Reports: {
-          dateOfReport: data.dateOfReport,
-          bmiValue: data.bmiValue,
-          currentWeight: data.currentWeight,
-          heightCm: data.heightCm
-        },
-        Blood_Sugar_Focus: {
-          fastingGlucose: data.fastingGlucose,
-          hba1c: data.hba1c,
-          cholesterolTotal: data.cholesterolTotal,
-          triglycerides: data.triglycerides
-        },
-        Thyroid: {
-          tsh: data.tsh,
-          freeT4: data.freeT4,
-          reverseT3: data.reverseT3,
-          thyroidAntibodies: data.thyroidAntibodies
-        },
-        Cardiovascular: {
-          systolicBP: data.systolicBP,
-          diastolicBP: data.diastolicBP,
-          spO2: data.spO2,
-          restingHeartRate: data.restingHeartRate
-        }
-      };
-
-      // Add only data for active categories
-      activeFormsOrder.forEach(categoryId => {
-        if (categoryDataMap[categoryId]) {
-          formData.append(categoryId.toLowerCase(), JSON.stringify(categoryDataMap[categoryId]));
-        }
-      });
-
-      // Add files
-      const fileFields = [
-        'hormonalProfileReport', 'endocrineReport', 'generalHealthReport', 'bloodTestReport',
-        'bloodSugarReport', 'diabetesReport', 'thyroidReport', 'cardiacHealthReport',
-        'cardiovascularReport', 'ecgReport'
-      ];
-
-      fileFields.forEach(fieldName => {
-        if (data[fieldName] && data[fieldName].length > 0) {
-          // React Hook Form returns FileList, so we iterate through it
-          Array.from(data[fieldName]).forEach(file => {
-            formData.append('files', file);
-          });
-        }
-      });
-
-      // Send to API
-      await axios.post('/api/lab-reports', formData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      setSubmitSuccess(true);
-      // Clear success message after 5 seconds
-      setTimeout(() => setSubmitSuccess(false), 5000);
-
-      // Reset form after successful submission
-      setActiveFormsOrder([]);
-
-    } catch (error) {
-      console.error('Submit error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit lab report. Please try again.';
-      setSubmitError(errorMessage);
-      // Clear error message after 5 seconds
-      setTimeout(() => setSubmitError(null), 5000);
-    } finally {
-      setIsSubmitting(false);
+  const onSubmit = (data) => {
+    console.log("Form Submitted (Partial Data for Active Forms):", data);
+    // In a real application, you would send this data to your backend API
+    const message = `Thank you! Your profile data from ${activeFormsOrder.length} section(s) has been submitted.`;
+    const messageBox = document.getElementById('messageBox');
+    const messageText = document.getElementById('messageText');
+    if (messageBox && messageText) {
+      messageText.textContent = message;
+      messageBox.classList.remove('hidden');
+      setTimeout(() => messageBox.classList.add('hidden'), 5000);
     }
   };
 
@@ -245,13 +138,13 @@ const LabReportUploader = () => {
     // Default structure for every form section
     const FormWrapper = ({ title, description, children }) => (
       <>
-        <h2 className="text-2xl font-bold text-[#1A4A40] mb-2 flex items-center">
+        <h2 className="text-2xl font-bold text-emerald-800 mb-2 flex items-center">
           <span className="mr-2">
-            <categoryMeta.icon className='w-6 h-6' />
+            <categoryMeta.icon className='w-8 h-8' />
           </span>
-          {title} Details
+          {categoryMeta.label} - Details
         </h2>
-        <p className="text-gray-600 mb-6 border-b border-[#27AE60]/20 pb-4">{description}</p>
+        <p className="text-gray-600 mb-6 border-b border-emerald-200 pb-4">{description}</p>
         {children}
       </>
     );
@@ -297,7 +190,7 @@ const LabReportUploader = () => {
               <div className="flex flex-col space-y-1">
                 <label htmlFor="activityLevel" className="text-sm font-medium text-gray-700">Activity Level</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#27AE60] transition duration-150"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-150"
                   {...register('activityLevel')} 
                 >
                   <option value="">Select Level</option>
@@ -314,7 +207,7 @@ const LabReportUploader = () => {
                 <label htmlFor="additionalInfo" className="text-sm font-medium text-gray-700">Additional Health Information (E.g., Allergies, Medications)</label>
                 <textarea
                   rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#27AE60] transition duration-150"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-150"
                   {...register('additionalInfo')}
                 />
               </div>
@@ -444,45 +337,38 @@ const LabReportUploader = () => {
   }, [register, handleViewFile, categories]); // Dependencies ensure form state updates correctly
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-8 font-sans">
-      {/* Error/Success Messages */}
-      {submitError && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-xl z-50 transition-opacity duration-300">
-          <p>{submitError}</p>
-        </div>
-      )}
-      {submitSuccess && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-xl z-50 transition-opacity duration-300">
-          <p>Thank you! Your lab report has been submitted successfully.</p>
-        </div>
-      )}
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 to-teal-50 pt-0 pb-6 px-6">
+      {/* Custom Message Box (Toggled to blue when "View" is clicked) */}
+      <div id="messageBox" className="hidden fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-xl z-50 transition-opacity duration-300">
+        <p id="messageText"></p>
+      </div>
 
-      {/* Custom Message Box (Toggled to blue when "View" is clicked) */}
-      <div id="messageBox" className="hidden fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-xl z-50 transition-opacity duration-300">
-        <p id="messageText"></p>
-      </div>
-
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl p-6 md:p-10">
-        <header className="mb-10">
-          <div className="flex items-center justify-between mb-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl border-2 border-emerald-200 overflow-hidden">
+        <header className="bg-linear-to-r from-emerald-500 to-teal-600 text-white p-6">
+          <div className="flex justify-between items-center">
             <button
               onClick={() => navigate(-1)}
-              className="py-2 px-6 bg-[#27AE60] text-white font-bold rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300 border-2 border-[#27AE60]/30"
+              className="px-4 py-2 bg-emerald-700 text-white rounded-xl hover:bg-emerald-800 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
             >
-              Back
+              Back to Chat
             </button>
-            <div className="flex-1 text-center">
-              <h1 className="text-3xl font-extrabold text-[#1A4A40]">
-                Personalized Diet Plan Intake Form
+            <div className="text-center flex-1">
+              <h1 className="text-4xl font-bold mb-2">
+                Lab Report Upload
               </h1>
-              <p className="text-gray-500 mt-2">
+              <p className="text-emerald-100 text-lg">
                 Upload your health reports and metrics for analysis by your Dietitian.
               </p>
             </div>
-            <div className="w-20"></div> {/* Spacer for balance */}
+            <button
+              onClick={() => navigate('/user/lab-reports')} // Assuming this route exists
+              className="px-4 py-2 bg-emerald-700 text-white rounded-xl hover:bg-emerald-800 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
+            >
+              Report History
+            </button>
           </div>
         </header>        {/* --- Category Buttons (Two Rows of Three) --- */}
-        <section className="grid grid-cols-3 gap-4 mb-10 max-w-4xl mx-auto">
+        <section className="grid grid-cols-6 gap-4 mb-10 max-w-6xl mx-auto">
           {categories.map((cat) => (
             <CategoryIcon
               key={cat.id}
@@ -506,7 +392,7 @@ const LabReportUploader = () => {
               <div 
                 key={categoryId} 
                 id={`form-section-${categoryId}`}
-                className="p-6 border border-[#27AE60]/20 rounded-xl bg-[#27AE60]/5 shadow-inner space-y-4"
+                className="p-6 border border-emerald-200 rounded-xl bg-emerald-50/50 shadow-inner space-y-4"
               >
                 {renderFormContent(categoryId)}
               </div>
@@ -517,32 +403,20 @@ const LabReportUploader = () => {
               Select one or more categories above to dynamically load the corresponding forms for submission.
             </div>
           )}
-          {/* --- Submit Button (Always Visible) --- */}
-          {activeFormsOrder.length > 0 && (
-            <div className="flex justify-end pt-4">
+          
+            <div className="flex justify-center pt-4">
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="px-8 py-3 bg-[#27AE60] text-white font-bold text-lg rounded-full shadow-lg hover:bg-[#1E6F5C] transition-all duration-300 transform hover:scale-[1.01] flex items-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="px-12 py-3 bg-emerald-700 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-emerald-800 transition-all duration-300 transform hover:scale-[1.01] flex items-center"
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-5 h-5 mr-2" />
-                    Submit All Active Sections
-                  </>
-                )}
+                <Upload className="w-6 h-6 mr-2" />
+                Submit the Report
               </button>
             </div>
-          )}
         </form>
 
-        <footer className="mt-10 pt-6 border-t border-gray-200 text-center text-sm text-gray-400">
-          Your lab reports will be securely stored and reviewed by your assigned dietitian.
+        <footer className="mt-10 pt-6 border-t border-emerald-200 text-center text-sm text-gray-400">
+          *Note: This is a client-side simulation. Actual data storage requires a connected backend API.
         </footer>
       </div>
     </div>
