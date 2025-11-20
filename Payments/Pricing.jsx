@@ -28,6 +28,7 @@ const Pricing = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      console.warn('User not authenticated for pricing page');
       alert('Please login to view pricing plans');
       navigate('/role');
     }
