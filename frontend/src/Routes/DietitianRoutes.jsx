@@ -31,7 +31,7 @@ export default function DietitianRoutes() {
         {/* All routes are automatically protected by ProtectedProvider in Layout.jsx */}
         <Route path="home" element={<DietitianHome />} />
         <Route path="profile" element={<DietitianDashboard />} />
-        <Route path="setup" element={<DietitianSetup/>} />
+        <Route path="profile-setup" element={<DietitianSetup/>} />
         <Route path="doc-status" element={<DietitianDocStatus/>} />
         <Route path="change-pass" element={<ChangePassword/>} />
         <Route path="edit-profile" element={<EditProfile />} />
@@ -40,21 +40,21 @@ export default function DietitianRoutes() {
         <Route
           path="schedule"
           element={
-            <VerifyProvider requiredRole="dietitian" redirectTo="/dietitian/doc-status">
+            <VerifyProvider requiredRole="dietitian" redirectTo="/verify/dietitian">
               <DietitianSchedule/>
             </VerifyProvider>
           } />
         <Route
           path="add-plans"
           element={
-            <VerifyProvider requiredRole="dietitian" redirectTo="/dietitian/doc-status">
+            <VerifyProvider requiredRole="dietitian" redirectTo="/verify/dietitian">
               <DietitianAddPlanForm/>
             </VerifyProvider>
           } />
         <Route
           path="clients-profiles"
           element={
-            <VerifyProvider requiredRole="dietitian" redirectTo="/dietitian/doc-status">
+            <VerifyProvider requiredRole="dietitian" redirectTo="/verify/dietitian">
               <ClientsList/>
             </VerifyProvider>
           } />
@@ -74,6 +74,7 @@ export default function DietitianRoutes() {
          
          {/* Lab Reports Route */}
          <Route path="lab-reports" element={<DietitianLabReportViewer />} />
+         <Route path="lab-reports/:clientId" element={<DietitianLabReportViewer />} />
       </Routes>
     </div>
     </AuthProvider>

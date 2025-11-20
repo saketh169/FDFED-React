@@ -309,6 +309,12 @@ exports.docUploadController = async (req, res) => {
                 ...userProfile.documents,
                 ...documents
             };
+            
+            // Set verification status to 'Pending' for uploaded documents
+            userProfile.verificationStatus = userProfile.verificationStatus || {};
+            Object.keys(documents).forEach(field => {
+                userProfile.verificationStatus[field] = 'Pending';
+            });
         }
         
         userProfile.documentUploadStatus = 'pending';

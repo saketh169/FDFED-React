@@ -120,8 +120,10 @@ const AllDietitiansPage = () => {
         const response = await axios.get('/api/dietitians', config);
         
         if (response.data.success) {
-          setAllDietitians(response.data.data);
-          setFilteredDietitians(response.data.data);
+          // Filter out dietitians with empty specialization arrays
+          const filteredData = response.data.data.filter((d) => d.specialties && d.specialties.length > 0);
+          setAllDietitians(filteredData);
+          setFilteredDietitians(filteredData);
         } else {
           throw new Error(response.data.message || 'Failed to fetch dietitians');
         }

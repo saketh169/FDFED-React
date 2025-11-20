@@ -344,7 +344,7 @@ const ChatPage = () => {
               
               {userType === 'dietitian' && (
                 <button
-                  onClick={() => navigate('/dietitian/lab-reports')}
+                  onClick={() => navigate(`/dietitian/lab-reports/${otherParticipant?._id || otherParticipant?.id}`, { state: { clientInfo: otherParticipant } })}
                   className="px-4 py-2 bg-linear-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all flex items-center gap-2"
                 >
                   <i className="fas fa-file-medical"></i>

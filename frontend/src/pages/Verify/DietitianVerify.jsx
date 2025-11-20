@@ -546,10 +546,12 @@ const DietitianVerify = () => {
                 dietitians.map(d => {
                 const overallStatus =
                   d.verificationStatus.finalReport || 'Not Received'
+                const documentUploadStatus = d.documentUploadStatus || 'pending'
                 const displayStatus =
+                  documentUploadStatus === 'verified' ? 'Verified' : 
                   overallStatus === 'Not Received' ? 'Pending' : overallStatus
                 const statusColor =
-                  overallStatus === 'Verified'
+                  documentUploadStatus === 'verified'
                     ? 'text-emerald-600'
                     : overallStatus === 'Rejected'
                     ? 'text-red-600'
@@ -576,7 +578,7 @@ const DietitianVerify = () => {
                       <td className='py-3 px-8'>
                         <div className='flex items-center'>
                           <div className={`p-2 rounded-xl mr-3 ${
-                            overallStatus === 'Verified'
+                            documentUploadStatus === 'verified'
                               ? 'bg-emerald-100'
                               : overallStatus === 'Rejected'
                               ? 'bg-red-100'
@@ -584,7 +586,7 @@ const DietitianVerify = () => {
                           }`}>
                             <i
                               className={`fas fa-${STATUS_ICONS[overallStatus]} ${
-                                overallStatus === 'Verified'
+                                documentUploadStatus === 'verified'
                                   ? 'text-emerald-600'
                                   : overallStatus === 'Rejected'
                                   ? 'text-red-600'

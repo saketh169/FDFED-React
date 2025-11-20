@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Dietitian } = require('../models/userModel');
+const { Dietitian, UserAuth } = require('../models/userModel');
 const Booking = require('../models/bookingModel');
 
 // Get all verified dietitians
@@ -195,8 +195,7 @@ router.get('/dietitians/:id/clients', async (req, res) => {
     });
   }
 });
-
-// Update dietitian profile
+/*
 router.post('/dietitians/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -221,6 +220,46 @@ router.post('/dietitians/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating dietitian'
+    });
+  }
+}); */
+
+// Dietitian profile setup route
+router.post('/dietitian-profile-setup/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const setupData = req.body;
+
+    // Validate required fields for setup
+    const requiredFields = ['name', 'email', 'phone', 'age', 'specialization', 'experience', 'fees', 'languages', 'location', 'education'];
+    const missingFields = requiredFields.filter(field => !setupData[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    const dietitian = await Dietitian.findByIdAndUpdate(id, setupData, { new: true });
+
+    if (!dietitian) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dietitian not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: dietitian,
+      message: 'Profile setup completed successfully'
+    });
+  } catch (error) {
+    console.error('Error setting up dietitian profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error setting up dietitian profile'
     });
   }
 });

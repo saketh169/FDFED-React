@@ -17,7 +17,7 @@ exports.getDietitianStatus = async (req, res) => {
             return res.status(403).json({ message: 'Access denied. Dietitian role required.' });
         }
 
-        const dietitian = await Dietitian.findById(decoded.roleId).select('name verificationStatus files');
+        const dietitian = await Dietitian.findById(decoded.roleId).select('name verificationStatus files documentUploadStatus');
         if (!dietitian) {
             return res.status(404).json({ message: 'Dietitian not found' });
         }
@@ -25,7 +25,10 @@ exports.getDietitianStatus = async (req, res) => {
         // Prepare the response data
         const responseData = {
             name: dietitian.name,
-            verificationStatus: dietitian.verificationStatus || {},
+            verificationStatus: {
+                ...dietitian.verificationStatus,
+                finalReport: dietitian.documentUploadStatus || 'pending'
+            },
             finalReport: null
         };
 
@@ -66,7 +69,7 @@ exports.getOrganizationStatus = async (req, res) => {
             return res.status(403).json({ message: 'Access denied. Organization role required.' });
         }
 
-        const organization = await Organization.findById(decoded.roleId).select('name verificationStatus files');
+        const organization = await Organization.findById(decoded.roleId).select('name verificationStatus files documentUploadStatus');
         if (!organization) {
             return res.status(404).json({ message: 'Organization not found' });
         }
@@ -74,7 +77,10 @@ exports.getOrganizationStatus = async (req, res) => {
         // Prepare the response data
         const responseData = {
             name: organization.name,
-            verificationStatus: organization.verificationStatus || {},
+            verificationStatus: {
+                ...organization.verificationStatus,
+                finalReport: organization.documentUploadStatus || 'pending'
+            },
             finalReport: null
         };
 
@@ -115,7 +121,7 @@ exports.getCorporatePartnerStatus = async (req, res) => {
             return res.status(403).json({ message: 'Access denied. Corporate Partner role required.' });
         }
 
-        const corporatePartner = await CorporatePartner.findById(decoded.roleId).select('name verificationStatus files');
+        const corporatePartner = await CorporatePartner.findById(decoded.roleId).select('name verificationStatus files documentUploadStatus');
         if (!corporatePartner) {
             return res.status(404).json({ message: 'Corporate Partner not found' });
         }
@@ -123,7 +129,10 @@ exports.getCorporatePartnerStatus = async (req, res) => {
         // Prepare the response data
         const responseData = {
             name: corporatePartner.name,
-            verificationStatus: corporatePartner.verificationStatus || {},
+            verificationStatus: {
+                ...corporatePartner.verificationStatus,
+                finalReport: corporatePartner.documentUploadStatus || 'pending'
+            },
             finalReport: null
         };
 

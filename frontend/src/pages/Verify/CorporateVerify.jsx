@@ -71,7 +71,8 @@ const STATUS_ICONS = {
   Verified: 'check-circle',
   Rejected: 'times-circle',
   Pending: 'hourglass-half',
-  'Not Uploaded': 'minus-circle'
+  'Not Uploaded': 'minus-circle',
+  'No Documents': 'minus-circle'
 }
 
 // --- Mock Data Setup (Corporate Partners) ---
@@ -511,12 +512,29 @@ const App = () => {
                 </tr>
               ) : (
                 partners.map(p => {
-                const overallStatus =
-                  p.verificationStatus.finalReport || 'Not Received'
-                const displayStatus =
-                  overallStatus === 'Not Received' ? 'Pending' : overallStatus
+                const status = p.verificationStatus || {};
+                const documentFields = [
+                    'businessLicense', 'taxIdDocument', 'incorporationCertificate',
+                    'authorizedRepId', 'bankAccountProof', 'financialAudit', 'codeOfConduct'
+                ];
+                const documentStatuses = documentFields.map(field => status[field] || 'Not Uploaded');
+                
+                // Determine overall status based on document upload status
+                let overallStatus = 'No Documents';
+                if (documentStatuses.some(s => s === 'Pending')) {
+                    overallStatus = 'Pending';
+                } else if (documentStatuses.some(s => s === 'Rejected')) {
+                    overallStatus = 'Rejected';
+                } else if (documentStatuses.some(s => s === 'Verified')) {
+                    overallStatus = 'Verified';
+                } else if (documentStatuses.some(s => s === 'Received')) {
+                    overallStatus = 'Received';
+                }
+                
+                const documentUploadStatus = p.documentUploadStatus || 'pending'
+                const displayStatus = documentUploadStatus === 'verified' ? 'Verified' : overallStatus;
                 const statusColor =
-                  overallStatus === 'Verified'
+                  documentUploadStatus === 'verified'
                     ? 'text-emerald-600'
                     : overallStatus === 'Rejected'
                     ? 'text-red-600'
@@ -543,7 +561,7 @@ const App = () => {
                       <td className='py-3 px-8'>
                         <div className='flex items-center'>
                           <div className={`p-2 rounded-xl mr-3 ${
-                            overallStatus === 'Verified'
+                            documentUploadStatus === 'verified'
                               ? 'bg-emerald-100'
                               : overallStatus === 'Rejected'
                               ? 'bg-red-100'
@@ -551,7 +569,7 @@ const App = () => {
                           }`}>
                             <i
                               className={`fas fa-${STATUS_ICONS[overallStatus]} ${
-                                overallStatus === 'Verified'
+                                documentUploadStatus === 'verified'
                                   ? 'text-emerald-600'
                                   : overallStatus === 'Rejected'
                                   ? 'text-red-600'

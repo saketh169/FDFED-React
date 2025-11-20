@@ -93,52 +93,11 @@ async function uploadDietitianFiles(req, res) {
 // Fetch all dietitians and log file statuses
 async function getDietitians(req, res) {
     try {
-        const dietitians = await Dietitian.find().select('name email files verificationStatus');
+        const dietitians = await Dietitian.find({}).select('name email files verificationStatus documentUploadStatus');
 
-        console.log('Dietitians with Verified Files:');
+        console.log('All Dietitians:');
         dietitians.forEach((dietitian) => {
-            const verifiedFiles = Object.keys(dietitian.verificationStatus || {})
-                .filter((key) => dietitian.verificationStatus[key] === 'Verified')
-                .map((key) => {
-                    const fieldMap = {
-                        resume: 'Resume',
-                        degreeCertificate: 'Degree Certificate',
-                        licenseDocument: 'License Document',
-                        idProof: 'ID Proof',
-                        experienceCertificates: 'Experience Certificates',
-                        specializationCertifications: 'Specialization Certifications',
-                        internshipCertificate: 'Internship Certificate',
-                        researchPapers: 'Research Papers',
-                        finalReport: 'Final Report'
-                    };
-                    return fieldMap[key] || key;
-                });
-            if (verifiedFiles.length > 0) {
-                console.log(`- ${dietitian.name}: ${verifiedFiles.join(', ')}`);
-            }
-        });
-
-        console.log('\nDietitians with Rejected Files:');
-        dietitians.forEach((dietitian) => {
-            const rejectedFiles = Object.keys(dietitian.verificationStatus || {})
-                .filter((key) => dietitian.verificationStatus[key] === 'Rejected')
-                .map((key) => {
-                    const fieldMap = {
-                        resume: 'Resume',
-                        degreeCertificate: 'Degree Certificate',
-                        licenseDocument: 'License Document',
-                        idProof: 'ID Proof',
-                        experienceCertificates: 'Experience Certificates',
-                        specializationCertifications: 'Specialization Certifications',
-                        internshipCertificate: 'Internship Certificate',
-                        researchPapers: 'Research Papers',
-                        finalReport: 'Final Report'
-                    };
-                    return fieldMap[key] || key;
-                });
-            if (rejectedFiles.length > 0) {
-                console.log(`- ${dietitian.name}: ${rejectedFiles.join(', ')}`);
-            }
+            console.log(`- ${dietitian.name}: ${dietitian.documentUploadStatus || 'No status'}`);
         });
 
         res.status(200).json(dietitians);
@@ -519,52 +478,11 @@ async function uploadOrganizationFiles(req, res) {
 // Fetch all organizations and log file statuses
 async function getOrganizations(req, res) {
     try {
-        const organizations = await Organization.find().select('name email files verificationStatus');
+        const organizations = await Organization.find({}).select('name email files verificationStatus documentUploadStatus');
 
-        console.log('Organizations with Verified Files:');
+        console.log('All Organizations:');
         organizations.forEach((organization) => {
-            const verifiedFiles = Object.keys(organization.verificationStatus || {})
-                .filter((key) => organization.verificationStatus[key] === 'Verified')
-                .map((key) => {
-                    const fieldMap = {
-                        orgLogo: 'Organization Logo',
-                        orgBrochure: 'Organization Brochure',
-                        legalDocument: 'Legal Document',
-                        taxDocument: 'Tax Document',
-                        addressProof: 'Proof of Address',
-                        businessLicense: 'Business License',
-                        authorizedRepId: 'Identity Proof',
-                        bankDocument: 'Bank Document',
-                        finalReport: 'Final Report'
-                    };
-                    return fieldMap[key] || key;
-                });
-            if (verifiedFiles.length > 0) {
-                console.log(`- ${organization.name}: ${verifiedFiles.join(', ')}`);
-            }
-        });
-
-        console.log('\nOrganizations with Rejected Files:');
-        organizations.forEach((organization) => {
-            const rejectedFiles = Object.keys(organization.verificationStatus || {})
-                .filter((key) => organization.verificationStatus[key] === 'Rejected')
-                .map((key) => {
-                    const fieldMap = {
-                        orgLogo: 'Organization Logo',
-                        orgBrochure: 'Organization Brochure',
-                        legalDocument: 'Legal Document',
-                        taxDocument: 'Tax Document',
-                        addressProof: 'Proof of Address',
-                        businessLicense: 'Business License',
-                        authorizedRepId: 'Identity Proof',
-                        bankDocument: 'Bank Document',
-                        finalReport: 'Final Report'
-                    };
-                    return fieldMap[key] || key;
-                });
-            if (rejectedFiles.length > 0) {
-                console.log(`- ${organization.name}: ${rejectedFiles.join(', ')}`);
-            }
+            console.log(`- ${organization.name}: ${organization.documentUploadStatus || 'No status'}`);
         });
 
         res.status(200).json(organizations);
@@ -591,8 +509,13 @@ async function getOrganizationFile(req, res) {
             return res.status(404).json({ success: false, message: 'Organization not found' });
         }
 
-        const files = organization.files || {};
-        const fileBuffer = files[field];
+        let fileBuffer;
+        if (organization.files && organization.files[field]) {
+            fileBuffer = organization.files[field];
+        } else if (organization.documents && organization.documents[field] && organization.documents[field].data) {
+            fileBuffer = organization.documents[field].data;
+        }
+
         if (!fileBuffer || fileBuffer.length === 0) {
             return res.status(404).json({ success: false, message: 'File not found' });
         }
@@ -940,50 +863,11 @@ async function uploadCorporateFiles(req, res) {
 // Fetch all corporate partners and log file statuses
 async function getCorporatePartners(req, res) {
     try {
-        const corporatePartners = await CorporatePartner.find().select('name email files verificationStatus');
+        const corporatePartners = await CorporatePartner.find({}).select('name email files verificationStatus documentUploadStatus');
 
-        console.log('Corporate Partners with Verified Files:');
+        console.log('All Corporate Partners:');
         corporatePartners.forEach((partner) => {
-            const verifiedFiles = Object.keys(partner.verificationStatus || {})
-                .filter((key) => partner.verificationStatus[key] === 'Verified')
-                .map((key) => {
-                    const fieldMap = {
-                        businessLicense: 'Business License',
-                        taxIdDocument: 'Tax ID Document',
-                        incorporationCertificate: 'Incorporation Certificate',
-                        authorizedRepId: 'Authorized Representative ID',
-                        bankAccountProof: 'Bank Account Proof',
-                        financialAudit: 'Financial Audit',
-                        codeOfConduct: 'Code of Conduct',
-                        finalReport: 'Final Report'
-                    };
-                    return fieldMap[key] || key;
-                });
-            if (verifiedFiles.length > 0) {
-                console.log(`- ${partner.name}: ${verifiedFiles.join(', ')}`);
-            }
-        });
-
-        console.log('\nCorporate Partners with Rejected Files:');
-        corporatePartners.forEach((partner) => {
-            const rejectedFiles = Object.keys(partner.verificationStatus || {})
-                .filter((key) => partner.verificationStatus[key] === 'Rejected')
-                .map((key) => {
-                    const fieldMap = {
-                        businessLicense: 'Business License',
-                        taxIdDocument: 'Tax ID Document',
-                        incorporationCertificate: 'Incorporation Certificate',
-                        authorizedRepId: 'Authorized Representative ID',
-                        bankAccountProof: 'Bank Account Proof',
-                        financialAudit: 'Financial Audit',
-                        codeOfConduct: 'Code of Conduct',
-                        finalReport: 'Final Report'
-                    };
-                    return fieldMap[key] || key;
-                });
-            if (rejectedFiles.length > 0) {
-                console.log(`- ${partner.name}: ${rejectedFiles.join(', ')}`);
-            }
+            console.log(`- ${partner.name}: ${partner.documentUploadStatus || 'No status'}`);
         });
 
         res.status(200).json(corporatePartners);
@@ -1010,8 +894,13 @@ async function getCorporateFile(req, res) {
             return res.status(404).json({ success: false, message: 'Corporate Partner not found' });
         }
 
-        const files = corporatePartner.files || {};
-        const fileBuffer = files[field];
+        let fileBuffer;
+        if (corporatePartner.files && corporatePartner.files[field]) {
+            fileBuffer = corporatePartner.files[field];
+        } else if (corporatePartner.documents && corporatePartner.documents[field] && corporatePartner.documents[field].data) {
+            fileBuffer = corporatePartner.documents[field].data;
+        }
+
         if (!fileBuffer || fileBuffer.length === 0) {
             return res.status(404).json({ success: false, message: 'File not found' });
         }
