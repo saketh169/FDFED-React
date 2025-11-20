@@ -1,10 +1,8 @@
-import React, { useState, useMemo, useCallback, useEffect, useContext, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useContext } from 'react';
 import { ChevronLeft, ChevronRight, Utensils, Users, X, Plus, Save, Trash2, Loader2, Calendar, Search, Check, Edit, Clipboard, CheckCircle, BarChart, Home, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../contexts/AuthContext';
-import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
-import * as Yup from 'yup';
 
 // --- Utility Functions ---
 
@@ -610,6 +608,70 @@ const DietitianAddPlanForm = () => {
         setSelectedDateForModal('');
     };
 
+    // --- Plan Creation Handler ---
+    const handleSavePlan = async (planFormState, mealEntries, setErrors, setMessage) => {
+        if (!selectedClient) return;
+
+        // Check if a plan with the same name already exists
+        const existingPlan = availablePlans.find(plan => 
+            plan.planName.toLowerCase() === planFormState.planName.trim().toLowerCase()
+        );
+        
+        if (existingPlan) {
+            setErrors(prev => ({ ...prev, planName: 'A plan with this name already exists. Please choose a different name.' }));
+            setMessage('Please fix the validation mistakes before submitting.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const planData = {
+                planName: planFormState.planName.trim(),
+                dietType: planFormState.dietType,
+                calories: parseInt(planFormState.calories) || 0,
+                notes: planFormState.notes,
+                imageUrl: planFormState.imageUrl,
+                meals: mealEntries.map(m => ({
+                    name: m.mealName.trim(),
+                    calories: parseInt(m.calories) || 0,
+                    details: m.details,
+                })),
+                dietitianId: user.id,
+                userId: selectedClient.id
+            };
+
+            const response = await axios.post('/api/meal-plans', planData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data.success) {
+                // Add the new plan to availablePlans
+                const newPlan = {
+                    ...response.data.data,
+                    id: response.data.data._id,
+                    assignedDates: []
+                };
+                setAvailablePlans(prev => [...prev, newPlan]);
+                setMessage(`Meal plan "${response.data.data.planName}" added successfully!`);
+                setTimeout(() => {
+                    setView('CLIENT_DASHBOARD');
+                }, 2000);
+            } else {
+                throw new Error(response.data.message || 'Failed to create meal plan');
+            }
+        } catch (error) {
+            console.error('Error creating meal plan:', error);
+            setErrors(prev => ({ ...prev, general: error.response?.data?.message || error.message || 'Failed to create meal plan' }));
+            setMessage('Failed to create meal plan. Please try again.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // --- UI Components ---
 
     const ClientList = () => (
@@ -876,145 +938,99 @@ const DietitianAddPlanForm = () => {
     const CreatePlanForm = () => {
         const mealTypes = ['Vegan', 'Vegetarian', 'Keto', 'Mediterranean', 'High-Protein', 'Low-Carb', 'Anything'];
 
-        // Add message state for displaying status messages
-        const [message, setMessage] = useState('');
-        const lastSubmitCountRef = useRef(0);
-
-        // Yup validation schema
-        const validationSchema = Yup.object().shape({
-            planName: Yup
-                .string()
-                .trim()
-                .required('Plan name is required')
-                .min(2, 'Plan name must be at least 2 characters')
-                .max(100, 'Plan name must be less than 100 characters'),
-            dietType: Yup
-                .string()
-                .required('Diet type is required')
-                .oneOf(mealTypes, 'Please select a valid diet type'),
-            calories: Yup
-                .number()
-                .required('Daily calories is required')
-                .min(500, 'Calories must be at least 500')
-                .max(5000, 'Calories must be less than 5000')
-                .integer('Calories must be a whole number'),
-            notes: Yup
-                .string()
-                .max(500, 'Notes must be less than 500 characters'),
-            imageUrl: Yup
-                .string()
-                .url('Please enter a valid URL')
-                .optional(),
-            meals: Yup
-                .array()
-                .of(
-                    Yup.object().shape({
-                        mealName: Yup
-                            .string()
-                            .trim()
-                            .required('Meal name is required')
-                            .min(2, 'Meal name must be at least 2 characters')
-                            .max(100, 'Meal name must be less than 100 characters'),
-                        calories: Yup
-                            .number()
-                            .required('Calories are required')
-                            .min(0, 'Calories cannot be negative')
-                            .max(2000, 'Calories seem too high for a single meal'),
-                        details: Yup
-                            .string()
-                            .required('Recipe details are required')
-                            .max(500, 'Details must be less than 500 characters')
-                            .min(5, 'Recipe details must be at least 5 characters'),
-                    })
-                )
-                .min(1, 'At least one meal is required')
-        });
-
-        const initialValues = {
+        const [formState, setFormState] = useState({
             planName: '',
             dietType: 'Vegan',
             calories: 1800,
             notes: '',
-            imageUrl: '',
-            meals: [{ mealName: '', calories: '', details: '' }]
-        };
+        });
+        const [mealEntries, setMealEntries] = useState([{ mealName: '', calories: '', details: '' }]);
+        const [errors, setErrors] = useState({});
+        const [message, setMessage] = useState('');
 
-        const removeMealEntry = (arrayHelpers, index) => {
-            if (arrayHelpers.form.values.meals.length > 1) {
-                arrayHelpers.remove(index);
+        const handleFormChange = (e) => {
+            const { id, value } = e.target;
+            setFormState(prev => ({ ...prev, [id]: value }));
+            // Clear error when user starts typing
+            if (errors[id]) {
+                setErrors(prev => ({ ...prev, [id]: null }));
             }
         };
 
-        const onSubmit = async (values, { setSubmitting, resetForm }) => {
-            // Clear any previous messages
-            setMessage('');
-            lastSubmitCountRef.current = 0; // Reset for next submit attempt
-
-            if (!selectedClient) {
-                setMessage('No client selected. Please select a client first.');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setSubmitting(false);
-                return;
+        const handleMealChange = (index, field, value) => {
+            const newMeals = [...mealEntries];
+            newMeals[index][field] = value;
+            setMealEntries(newMeals);
+            // Clear meal errors when user starts typing
+            if (errors[`meal_${index}_${field}`]) {
+                setErrors(prev => ({ ...prev, [`meal_${index}_${field}`]: null }));
             }
+        };
 
-            // Check if a plan with the same name already exists
-            const existingPlan = availablePlans.find(plan => 
-                plan.planName.toLowerCase() === values.planName.trim().toLowerCase()
-            );
-            
-            if (existingPlan) {
-                setMessage('A plan with this name already exists. Please choose a different name.');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setSubmitting(false);
-                return;
-            }
+        const addMealEntry = () => {
+            setMealEntries(prev => [...prev, { mealName: '', calories: '', details: '' }]);
+        };
 
-            setMessage('Adding meal plans...');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            try {
-                const planData = {
-                    planName: values.planName.trim(),
-                    dietType: values.dietType,
-                    calories: parseInt(values.calories) || 0,
-                    notes: values.notes,
-                    imageUrl: values.imageUrl,
-                    meals: values.meals.map(m => ({
-                        name: m.mealName.trim(),
-                        calories: parseInt(m.calories) || 0,
-                        details: m.details,
-                    })),
-                    dietitianId: user.id,
-                    userId: selectedClient.id
-                };
-
-                const response = await axios.post('/api/meal-plans', planData, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.data.success) {
-                    // Add the new plan to availablePlans
-                    const newPlan = {
-                        ...response.data.data,
-                        id: response.data.data._id,
-                        assignedDates: []
-                    };
-                    setAvailablePlans(prev => [...prev, newPlan]);
-                    setView('CLIENT_DASHBOARD');
-                    resetForm(); // Reset form after successful submission
-                } else {
-                    throw new Error(response.data.message || 'Failed to create meal plan');
+        const removeMealEntry = (index) => {
+            setMealEntries(prev => prev.filter((_, i) => i !== index));
+            // Clear any errors for this meal
+            const newErrors = { ...errors };
+            Object.keys(newErrors).forEach(key => {
+                if (key.startsWith(`meal_${index}_`)) {
+                    delete newErrors[key];
                 }
-            } catch (error) {
-                console.error('Error creating meal plan:', error);
-                setMessage(`Error: ${error.response?.data?.message || error.message || 'Failed to create meal plan'}`);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            } finally {
-                setSubmitting(false);
-            }
+            });
+            setErrors(newErrors);
         };
+
+        const validateForm = () => {
+            const newErrors = {};
+
+            // Validate plan name
+            if (!formState.planName.trim()) {
+                newErrors.planName = 'Plan name is required';
+            }
+
+            // Validate calories
+            const calories = parseInt(formState.calories);
+            if (!calories || calories < 500 || calories > 5000) {
+                newErrors.calories = 'Calories must be between 500 and 5000';
+            }
+
+            // Validate meal entries
+            mealEntries.forEach((meal, index) => {
+                if (!meal.mealName.trim()) {
+                    newErrors[`meal_${index}_mealName`] = 'Meal name is required';
+                }
+                const mealCalories = parseInt(meal.calories);
+                if (!meal.calories || mealCalories < 0) {
+                    newErrors[`meal_${index}_calories`] = 'Approx. calories must be 0 or more';
+                }
+            });
+
+            // Check if at least one meal is defined
+            if (mealEntries.length === 0 || mealEntries.every(m => !m.mealName.trim())) {
+                newErrors.meals = 'At least one meal with a name is required';
+            }
+
+            setErrors(newErrors);
+            return Object.keys(newErrors).length === 0;
+        };
+
+        const handleSubmit = () => {
+            if (!validateForm()) {
+                // Scroll to top if validation errors
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setMessage('Please fix the validation mistakes before submitting.');
+                return;
+            }
+
+            setMessage('Creating meal plan...');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            handleSavePlan(formState, mealEntries, setErrors, setMessage);
+        };
+
+        const isSaveDisabled = loading;
 
         return (
             <div className="min-h-screen bg-linear-to-br from-slate-50 via-emerald-50 to-teal-50 pb-12 px-4 sm:px-6 lg:px-8">
@@ -1035,271 +1051,219 @@ const DietitianAddPlanForm = () => {
                         </div>
                     </div>
 
-                    <Formik
-                        initialValues={initialValues}
-                        validationSchema={validationSchema}
-                        onSubmit={onSubmit}
-                        validateOnChange={false}
-                        validateOnBlur={false}
-                    >
-                        {({ isSubmitting, values, errors, submitCount }) => {
-                            // Scroll to top when there are validation errors after submit attempt
-                            if (submitCount > lastSubmitCountRef.current && Object.keys(errors).length > 0) {
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                lastSubmitCountRef.current = submitCount;
-                            }
+                    {/* Global message */}
+                    {message && (
+                        <div
+                            aria-live="polite"
+                            className={`p-3 mb-5 text-center text-base font-medium rounded-lg shadow-sm w-full ${
+                                message.includes('successfully') || message.includes('Redirecting')
+                                    ? 'text-green-800 bg-green-100 border border-green-300'
+                                    : message.includes('Creating')
+                                    ? 'text-blue-800 bg-blue-100 border border-blue-300'
+                                    : 'text-red-800 bg-red-100 border border-red-300'
+                            }`}
+                            role="alert"
+                        >
+                            {message}
+                        </div>
+                    )}
 
-                            return (
-                            <Form className="space-y-6">
-                                {/* Global message */}
-                                {message && (
-                                    <div
-                                        aria-live="polite"
-                                        className={`p-3 mb-5 text-center text-base font-medium rounded-lg shadow-sm w-full ${
-                                            message.includes('successfully') || message.includes('added successfully')
-                                                ? 'text-green-800 bg-green-100 border border-green-300'
-                                                : message.includes('Adding')
-                                                ? 'text-blue-800 bg-blue-100 border border-blue-300'
-                                                : 'text-red-800 bg-red-100 border border-red-300'
+                    <div className="space-y-6">
+                        {/* Plan Details */}
+                        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
+                            <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                                <Icon name="Utensils" className="mr-3 text-emerald-600" />
+                                Plan Details
+                            </h2>
+                            <div className="grid md:grid-cols-3 gap-4">
+                                <label className="block">
+                                    <span className="text-sm font-medium text-slate-700">Plan Name *</span>
+                                    <input
+                                        type="text"
+                                        id="planName"
+                                        value={formState.planName}
+                                        onChange={handleFormChange}
+                                        className={`w-full mt-1 p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                            errors.planName ? 'border-red-500 bg-red-50' : 'border-slate-300'
                                         }`}
-                                        role="alert"
+                                        placeholder="e.g., Daily High Protein"
+                                        required
+                                    />
+                                    {errors.planName && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.planName}</p>
+                                    )}
+                                </label>
+                                <label className="block">
+                                    <span className="text-sm font-medium text-slate-700">Diet Type *</span>
+                                    <select
+                                        id="dietType"
+                                        value={formState.dietType}
+                                        onChange={handleFormChange}
+                                        className={`w-full mt-1 p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                            errors.dietType ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                        }`}
                                     >
-                                        {message}
-                                    </div>
-                                )}
+                                        {mealTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                                    </select>
+                                    {errors.dietType && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.dietType}</p>
+                                    )}
+                                </label>
+                                <label className="block">
+                                    <span className="text-sm font-medium text-slate-700">Daily Calories (kcal) *</span>
+                                    <input
+                                        type="number"
+                                        id="calories"
+                                        value={formState.calories}
+                                        onChange={handleFormChange}
+                                        className={`w-full mt-1 p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                            errors.calories ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                        }`}
+                                        min="500"
+                                        max="5000"
+                                    />
+                                    {errors.calories && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.calories}</p>
+                                    )}
+                                </label>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-4 mt-4">
+                                <label className="block">
+                                    <span className="text-sm font-medium text-slate-700">Plan Image URL</span>
+                                    <input
+                                        type="url"
+                                        id="imageUrl"
+                                        value={formState.imageUrl}
+                                        onChange={handleFormChange}
+                                        className="w-full mt-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                        placeholder="https://example.com/image.jpg"
+                                    />
+                                </label>
+                                <label className="block">
+                                    <span className="text-sm font-medium text-slate-700">Upload Image</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                // In a real app, you'd upload to a server and get back a URL
+                                                // For now, we'll just create a data URL
+                                                const reader = new FileReader();
+                                                reader.onload = (e) => {
+                                                    setFormState(prev => ({ ...prev, imageUrl: e.target.result }));
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                        className="w-full mt-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                                    />
+                                </label>
+                            </div>
+                            <label className="block mt-4">
+                                <span className="text-sm font-medium text-slate-700">General Notes</span>
+                                <textarea
+                                    id="notes"
+                                    value={formState.notes}
+                                    onChange={handleFormChange}
+                                    className="w-full mt-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-y"
+                                    rows="3"
+                                    placeholder="Important notes: Drink 3L water, avoid sugars, etc."
+                                />
+                            </label>
+                        </div>
 
-                                {/* Validation error message */}
-                                {submitCount > 0 && Object.keys(errors).length > 0 && !message && (
-                                    <div
-                                        aria-live="polite"
-                                        className="p-3 mb-5 text-center text-base font-medium rounded-lg shadow-sm w-full text-red-800 bg-red-100 border border-red-300"
-                                        role="alert"
-                                    >
-                                        Please fill missing fields
-                                    </div>
-                                )}
-
-                                {/* Plan Details */}
-                                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
-                                    <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
-                                        <Icon name="Utensils" className="mr-3 text-emerald-600" />
-                                        Plan Details
-                                    </h2>
-
-                                    <div className="grid md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label htmlFor="planName" className="block text-sm font-medium text-slate-700 mb-1">
-                                                Plan Name *
-                                            </label>
-                                            <Field
-                                                id="planName"
-                                                name="planName"
-                                                type="text"
-                                                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-                                                    errors.planName ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                                                }`}
-                                                placeholder="e.g., Daily High Protein"
-                                            />
-                                            <ErrorMessage name="planName" component="div" className="text-red-500 text-xs mt-1" />
-                                        </div>
-
-                                        <div>
-                                            <label htmlFor="dietType" className="block text-sm font-medium text-slate-700 mb-1">
-                                                Diet Type *
-                                            </label>
-                                            <Field
-                                                as="select"
-                                                id="dietType"
-                                                name="dietType"
-                                                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-                                                    errors.dietType ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                                                }`}
+                        {/* Meal Entries */}
+                        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-bold text-slate-800 flex items-center">
+                                    <Icon name="Utensils" className="mr-3 text-emerald-600" />
+                                    Meal Entries
+                                </h2>
+                                <button onClick={addMealEntry} className="flex items-center px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors duration-200 font-medium">
+                                    <Icon name="Plus" className="mr-2" /> Add Meal
+                                </button>
+                            </div>
+                            <div className="space-y-4">
+                                {mealEntries.length === 0 && <p className="text-center text-slate-500 italic py-8">No meals defined yet.</p>}
+                                {mealEntries.map((meal, index) => (
+                                     <div key={index} className="p-4 border border-slate-200 rounded-xl bg-slate-50 relative">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="font-semibold text-emerald-600">Meal {index + 1}</h4>
+                                            <button
+                                                onClick={() => removeMealEntry(index)}
+                                                className="text-red-500 hover:text-red-700 transition p-1"
+                                                title="Remove meal"
                                             >
-                                                {mealTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                                            </Field>
-                                            <ErrorMessage name="dietType" component="div" className="text-red-500 text-xs mt-1" />
+                                                <Icon name="X" />
+                                            </button>
                                         </div>
-
-                                        <div>
-                                            <label htmlFor="calories" className="block text-sm font-medium text-slate-700 mb-1">
-                                                Daily Calories (kcal) *
-                                            </label>
-                                            <Field
-                                                id="calories"
-                                                name="calories"
-                                                type="number"
-                                                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-                                                    errors.calories ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                                                }`}
-                                                min="500"
-                                                max="5000"
-                                            />
-                                            <ErrorMessage name="calories" component="div" className="text-red-500 text-xs mt-1" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-4 mt-4">
-                                        <div>
-                                            <label htmlFor="imageUrl" className="block text-sm font-medium text-slate-700 mb-1">
-                                                Plan Image URL
-                                            </label>
-                                            <Field
-                                                id="imageUrl"
-                                                name="imageUrl"
-                                                type="url"
-                                                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-                                                    errors.imageUrl ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                                                }`}
-                                                placeholder="https://example.com/image.jpg"
-                                            />
-                                            <ErrorMessage name="imageUrl" component="div" className="text-red-500 text-xs mt-1" />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                                Upload Image
-                                            </label>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (file) {
-                                                    // File upload functionality would need to be implemented with Formik setFieldValue
-                                                    // For now, this is a placeholder
-                                                    console.log('File selected:', file.name);
-                                                }
-                                            }}
-                                                className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4">
-                                        <label htmlFor="notes" className="block text-sm font-medium text-slate-700 mb-1">
-                                            General Notes
-                                        </label>
-                                        <Field
-                                            as="textarea"
-                                            id="notes"
-                                            name="notes"
-                                            className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-y ${
-                                                errors.notes ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                                            }`}
-                                            rows="3"
-                                            placeholder="Important notes: Drink 3L water, avoid sugars, etc."
-                                        />
-                                        <ErrorMessage name="notes" component="div" className="text-red-500 text-xs mt-1" />
-                                    </div>
-                                </div>
-
-                                {/* Meal Entries */}
-                                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                                            <Icon name="Utensils" className="mr-3 text-emerald-600" />
-                                            Meal Entries
-                                        </h2>
-                                        <FieldArray name="meals">
-                                            {({ push }) => (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => push({ mealName: '', calories: '', details: '' })}
-                                                    className="flex items-center px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors duration-200 font-medium"
-                                                >
-                                                    <Icon name="Plus" className="mr-2" /> Add Meal
-                                                </button>
-                                            )}
-                                        </FieldArray>
-                                    </div>
-
-                                    <FieldArray name="meals">
-                                        {({ remove, form }) => (
-                                            <div className="space-y-4">
-                                                {values.meals.length === 0 && (
-                                                    <p className="text-center text-slate-500 italic py-8">No meals defined yet.</p>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <label className="block col-span-2">
+                                                <span className="text-xs font-medium text-slate-700">Meal Name (e.g., Lunch) *</span>
+                                                <input
+                                                    type="text"
+                                                    value={meal.mealName}
+                                                    onChange={(e) => handleMealChange(index, 'mealName', e.target.value)}
+                                                    className={`w-full mt-1 p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                                        errors[`meal_${index}_mealName`] ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                                    }`}
+                                                    placeholder="e.g., Chicken Salad"
+                                                    required
+                                                />
+                                                {errors[`meal_${index}_mealName`] && (
+                                                    <p className="text-red-500 text-xs mt-1">{errors[`meal_${index}_mealName`]}</p>
                                                 )}
-                                                {values.meals.map((meal, index) => (
-                                                    <div key={index} className="p-4 border border-slate-200 rounded-xl bg-slate-50 relative">
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            <h4 className="font-semibold text-emerald-600">Meal {index + 1}</h4>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeMealEntry({ remove, form }, index)}
-                                                                className="text-red-500 hover:text-red-700 transition p-1"
-                                                                title="Remove meal"
-                                                                disabled={values.meals.length === 1}
-                                                            >
-                                                                <Icon name="X" />
-                                                            </button>
-                                                        </div>
-                                                        <div className="grid grid-cols-3 gap-4">
-                                                            <div className="col-span-2">
-                                                                <label className="block text-xs font-medium text-slate-700 mb-1">
-                                                                    Meal Name (e.g., Lunch) *
-                                                                </label>
-                                                                <Field
-                                                                    name={`meals.${index}.mealName`}
-                                                                    type="text"
-                                                                    className={`w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-                                                                        form.errors.meals?.[index]?.mealName ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                                                                    }`}
-                                                                    placeholder="e.g., Chicken Salad"
-                                                                />
-                                                                <ErrorMessage name={`meals.${index}.mealName`} component="div" className="text-red-500 text-xs mt-1" />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-slate-700 mb-1">
-                                                                    Approx. Calories *
-                                                                </label>
-                                                                <Field
-                                                                    name={`meals.${index}.calories`}
-                                                                    type="number"
-                                                                    className={`w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-                                                                        form.errors.meals?.[index]?.calories ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                                                                    }`}
-                                                                    min="0"
-                                                                />
-                                                                <ErrorMessage name={`meals.${index}.calories`} component="div" className="text-red-500 text-xs mt-1" />
-                                                            </div>
-                                                        </div>
-                                                        <div className="mt-2">
-                                                            <label className="block text-xs font-medium text-slate-700 mb-1">
-                                                                Details/Recipe *
-                                                            </label>
-                                                            <Field
-                                                                as="textarea"
-                                                                name={`meals.${index}.details`}
-                                                                className={`w-full p-2 border rounded-lg text-sm resize-y focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-                                                                    form.errors.meals?.[index]?.details ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                                                                }`}
-                                                                rows="2"
-                                                                placeholder="Recipe or ingredients: 150g chicken, 50g lettuce, dressing."
-                                                            />
-                                                            <ErrorMessage name={`meals.${index}.details`} component="div" className="text-red-500 text-xs mt-1" />
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </FieldArray>
-                                </div>
+                                            </label>
+                                            <label className="block">
+                                                <span className="text-xs font-medium text-slate-700">Approx. Calories *</span>
+                                                <input
+                                                    type="number"
+                                                    value={meal.calories}
+                                                    onChange={(e) => handleMealChange(index, 'calories', e.target.value)}
+                                                    className={`w-full mt-1 p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                                        errors[`meal_${index}_calories`] ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                                    }`}
+                                                    min="0"
+                                                    required
+                                                />
+                                                {errors[`meal_${index}_calories`] && (
+                                                    <p className="text-red-500 text-xs mt-1">{errors[`meal_${index}_calories`]}</p>
+                                                )}
+                                            </label>
+                                        </div>
+                                        <label className="block mt-2">
+                                            <span className="text-xs font-medium text-slate-700">Details/Recipe</span>
+                                            <textarea
+                                                value={meal.details}
+                                                onChange={(e) => handleMealChange(index, 'details', e.target.value)}
+                                                className={`w-full mt-1 p-2 border rounded-lg text-sm resize-y focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                                                    errors[`meal_${index}_details`] ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                                                }`}
+                                                rows="2"
+                                                placeholder="Recipe or ingredients: 150g chicken, 50g lettuce, dressing."
+                                            />
+                                            {errors[`meal_${index}_details`] && (
+                                                <p className="text-red-500 text-xs mt-1">{errors[`meal_${index}_details`]}</p>
+                                            )}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
 
-                                {/* Save Button */}
-                                <div className="flex justify-end pt-4 border-t border-slate-200">
-                                    <button
-                                        type="submit"
-                                        className="flex items-center px-6 py-3 bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-lg disabled:bg-slate-400"
-                                        disabled={isSubmitting || loading}
-                                    >
-                                        {isSubmitting || loading ? <Icon name="Loader2" className="mr-2 animate-spin" /> : <Icon name="Save" className="mr-2" />}
-                                        Create Plan
-                                    </button>
-                                </div>
-                            </Form>
-                            );
-                        }}
-                    </Formik>
+                        {/* Save Button */}
+                        <div className="flex justify-end pt-4 border-t border-slate-200">
+                            <button
+                                onClick={handleSubmit}
+                                className="flex items-center px-6 py-3 bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-lg disabled:bg-slate-400"
+                                disabled={isSaveDisabled}
+                            >
+                                {loading ? <Icon name="Loader2" className="mr-2" /> : <Icon name="Save" className="mr-2" />}
+                                Create Plan
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

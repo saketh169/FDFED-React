@@ -33,23 +33,23 @@ const requireAdmin = (req, res, next) => {
 router.use(requireAdmin);
 
 // Get all users by role (with optional search)
-router.get('/:role-list', getUsersByRole);
-router.get('/:role-list/search', getUsersByRole); // Alternative search endpoint
+router.get('/crud/:role-list', getUsersByRole);
+router.get('/crud/:role-list/search', getUsersByRole); // Alternative search endpoint
 
 // Get user details
-router.get('/:role-list/:id', getUserDetails);
+router.get('/crud/:role-list/:id', getUserDetails);
 
 // Remove a user
-router.delete('/:role-list/:id', removeUser);
+router.delete('/crud/:role-list/:id', removeUser);
 
 // Get removed accounts
-router.get('/removed-accounts', getRemovedAccounts);
-router.get('/removed-accounts/search', getRemovedAccounts); // Alternative search endpoint
+router.get('/crud/removed-accounts', getRemovedAccounts);
+router.get('/crud/removed-accounts/search', getRemovedAccounts); // Alternative search endpoint
 
 // Restore a removed account
-router.post('/removed-accounts/:id/restore', restoreAccount);
+router.post('/crud/removed-accounts/:id/restore', restoreAccount);
 
 // Permanently delete a removed account
-router.delete('/removed-accounts/:id', permanentDeleteAccount);
+router.delete('/crud/removed-accounts/:id', permanentDeleteAccount);
 
 module.exports = router;

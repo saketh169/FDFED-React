@@ -1,24 +1,29 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// File Schema (Subdocument for uploaded files)
-const FileSchema = new Schema({
-    fieldName: { type: String, required: true },
-    originalName: { type: String, required: true },
-    filename: { type: String, required: true },
-    path: { type: String, required: true },
-    size: { type: Number },
-    mimetype: { type: String }
-}, { _id: true });
-
-// Main Lab Report Schema
 const LabReportSchema = new Schema({
-    clientId: {
+    userId: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
+    dietitianId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Dietitian'
+    },
     clientName: {
+        type: String,
+        required: true
+    },
+    clientAge: {
+        type: Number,
+        required: true
+    },
+    clientPhone: {
+        type: String,
+        required: true
+    },
+    clientAddress: {
         type: String,
         required: true
     },
@@ -75,8 +80,16 @@ const LabReportSchema = new Schema({
         spO2: { type: Number },
         restingHeartRate: { type: Number }
     },
-    // File uploads
-    uploadedFiles: [FileSchema],
+    // File uploads - embedded directly in main schema
+    uploadedFiles: [{
+        fieldName: { type: String, required: true },
+        originalName: { type: String, required: true },
+        filename: { type: String, required: true },
+        data: { type: Buffer, required: true }, // File data as buffer
+        size: { type: Number, required: true },
+        mimetype: { type: String, required: true },
+        uploadedAt: { type: Date, default: Date.now }
+    }],
     // Status
     status: {
         type: String,
@@ -96,10 +109,10 @@ const LabReportSchema = new Schema({
 });
 
 // Indexes for better query performance
-LabReportSchema.index({ clientId: 1 });
+LabReportSchema.index({ userId: 1 });
 LabReportSchema.index({ createdAt: -1 });
 LabReportSchema.index({ status: 1 });
-LabReportSchema.index({ 'reviewedBy.dietitianId': 1 });
+LabReportSchema.index({ dietitianId: 1 });
 
 // Virtual for formatted submission date
 LabReportSchema.virtual('formattedDate').get(function() {

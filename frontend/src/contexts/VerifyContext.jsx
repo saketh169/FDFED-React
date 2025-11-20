@@ -21,6 +21,7 @@ export const VerifyProvider = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [token, setToken] = useState(null);
@@ -54,8 +55,9 @@ export const VerifyProvider = ({
 
         if (response.ok) {
           const data = await response.json();
-          const finalStatus = data.verificationStatus?.finalReport || 'Not Received';
-          setIsVerified(finalStatus === 'Verified');
+          const finalStatus = data.verificationStatus?.finalReport || 'pending';
+          setVerificationStatus(finalStatus);
+          setIsVerified(finalStatus === 'verified');
         } else {
           setError('Failed to check verification status');
         }
@@ -86,6 +88,7 @@ export const VerifyProvider = ({
   const value = {
     isAuthenticated,
     isVerified,
+    verificationStatus,
     token,
     loading,
     error,
@@ -108,8 +111,9 @@ export const VerifyProvider = ({
           .then(response => response.ok ? response.json() : null)
           .then(data => {
             if (data) {
-              const finalStatus = data.verificationStatus?.finalReport || 'Not Received';
-              setIsVerified(finalStatus === 'Verified');
+              const finalStatus = data.verificationStatus?.finalReport || 'pending';
+              setVerificationStatus(finalStatus);
+              setIsVerified(finalStatus === 'verified');
             }
           })
           .catch(err => {
@@ -207,10 +211,40 @@ export const VerifyProvider = ({
     );
   }
 
-  // Not Verified UI
+  // Not Verified UI - Handle different statuses
   if (!isVerified) {
     const roleDisplayName = requiredRole === 'dietitian' ? 'Dietitian' : 'Organization';
 
+    // Rejected status - allow resubmitting documents
+    if (verificationStatus === 'rejected') {
+      return (
+        <VerifyContext.Provider value={value}>
+          {/* Backdrop with blur */}
+          <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm"></div>
+
+          {/* Rejected Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md text-center border-l-4 border-red-500 relative">
+              <div className="text-6xl mb-4 text-red-500">
+                <i className="fas fa-times-circle"></i>
+              </div>
+              <h2 className="text-2xl font-bold text-red-600 mb-3">Application Rejected</h2>
+              <p className="text-gray-600 mb-6">
+                Your {roleDisplayName.toLowerCase()} application has been rejected. Please review and resubmit your documents.
+              </p>
+              <a
+                href={`/upload-documents?role=${requiredRole}`}
+                className="inline-block bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-300"
+              >
+                <i className="fas fa-upload mr-2"></i> Resubmit Documents
+              </a>
+            </div>
+          </div>
+        </VerifyContext.Provider>
+      );
+    }
+
+    // Pending status - show verification required
     return (
       <VerifyContext.Provider value={value}>
         {/* Backdrop with blur */}

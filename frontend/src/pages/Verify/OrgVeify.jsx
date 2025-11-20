@@ -485,10 +485,12 @@ const OrgVerify = () => {
                 organizations.map(o => {
                 const overallStatus =
                   o.verificationStatus.finalReport || 'Not Received'
+                const documentUploadStatus = o.documentUploadStatus || 'pending'
                 const displayStatus =
+                  documentUploadStatus === 'verified' ? 'Verified' : 
                   overallStatus === 'Not Received' ? 'Pending' : overallStatus
                 const statusColor =
-                  overallStatus === 'Verified'
+                  documentUploadStatus === 'verified'
                     ? 'text-emerald-600'
                     : overallStatus === 'Rejected'
                     ? 'text-red-600'
@@ -507,7 +509,7 @@ const OrgVerify = () => {
                             <i className='fas fa-building text-emerald-600 text-lg'></i>
                           </div>
                           <div>
-                            <div className='font-bold text-slate-800 text-lg'>{o.org_name}</div>
+                            <div className='font-bold text-slate-800 text-lg'>{o.name || o.org_name}</div>
                             <div className='text-sm text-slate-500'>Organization</div>
                           </div>
                         </div>
@@ -515,7 +517,7 @@ const OrgVerify = () => {
                       <td className='py-3 px-8'>
                         <div className='flex items-center'>
                           <div className={`p-2 rounded-xl mr-3 ${
-                            overallStatus === 'Verified'
+                            documentUploadStatus === 'verified'
                               ? 'bg-emerald-100'
                               : overallStatus === 'Rejected'
                               ? 'bg-red-100'
@@ -523,7 +525,7 @@ const OrgVerify = () => {
                           }`}>
                             <i
                               className={`fas fa-${STATUS_ICONS[overallStatus]} ${
-                                overallStatus === 'Verified'
+                                documentUploadStatus === 'verified'
                                   ? 'text-emerald-600'
                                   : overallStatus === 'Rejected'
                                   ? 'text-red-600'
@@ -551,7 +553,7 @@ const OrgVerify = () => {
                                   <h3 className='text-xl font-bold text-slate-800'>
                                     Document Verification
                                   </h3>
-                                  <p className='text-slate-600'>Review and verify documents for {o.org_name}</p>
+                                  <p className='text-slate-600'>Review and verify documents for {o.name || o.org_name}</p>
                                 </div>
                               </div>
 

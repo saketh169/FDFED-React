@@ -6,6 +6,7 @@ import { useAuthContext } from '../hooks/useAuthContext';
 
 const DietitianSetup = () => {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,14 +16,22 @@ const DietitianSetup = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const userId = localStorage.getItem('userId');
         const token = localStorage.getItem('authToken_dietitian');
         
-        if (!userId || !token) {
+        if (!token) {
           return;
         }
 
-        const response = await axios.get(`/api/dietitians/profile/${userId}`, {
+        // Decode JWT to get roleId (the actual dietitian document ID)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.roleId; // Use roleId instead of userId
+        
+        if (!userId) {
+          console.error('No roleId found in token');
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5000/api/dietitians/profile/${userId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -40,10 +49,10 @@ const DietitianSetup = () => {
   const { register, handleSubmit, formState: { errors, isSubmitting }, control, reset } = useForm({
     defaultValues: {
       // Step 1 - Dietitian Details
-      name: '',
-      email: '',
-      age: '',
-      phone: '',
+      name: user?.name || '',
+      email: user?.email || '',
+      age: user?.age || '',
+      phone: user?.phone || '',
       specializationDomain: '',
       specialization: '',
       experience: '',
@@ -73,38 +82,38 @@ const DietitianSetup = () => {
     mode: 'onBlur'
   });
 
-  // Update form with fetched user data
+  // Update form with fetched user data and auth context data
   useEffect(() => {
-    if (userProfile) {
-      reset({
-        name: userProfile.name || '',
-        email: userProfile.email || '',
-        phone: userProfile.phone || '',
-        age: userProfile.age || '',
-        specializationDomain: userProfile.specializationDomain || '',
-        specialization: Array.isArray(userProfile.specialization) ? userProfile.specialization.join(', ') : '',
-        experience: userProfile.experience || '',
-        fees: userProfile.fees || '',
-        languages: Array.isArray(userProfile.languages) ? userProfile.languages.join(', ') : '',
-        location: userProfile.location || '',
-        about: userProfile.about || '',
-        education: Array.isArray(userProfile.education) ? userProfile.education.join(', ') : '',
-        title: userProfile.title || '',
-        description: userProfile.description || '',
-        specialties: Array.isArray(userProfile.specialties) ? userProfile.specialties.join(', ') : '',
-        expertise: Array.isArray(userProfile.expertise) ? userProfile.expertise.join(', ') : '',
-        certifications: userProfile.certifications || [{ name: '', year: '', issuer: '' }],
-        awards: userProfile.awards || [{ name: '', year: '', description: '' }],
-        publications: userProfile.publications || [{ title: '', year: '', link: '' }],
-        consultationTypes: userProfile.consultationTypes || [{ type: '', duration: '', fee: '' }],
-        workingDays: userProfile.availability?.workingDays?.join(', ') || '',
-        workingHoursStart: userProfile.availability?.workingHours?.start || '',
-        workingHoursEnd: userProfile.availability?.workingHours?.end || '',
-        linkedin: userProfile.socialMedia?.linkedin || '',
-        twitter: userProfile.socialMedia?.twitter || '',
-      });
-    }
-  }, [userProfile, reset]);
+    const formData = {
+      name: user?.name || userProfile?.name || '',
+      email: user?.email || userProfile?.email || '',
+      phone: user?.phone || userProfile?.phone || '',
+      age: user?.age || userProfile?.age || '',
+      specializationDomain: userProfile?.specializationDomain || '',
+      specialization: Array.isArray(userProfile?.specialization) ? userProfile.specialization.join(', ') : '',
+      experience: userProfile?.experience || '',
+      fees: userProfile?.fees || '',
+      languages: Array.isArray(userProfile?.languages) ? userProfile.languages.join(', ') : '',
+      location: userProfile?.location || '',
+      about: userProfile?.about || '',
+      education: Array.isArray(userProfile?.education) ? userProfile.education.join(', ') : '',
+      title: userProfile?.title || '',
+      description: userProfile?.description || '',
+      specialties: Array.isArray(userProfile?.specialties) ? userProfile.specialties.join(', ') : '',
+      expertise: Array.isArray(userProfile?.expertise) ? userProfile.expertise.join(', ') : '',
+      certifications: userProfile?.certifications || [{ name: '', year: '', issuer: '' }],
+      awards: userProfile?.awards || [{ name: '', year: '', description: '' }],
+      publications: userProfile?.publications || [{ title: '', year: '', link: '' }],
+      consultationTypes: userProfile?.consultationTypes || [{ type: '', duration: '', fee: '' }],
+      workingDays: userProfile?.availability?.workingDays?.join(', ') || '',
+      workingHoursStart: userProfile?.availability?.workingHours?.start || '',
+      workingHoursEnd: userProfile?.availability?.workingHours?.end || '',
+      linkedin: userProfile?.socialMedia?.linkedin || '',
+      twitter: userProfile?.socialMedia?.twitter || '',
+    };
+
+    reset(formData);
+  }, [user, userProfile, reset]);
 
   const { fields: certFields, append: appendCert, remove: removeCert } = useFieldArray({
     control,
@@ -135,56 +144,68 @@ const DietitianSetup = () => {
       setError('');
 
       try {
-        // Get user ID from localStorage
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-          setError('User ID not found. Please sign up first.');
-          return;
-        }
-
-        // Get auth token
+        // Get user ID from JWT token (roleId)
         const token = localStorage.getItem('authToken_dietitian');
         if (!token) {
           setError('Authentication token not found. Please sign in.');
           return;
         }
 
+        // Decode JWT to get roleId
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.roleId;
+
+        if (!userId) {
+          setError('User ID not found in token. Please sign in again.');
+          return;
+        }
+
+        // Validate required fields
+        if (!data.name || !data.email || !data.phone || !data.age) {
+          setError('Basic information (name, email, phone, age) is required');
+          return;
+        }
+
         // Process the data to match schema
         const processedData = {
-          name: data.name,
-          age: data.age,
-          specialization: data.specialization ? data.specialization.split(',').map(s => s.trim()) : [],
-          experience: data.experience,
-          fees: data.fees,
-          languages: data.languages ? data.languages.split(',').map(s => s.trim()) : [],
-          location: data.location,
+          name: data.name.trim(),
+          email: data.email.trim(),
+          phone: data.phone.trim(),
+          age: parseInt(data.age),
+          specialization: data.specialization ? data.specialization.split(',').map(s => s.trim()).filter(s => s) : [],
+          experience: parseInt(data.experience),
+          fees: parseInt(data.fees),
+          languages: data.languages ? data.languages.split(',').map(s => s.trim()).filter(s => s) : [],
+          location: data.location?.trim(),
           online: data.onlineConsultation || false,
           offline: data.offlineConsultation || false,
-          education: data.education ? data.education.split(',').map(s => s.trim()) : [],
-          about: data.about,
-          title: data.title,
-          description: data.description,
-          specialties: data.specialties ? data.specialties.split(',').map(s => s.trim()) : [],
-          expertise: data.expertise ? data.expertise.split(',').map(s => s.trim()) : [],
-          certifications: data.certifications || [],
-          awards: data.awards || [],
-          publications: data.publications || [],
-          consultationTypes: data.consultationTypes || [],
+          education: data.education ? data.education.split(',').map(s => s.trim()).filter(s => s) : [],
+          about: data.about?.trim(),
+          title: data.title?.trim(),
+          description: data.description?.trim(),
+          specialties: data.specialties ? data.specialties.split(',').map(s => s.trim()).filter(s => s) : [],
+          expertise: data.expertise ? data.expertise.split(',').map(s => s.trim()).filter(s => s) : [],
+          certifications: data.certifications?.filter(cert => cert.name?.trim() && cert.year && cert.issuer?.trim()) || [],
+          awards: data.awards?.filter(award => award.name?.trim() && award.year && award.description?.trim()) || [],
+          publications: data.publications?.filter(pub => pub.title?.trim() && pub.year && pub.link?.trim()) || [],
+          consultationTypes: data.consultationTypes?.filter(ct => ct.type?.trim() && ct.duration && ct.fee) || [],
           availability: {
-            workingDays: data.workingDays ? data.workingDays.split(',').map(s => s.trim()) : [],
+            workingDays: data.workingDays ? data.workingDays.split(',').map(s => s.trim()).filter(s => s) : [],
             workingHours: {
-              start: data.workingHoursStart,
-              end: data.workingHoursEnd
+              start: data.workingHoursStart?.trim(),
+              end: data.workingHoursEnd?.trim()
             }
           },
           socialMedia: {
-            linkedin: data.linkedin,
-            twitter: data.twitter
+            linkedin: data.linkedin?.trim(),
+            twitter: data.twitter?.trim()
           }
         };
 
-        // Send POST request to update profile
-        const response = await axios.post(`/api/dietitians/${userId}`, processedData, {
+        console.log('Submitting dietitian profile data:', processedData);
+
+        // Send POST request to setup profile
+        const response = await axios.post(`http://localhost:5000/api/dietitian-profile-setup/${userId}`, processedData, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -259,7 +280,7 @@ const DietitianSetup = () => {
                   </label>
                   <input
                     type="email"
-                    {...register('email', { required: 'Email is required', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email' } })}
+                    {...register('email')}
                     className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-gray-100 cursor-not-allowed transition-all"
                     placeholder="e.g., john@example.com"
                     readOnly
@@ -290,7 +311,7 @@ const DietitianSetup = () => {
                   </label>
                   <input
                     type="tel"
-                    {...register('phone', { required: 'Phone is required', pattern: { value: /^[0-9]{10}$/, message: 'Must be 10 digits' } })}
+                    {...register('phone')}
                     className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-gray-100 cursor-not-allowed transition-all"
                     placeholder="e.g., 9876543210"
                     readOnly

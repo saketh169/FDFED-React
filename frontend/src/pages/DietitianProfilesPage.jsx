@@ -162,6 +162,9 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
           );
         }
 
+        // Filter out dietitians with empty specialization arrays
+        data = data.filter((d) => d.specialties && d.specialties.length > 0);
+
         setAllDietitians(data);
         setFilteredDietitians(data);
       } catch (error) {

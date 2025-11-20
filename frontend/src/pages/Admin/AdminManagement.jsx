@@ -193,19 +193,19 @@ const AdminManagement = () => {
 
     // Fetch all active users by role
     const fetchUsersByRole = useCallback(async (role) => {
-        const endpoint = `/api/${role}-list`;
+        const endpoint = `/api/crud/${role}-list`;
         return await fetchData(endpoint);
     }, [fetchData]);
 
     // Search users by role
     const searchUsersByRole = useCallback(async (role, query) => {
-        const endpoint = `/api/${role}-list/search?q=${encodeURIComponent(query)}`;
+        const endpoint = `/api/crud/${role}-list/search?q=${encodeURIComponent(query)}`;
         return await fetchData(endpoint);
     }, [fetchData]);
 
     // Fetch removed accounts
     const fetchRemovedAccountsData = useCallback(async (query = '') => {
-        const endpoint = query ? `/api/removed-accounts/search?q=${encodeURIComponent(query)}` : '/api/removed-accounts';
+        const endpoint = query ? `/api/crud/removed-accounts/search?q=${encodeURIComponent(query)}` : '/api/crud/removed-accounts';
         return await fetchData(endpoint);
     }, [fetchData]);
 
@@ -213,7 +213,7 @@ const AdminManagement = () => {
     const removeUserAPI = async (role, id) => {
         const token = localStorage.getItem('authToken_admin');
         try {
-            const response = await fetch(`/api/${role}-list/${id}`, {
+            const response = await fetch(`/api/crud/${role}-list/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -237,7 +237,7 @@ const AdminManagement = () => {
     const restoreAccountAPI = async (id) => {
         const token = localStorage.getItem('authToken_admin');
         try {
-            const response = await fetch(`/api/removed-accounts/${id}/restore`, {
+            const response = await fetch(`/api/crud/removed-accounts/${id}/restore`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -824,10 +824,10 @@ const AdminManagement = () => {
             
             {/* API Route References (Commented for clarity) */}
             {/*
-                // User/Client: /users-list, /users-list/search?q=..., /users-list/:id (DELETE)
-                // Dietitian: /dietitian-list, /dietitian-list/search?q=..., /dietitian-list/:id (DELETE)
+                // User/Client: /crud/users-list, /crud/users-list/search?q=..., /crud/users-list/:id (DELETE)
+                // Dietitian: /crud/dietitian-list, /crud/dietitian-list/search?q=..., /crud/dietitian-list/:id (DELETE)
                 // Admin/Org/Corp: Similar structure if deletion is required
-                // Removed: /removed-accounts, /removed-accounts/search?q=..., /removed-accounts/:id/restore (POST)
+                // Removed: /crud/removed-accounts, /crud/removed-accounts/search?q=..., /crud/removed-accounts/:id/restore (POST)
             */}
         </div>
     );

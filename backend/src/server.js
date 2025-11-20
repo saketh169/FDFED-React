@@ -14,7 +14,7 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const dietitianRoutes = require('./routes/dietitianRoutes');
 const mealPlanRoutes = require('./routes/mealPlanRoutes');
 const chatRoutes = require('./routes/chatRoutes');
-//const labReportRoutes = require('./routes/labReportRoutes');
+const labReportRoutes = require('./routes/labReportRoutes');
 
 
 // Load environment variables from .env file
@@ -65,11 +65,11 @@ app.use('/api/contact', contactusRoutes);
 // Booking routes mounted at '/api/bookings'
 app.use('/api/bookings', bookingRoutes);
 
-// CRUD routes mounted at '/api' for admin user management
-app.use('/api', crudRoutes);
-
 // Dietitian routes mounted at '/api'
 app.use('/api', dietitianRoutes);
+
+// CRUD routes mounted at '/api' for admin user management
+app.use('/api', crudRoutes);
 
 // Meal plan routes mounted at '/api/meal-plans'
 app.use('/api/meal-plans', mealPlanRoutes);
@@ -78,8 +78,7 @@ app.use('/api/meal-plans', mealPlanRoutes);
 app.use('/api/chat', chatRoutes);
 
 // Lab report routes mounted at '/api/lab-reports'
-//app.use('/api/lab-reports', labReportRoutes);
-
+app.use('/api/lab-reports', labReportRoutes);
 
 
 // Simple test route (kept from your original code)

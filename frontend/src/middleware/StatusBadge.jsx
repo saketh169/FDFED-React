@@ -25,7 +25,7 @@ const StatusBadge = ({ role }) => {
 
   const getStatusDisplay = () => {
     switch (status) {
-      case 'Verified':
+      case 'verified':
         if (role === 'dietitian') {
           return {
             bg: 'bg-green-100 text-green-800',
@@ -34,7 +34,7 @@ const StatusBadge = ({ role }) => {
             button: (
               <button
                 className="mt-3 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition shadow"
-                onClick={() => navigate('/dietitian/setup')}
+                onClick={() => navigate('/dietitian/profile-setup')}
               >
                 <i className="fas fa-arrow-right"></i> Complete Setup
               </button>
@@ -63,8 +63,19 @@ const StatusBadge = ({ role }) => {
           };
         }
         break;
-      case 'Pending':
-      case 'Received':
+      case 'pending':
+        const getVerifyRoute = () => {
+          switch (role) {
+            case 'dietitian':
+              return '/dietitian/doc-status';
+            case 'organization':
+              return '/organization/doc-status';
+            case 'corporatepartner':
+              return '/corporate/doc-status';
+            default:
+              return `/status/${role}`;
+          }
+        };
         return {
           bg: 'bg-yellow-100 text-yellow-800',
           icon: 'fas fa-clock',
@@ -72,13 +83,13 @@ const StatusBadge = ({ role }) => {
           button: (
             <button
               className="mt-3 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-full hover:bg-yellow-700 transition shadow"
-              onClick={() => navigate(`/status/${role}`)}
+              onClick={() => navigate(getVerifyRoute())}
             >
-              <i className="fas fa-eye"></i> View StatusBadge Details
+              <i className="fas fa-eye"></i> View Verify Status
             </button>
           ),
         };
-      case 'Rejected':
+      case 'rejected':
         return {
           bg: 'bg-red-100 text-red-800',
           icon: 'fas fa-times-circle',
@@ -89,20 +100,6 @@ const StatusBadge = ({ role }) => {
               onClick={() => navigate(`/upload-documents?role=${role}`)}
             >
               <i className="fas fa-upload"></i> Resubmit Documents
-            </button>
-          ),
-        };
-      case 'Not Received':
-        return {
-          bg: 'bg-blue-100 text-blue-800',
-          icon: 'fas fa-upload',
-          message: 'Please upload your verification documents to continue.',
-          button: (
-            <button
-              className="mt-3 px-4 py-2 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition shadow"
-              onClick={() => navigate('/upload-documents')}
-            >
-              <i className="fas fa-upload"></i> Upload Documents
             </button>
           ),
         };
@@ -154,11 +151,11 @@ const StatusBadge = ({ role }) => {
       <div className="grow flex flex-col justify-center items-center text-center">
         <div className={`p-3 rounded-lg w-full ${display.bg}`}>
           <i className={`${display.icon} mr-2 text-lg`}></i>
-          <span className="font-bold text-base">{status}</span>
+          <span className="font-bold text-base">{status.charAt(0).toUpperCase() + status.slice(1)}</span>
         </div>
         <p className="mt-3 text-gray-600">{display.message}</p>
         <p className="text-sm text-gray-500 mb-2">
-          Final report status: <strong>{status}</strong>
+          Document upload status: <strong>{status.charAt(0).toUpperCase() + status.slice(1)}</strong>
         </p>
         {display.button}
       </div>
