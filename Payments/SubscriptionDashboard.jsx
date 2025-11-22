@@ -35,9 +35,9 @@ const SubscriptionDashboard = () => {
       return;
     }
 
-    // Fetch subscription data using Redux thunks
-    dispatch(checkActiveSubscription());
-    dispatch(fetchPaymentHistory(5));
+    // Fetch subscription data using Redux thunks with error handling
+    dispatch(checkActiveSubscription()).catch(err => console.error('Failed to check subscription:', err));
+    dispatch(fetchPaymentHistory(5)).catch(err => console.error('Failed to fetch payment history:', err));
   }, [isAuthenticated, navigate, dispatch]);
 
   const handleCancelSubscription = async () => {
