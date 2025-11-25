@@ -42,9 +42,9 @@ const NavHeader = ({ renderActionButtons, handleScrollToTop }) => {
   const corporatePartnerNavLinks = [ 
     { name: 'Home', href: '/corporatepartner/home' },
     { name: 'Plans/Offers', href: '/corporatepartner/plans-offers' },
+    { name: 'Analytics', href: '/corporatepartner/analytics' },
     { name: 'Renewal', href: '/corporatepartner/renewal' },
     { name: 'Bookings', href: '/corporatepartner/bookings' },
-    { name: 'Chatbot', href: '/user/chatbot' },
 
   ];
 

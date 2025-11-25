@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Chart from "chart.js/auto";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { useAuthContext } from "../../hooks/useAuthContext";
+import {
+  fetchUserStats,
+  fetchUserGrowth,
+  fetchMembershipRevenue,
+  fetchConsultationRevenue,
+} from "../../redux/slices/analyticsSlice";
 
 // --- Mock Data & API Call Simulation ---
 const mockAdmin = {
@@ -20,34 +27,11 @@ const mockOrganizations = [
   { org_name: "NutriClinic Pvt Ltd", verificationStatus: { finalReport: "Not Received" } },
 ];
 
-const mockStats = {
-  clients: new Array(50).fill(0), // Mock 50 clients
-  dietitians: new Array(15).fill(0), // Mock 15 dietitians
-  activePlans: 35,
-};
-
 // Mock function to simulate fetching organizations
 const mockFetchOrganizations = async () => {
   await new Promise((resolve) => setTimeout(resolve, 500));
   return mockOrganizations;
 };
-
-// Mock function to simulate fetching statistics
-const mockFetchStatistics = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return mockStats;
-};
-
-// Mock function to simulate revenue data (simplified for chart/stats)
-const mockRevenueData = {
-  labels: ["Nov 2024", "Dec 2024", "Jan 2025", "Feb 2025", "Mar 2025", "Apr 2025", "May 2025"],
-  subscriptions: [15000, 18000, 25000, 22000, 30000, 35000, 42000],
-  consultations: [3000, 4500, 6000, 5500, 8000, 9500, 11000], // Admin share (20%)
-  users: [65, 80, 105, 120, 150, 175, 200], // Total Users
-};
-// Calculate Yearly Revenue from the last data point for simplicity
-const YEARLY_SUB_REVENUE = mockRevenueData.subscriptions.reduce((a, b) => a + b, 0);
-const YEARLY_CON_REVENUE = mockRevenueData.consultations.reduce((a, b) => a + b, 0);
 
 // --- Chart Component ---
 const GrowthChart = ({ data }) => {
@@ -201,30 +185,46 @@ const OrganizationTable = ({ organizations }) => {
 // --- Main Admin Dashboard Component ---
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user, token } = useAuthContext();
-  const [stats, setStats] = useState({ clients: 0, dietitians: 0, activePlans: 0 });
+
+  // Get analytics data from Redux state
+  const {
+    userStats,
+    userGrowth,
+    membershipRevenue,
+    consultationRevenue,
+    isLoading,
+    error: analyticsError
+  } = useSelector(state => state.analytics);
+
   const [organizations, setOrganizations] = useState([]);
   const [profileImage, setProfileImage] = useState(mockAdmin.profileImage);
   const [isUploading, setIsUploading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = React.useRef(null);
 
+  // Calculate revenue from Redux state
+  const yearlySubRevenue = membershipRevenue.yearly || 0;
+  const yearlyConRevenue = consultationRevenue.yearlyPeriods?.reduce((sum, period) => sum + period.revenue, 0) || 0;
+  const totalRevenue = yearlySubRevenue + yearlyConRevenue;
+
   // Fetch data on component mount
   useEffect(() => {
     const loadData = async () => {
-      const fetchedStats = await mockFetchStatistics();
-      setStats({
-        clients: fetchedStats.clients.length,
-        dietitians: fetchedStats.dietitians.length,
-        activePlans: fetchedStats.activePlans,
-      });
+      // Dispatch analytics actions to fetch real data
+      dispatch(fetchUserStats());
+      dispatch(fetchUserGrowth());
+      dispatch(fetchMembershipRevenue());
+      dispatch(fetchConsultationRevenue());
 
+      // Keep organization fetching as is (not part of analytics)
       const fetchedOrgs = await mockFetchOrganizations();
       setOrganizations(fetchedOrgs);
     };
 
     loadData();
-  }, []);
+  }, [dispatch]);
 
   // Set profile image from user data when available
   useEffect(() => {
@@ -306,6 +306,13 @@ const AdminDashboard = () => {
           Welcome, {user?.name || mockAdmin.name}! 
         </h1>
 
+        {/* Error Message */}
+        {analyticsError && (
+          <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-6">
+            Error loading analytics data: {analyticsError}
+          </div>
+        )}
+
         {/* Admin Info & Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* 1. Profile Card (Consistent Styling) */}
@@ -370,18 +377,18 @@ const AdminDashboard = () => {
           {/* 2. Quick Stats & Revenue (Merged into one large section) */}
           <div className="col-span-1 lg:col-span-2 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <StatCard title="Total Clients" value={stats.clients} icon="fas fa-users" color="text-blue-600" desc="Registered clients on the platform." />
-              <StatCard title="Total Dietitians" value={stats.dietitians} icon="fas fa-user-md" color="text-green-600" desc="Registered dietitians on the platform." />
-              <StatCard title="Active Plans" value={stats.activePlans} icon="fas fa-utensils" color="text-yellow-600" desc="Active diet plans on the platform." />
+              <StatCard title="Total Clients" value={userStats.totalUsers || 0} icon="fas fa-users" color="text-blue-600" desc="Registered clients on the platform." />
+              <StatCard title="Total Dietitians" value={userStats.totalDietitians || 0} icon="fas fa-user-md" color="text-green-600" desc="Registered dietitians on the platform." />
+              <StatCard title="Active Plans" value={userStats.activeDietPlans || 0} icon="fas fa-utensils" color="text-yellow-600" desc="Active diet plans on the platform." />
             </div>
 
             <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-green-700">
               <h3 className="text-xl font-bold text-teal-900 mb-5 border-b pb-3">
                 Revenue Overview (YTD)
               </h3>
-              <RevenueBox title="Subscriptions Revenue" value={YEARLY_SUB_REVENUE} />
-              <RevenueBox title="Consultations Revenue (Admin Share)" value={YEARLY_CON_REVENUE} />
-              <RevenueBox title="Total Revenue" value={YEARLY_SUB_REVENUE + YEARLY_CON_REVENUE} isTotal={true} />
+              <RevenueBox title="Subscriptions Revenue" value={yearlySubRevenue} />
+              <RevenueBox title="Consultations Revenue (Admin Share)" value={yearlyConRevenue} />
+              <RevenueBox title="Total Revenue" value={totalRevenue} isTotal={true} />
             </div>
           </div>
         </div>
@@ -391,9 +398,39 @@ const AdminDashboard = () => {
           <h3 className="text-xl font-bold text-teal-900 mb-5">
             Platform Growth Statistics
           </h3>
-          <div className="h-96">
-            <GrowthChart data={mockRevenueData} />
-          </div>
+          {isLoading ? (
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-center">
+                <i className="fas fa-spinner fa-spin text-4xl text-green-600 mb-4"></i>
+                <p className="text-gray-600">Loading analytics data...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-96">
+              <GrowthChart data={{
+                labels: userGrowth.monthlyGrowth?.length > 0
+                  ? userGrowth.monthlyGrowth.map(item => item.month)
+                  : consultationRevenue.monthlyPeriods?.length > 0
+                  ? consultationRevenue.monthlyPeriods.map(period => period.month)
+                  : ['Current'],
+                subscriptions: userGrowth.monthlyGrowth?.length > 0
+                  ? userGrowth.monthlyGrowth.map(() => membershipRevenue.monthly || 0)
+                  : consultationRevenue.monthlyPeriods?.length > 0
+                  ? consultationRevenue.monthlyPeriods.map(() => membershipRevenue.monthly || 0)
+                  : [membershipRevenue.monthly || 0],
+                consultations: userGrowth.monthlyGrowth?.length > 0
+                  ? userGrowth.monthlyGrowth.map(() => yearlyConRevenue / 12)
+                  : consultationRevenue.monthlyPeriods?.length > 0
+                  ? consultationRevenue.monthlyPeriods.map(period => period.revenue)
+                  : [yearlyConRevenue / 12],
+                users: userGrowth.monthlyGrowth?.length > 0
+                  ? userGrowth.monthlyGrowth.map(item => item.cumulative)
+                  : consultationRevenue.monthlyPeriods?.length > 0
+                  ? consultationRevenue.monthlyPeriods.map(() => userStats.totalUsers || 0)
+                  : [userStats.totalUsers || 0]
+              }} />
+            </div>
+          )}
         </div>
         
 

@@ -1,5 +1,20 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchUsersByRole,
+  searchUsersByRole,
+  fetchRemovedAccounts,
+  removeUser,
+  restoreAccount,
+  setActiveRole,
+  setRemovedRole,
+  setSearchTerm,
+  setRemovedSearchTerm,
+  setExpandedDetails,
+  setConfirmAction,
+  clearConfirmAction,
+} from '../../redux/slices/adminSlice';
 
 // --- Global Constants ---
 // Theme colors matching NutriConnect design
@@ -30,27 +45,6 @@ const COLORS = {
 };
 
 // --- Mock API Response Structure (To define expected data shape) ---
-const mockAllUsers = {
-    'user': [
-        { _id: 'u1', name: 'Alice Johnson', email: 'alice@client.com', phone: '1234567890', dob: '1990-05-15T00:00:00.000Z', gender: 'female', address: '101 Main St' },
-        { _id: 'u2', name: 'Bob Smith', email: 'bob@client.com', phone: '9876543210', dob: '1985-11-22T00:00:00.000Z', gender: 'male', address: '202 Oak Ave' },
-    ],
-    'dietitian': [
-        { _id: 'd1', name: 'Dr. Jane Doe', email: 'jane@dietitian.com', phone: '5551234567', age: 40, licenseNumber: 'DLN123456', verificationStatus: 'Verified' },
-        { _id: 'd2', name: 'Mark Wilson', email: 'mark@dietitian.com', phone: '5559876543', age: 35, licenseNumber: 'DLN654321', verificationStatus: 'Pending' },
-    ],
-    'organization': [
-        { _id: 'o1', name: 'Wellness Corp', email: 'admin@wellness.com', phone: '9991112222', licenseNumber: 'OLN000111', address: 'HQ Building' },
-    ],
-    'corporatepartner': [
-        { _id: 'c1', name: 'Tech Health', email: 'hr@techhealth.com', phone: '8883334444', licenseNumber: 'CLN999888', address: 'Tech Park' },
-    ],
-};
-
-const mockRemovedAccounts = [
-    { id: 'r1', name: 'Zoe Deleted', email: 'zoe@old.com', phone: '1112223333', accountType: 'User', removedOn: '2024-10-01' },
-    { id: 'r2', name: 'Dr. Removed', email: 'removed@old.com', phone: '4445556666', accountType: 'Dietitian', removedOn: '2024-10-15' },
-];
 
 // --- Helper Functions ---
 
@@ -139,237 +133,88 @@ const RemovedActions = ({ id, type, onView, onShowRestore }) => (
 // --- Main Component ---
 const AdminManagement = () => {
     const navigate = useNavigate();
-    const [activeRole, setActiveRole] = useState('user');
-    const [removedRole, setRemovedRole] = useState('user');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [removedSearchTerm, setRemovedSearchTerm] = useState('');
-    const [users, setUsers] = useState({}); // { role: data[] }
-    const [removedAccounts, setRemovedAccounts] = useState([]);
-    const [expandedDetails, setExpandedDetails] = useState(null); // { id, type }
-    const [confirmAction, setConfirmAction] = useState(null); // { id, type, action: 'remove' | 'restore' }
-    const [softDeleteDropdown, setSoftDeleteDropdown] = useState(null); // { id, type }
-    const [isLoading, setIsLoading] = useState(true);
+    const dispatch = useDispatch();
+
+    // Redux state
+    const {
+      users,
+      removedAccounts,
+      activeRole,
+      removedRole,
+      searchTerm,
+      removedSearchTerm,
+      expandedDetails,
+      confirmAction,
+      isLoading,
+      error,
+    } = useSelector((state) => state.admin);
 
     const activeRolesList = useMemo(() => ['user', 'dietitian', 'organization', 'corporatepartner'], []);
     const removedRolesList = useMemo(() => ['user', 'dietitian', 'organization', 'corporatepartner'], []);
     
-    // --- API Handlers ---
-
-    // Generic fetch handler with error logging and status check
-    const fetchData = useCallback(async (url, options = {}) => {
-        const token = localStorage.getItem('authToken_admin');
-        if (!token) {
-            handleAlert('Admin authentication required. Please login again.');
-            return [];
-        }
-
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                ...options
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                if (response.status === 401) {
-                    handleAlert('Unauthorized. Redirecting to login.');
-                    // navigate('/admin/login'); // Uncomment in real app
-                    return [];
-                }
-                throw new Error(data.message || `API Error: ${response.status}`);
-            }
-            return data.data || data;
-        } catch (error) {
-            console.error("Fetch Error:", error);
-            handleAlert(`Error fetching data: ${error.message}`);
-            return [];
-        }
-    }, []);
-
-    // Fetch all active users by role
-    const fetchUsersByRole = useCallback(async (role) => {
-        const endpoint = `/api/crud/${role}-list`;
-        return await fetchData(endpoint);
-    }, [fetchData]);
-
-    // Search users by role
-    const searchUsersByRole = useCallback(async (role, query) => {
-        const endpoint = `/api/crud/${role}-list/search?q=${encodeURIComponent(query)}`;
-        return await fetchData(endpoint);
-    }, [fetchData]);
-
-    // Fetch removed accounts
-    const fetchRemovedAccountsData = useCallback(async (query = '') => {
-        const endpoint = query ? `/api/crud/removed-accounts/search?q=${encodeURIComponent(query)}` : '/api/crud/removed-accounts';
-        return await fetchData(endpoint);
-    }, [fetchData]);
-
-    // Remove a user
-    const removeUserAPI = async (role, id) => {
-        const token = localStorage.getItem('authToken_admin');
-        try {
-            const response = await fetch(`/api/crud/${role}-list/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || `API Error: ${response.status}`);
-            }
-            return data;
-        } catch (error) {
-            console.error("Remove User Error:", error);
-            throw error;
-        }
-    };
-
-    // Restore a removed account
-    const restoreAccountAPI = async (id) => {
-        const token = localStorage.getItem('authToken_admin');
-        try {
-            const response = await fetch(`/api/crud/removed-accounts/${id}/restore`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || `API Error: ${response.status}`);
-            }
-            return data;
-        } catch (error) {
-            console.error("Restore Account Error:", error);
-            throw error;
-        }
-    };
-
     // --- Data Fetching Logic ---
 
     // Fetch all active users (real API calls)
     const fetchAllActiveUsers = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const userData = await fetchUsersByRole('user');
-            const dietitianData = await fetchUsersByRole('dietitian');
-            const organizationData = await fetchUsersByRole('organization');
-            const corporatePartnerData = await fetchUsersByRole('corporatepartner');
-
-            setUsers({
-                user: userData,
-                dietitian: dietitianData,
-                organization: organizationData,
-                corporatepartner: corporatePartnerData,
-                _isSearchResult: false // Clear search flag for fresh data
-            });
-        } catch (error) {
-            console.error('Error fetching active users:', error);
-            handleAlert('Failed to load active users. Using sample data.');
-            // Fallback to mock data if API fails
-            setUsers(mockAllUsers);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [fetchUsersByRole]);
+        await Promise.all([
+            dispatch(fetchUsersByRole('user')),
+            dispatch(fetchUsersByRole('dietitian')),
+            dispatch(fetchUsersByRole('organization')),
+            dispatch(fetchUsersByRole('corporatepartner')),
+        ]);
+    }, [dispatch]);
 
     // Fetch removed accounts (real API call)
-    const fetchRemovedAccounts = useCallback(async () => {
-        try {
-            const removedData = await fetchRemovedAccountsData();
-            setRemovedAccounts(removedData);
-        } catch (error) {
-            console.error('Error fetching removed accounts:', error);
-            handleAlert('Failed to load removed accounts. Using sample data.');
-            // Fallback to mock data
-            setRemovedAccounts(mockRemovedAccounts);
-        }
-    }, [fetchRemovedAccountsData]);
+    const fetchRemovedAccountsData = useCallback(async () => {
+        await dispatch(fetchRemovedAccounts());
+    }, [dispatch]);
 
     useEffect(() => {
         fetchAllActiveUsers();
-        fetchRemovedAccounts();
-    }, [fetchAllActiveUsers, fetchRemovedAccounts]);
+        fetchRemovedAccountsData();
+    }, [fetchAllActiveUsers, fetchRemovedAccountsData]);
 
     // --- Action Handlers ---
 
     const handleActionConfirm = (id, type, action) => {
-        setConfirmAction({ id, type, action });
-        setExpandedDetails(null); 
+        dispatch(setConfirmAction({ id, type, action }));
     };
-    
+
     const handleActionExecute = async () => {
         if (!confirmAction) return;
 
         const { action, type, id } = confirmAction;
         let successMessage = '';
-        
+
         if (action === 'remove') {
-            try {
-                await removeUserAPI(type, id);
-                successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} removed successfully!`;
-            } catch (error) {
-                handleAlert(`Failed to remove ${type}: ${error.message}`);
-                return;
-            }
+            await dispatch(removeUser({ role: type, id }));
+            successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} removed successfully!`;
         } else if (action === 'restore') {
-            try {
-                const result = await restoreAccountAPI(id);
-                const passwordMsg = result.data.passwordRestored 
-                    ? ' Original password has been restored.' 
-                    : ' A temporary password has been set.';
-                successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} restored successfully!${passwordMsg}`;
-            } catch (error) {
-                handleAlert(`Failed to restore ${type}: ${error.message}`);
-                return;
-            }
-        } else {
-            return;
+            const result = await dispatch(restoreAccount(id));
+            const passwordMsg = result.payload.data.passwordRestored
+                ? ' Original password has been restored.'
+                : ' A temporary password has been set.';
+            successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} restored successfully!${passwordMsg}`;
         }
 
-        handleActionCancel(); // Close confirmation dialogue
+        dispatch(clearConfirmAction());
+        handleAlert(successMessage);
 
-        try {
-            handleAlert(successMessage);
-            // Clear search terms and refresh data sets to ensure fresh data
-            setSearchTerm('');
-            setRemovedSearchTerm('');
-            await Promise.all([fetchAllActiveUsers(), fetchRemovedAccounts()]);
-        } catch (err) {
-            handleAlert(`Operation completed but failed to refresh data: ${err.message}`);
-        }
+        // Refresh data
+        await Promise.all([fetchAllActiveUsers(), fetchRemovedAccountsData()]);
     };
 
     const handleActionCancel = () => {
-        setConfirmAction(null);
+        dispatch(clearConfirmAction());
     };
 
     const handleViewDetails = (id, type) => {
-        // Handle removed accounts specially
         const key = type.startsWith('removed-') ? `removed-${id}` : `${type}-${id}`;
-        setExpandedDetails(expandedDetails === key ? null : key);
-        setConfirmAction(null); // Close any active confirmation dialogues
+        dispatch(setExpandedDetails(key));
     };
 
     const handleSoftDelete = (id, type) => {
-        // Actually perform soft delete instead of showing dropdown
         handleActionConfirm(id, type, 'remove');
-    };
-
-    const handleCloseSoftDeleteDropdown = () => {
-        setSoftDeleteDropdown(null);
     };
 
     // --- Search and Filter Logic ---
@@ -377,46 +222,25 @@ const AdminManagement = () => {
     // Handle search for active users
     const handleActiveSearch = async () => {
         if (!searchTerm.trim()) {
-            await fetchAllActiveUsers(); // Reload all data if search is empty
+            await fetchAllActiveUsers();
             return;
         }
 
-        setIsLoading(true);
-        try {
-            const userData = searchTerm ? await searchUsersByRole('user', searchTerm) : await fetchUsersByRole('user');
-            const dietitianData = searchTerm ? await searchUsersByRole('dietitian', searchTerm) : await fetchUsersByRole('dietitian');
-            const organizationData = searchTerm ? await searchUsersByRole('organization', searchTerm) : await fetchUsersByRole('organization');
-            const corporatePartnerData = searchTerm ? await searchUsersByRole('corporatepartner', searchTerm) : await fetchUsersByRole('corporatepartner');
-
-            // Store search results separately to avoid conflicts with full data refresh
-            setUsers({
-                user: userData,
-                dietitian: dietitianData,
-                organization: organizationData,
-                corporatepartner: corporatePartnerData,
-                _isSearchResult: true // Flag to indicate this is search results
-            });
-        } catch (error) {
-            console.error('Error searching active users:', error);
-            handleAlert('Failed to search users. Please try again.');
-        } finally {
-            setIsLoading(false);
-        }
+        await Promise.all([
+            dispatch(searchUsersByRole({ role: 'user', query: searchTerm })),
+            dispatch(searchUsersByRole({ role: 'dietitian', query: searchTerm })),
+            dispatch(searchUsersByRole({ role: 'organization', query: searchTerm })),
+            dispatch(searchUsersByRole({ role: 'corporatepartner', query: searchTerm })),
+        ]);
     };
 
     // Handle search for removed accounts
     const handleRemovedSearch = async () => {
-        try {
-            const removedData = await fetchRemovedAccountsData(removedSearchTerm);
-            setRemovedAccounts(removedData);
-        } catch (error) {
-            console.error('Error searching removed accounts:', error);
-            handleAlert('Failed to search removed accounts. Please try again.');
-        }
+        await dispatch(fetchRemovedAccounts(removedSearchTerm));
     };
 
-    const filteredActiveUsers = users; // Now handled by API calls
-    const filteredRemovedAccounts = removedAccounts; // Now handled by API calls
+    const filteredActiveUsers = users;
+    const filteredRemovedAccounts = removedAccounts;
 
 
     // --- UI Renderers ---
@@ -486,59 +310,6 @@ const AdminManagement = () => {
                                                             >
                                                                 <i className="fas fa-trash-alt mr-1"></i>
                                                                 Remove
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {softDeleteDropdown === `${type}-${user._id}` && (
-                                        <tr>
-                                            <td colSpan="2" className="px-6 py-2">
-                                                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg shadow-sm">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center mb-3">
-                                                                <i className="fas fa-archive text-emerald-600 mr-3 text-lg"></i>
-                                                                <h4 className="text-sm font-semibold text-gray-900">Soft Delete Account</h4>
-                                                            </div>
-                                                            <p className="text-gray-600 text-sm mb-3">
-                                                                Are you sure you want to soft delete this account? The account will be moved to removed accounts and can be restored later.
-                                                            </p>
-                                                            <div className="bg-white p-3 rounded-md border border-emerald-100">
-                                                                <div className="grid grid-cols-1 gap-1 text-sm">
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-gray-500">Name:</span>
-                                                                        <span className="font-medium text-gray-900">{user.name}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-gray-500">Email:</span>
-                                                                        <span className="font-medium text-gray-900">{user.email}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-gray-500">Type:</span>
-                                                                        <span className="font-medium text-gray-900">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex flex-col space-y-2 ml-4">
-                                                            <button
-                                                                onClick={handleCloseSoftDeleteDropdown}
-                                                                className="px-3 py-1.5 text-gray-600 bg-white hover:bg-gray-50 border border-gray-300 rounded-md text-xs font-medium transition-colors duration-200"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleCloseSoftDeleteDropdown();
-                                                                    handleActionConfirm(user._id, type, 'remove');
-                                                                }}
-                                                                className="px-3 py-1.5 text-white bg-emerald-600 hover:bg-emerald-700 rounded-md text-xs font-medium transition-colors duration-200"
-                                                            >
-                                                                <i className="fas fa-archive mr-1"></i>
-                                                                Soft Delete
                                                             </button>
                                                         </div>
                                                     </div>
@@ -654,7 +425,10 @@ const AdminManagement = () => {
             </div>
             
             <div style={{ maxWidth: '100%', margin: '0 auto' }}>
-                <h1 className="text-4xl font-extrabold text-center text-green-700 mb-8">Admin User Management</h1>
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-100 text-red-700 p-3 rounded-lg text-center mb-6">{error}</div>
+                )}
 
                 {/* --- 1. Active Users Container --- */}
                 <div style={{ borderTopColor: THEME.primary }} className="bg-white p-6 rounded-xl shadow-2xl border-t-4 mb-8">
@@ -666,7 +440,7 @@ const AdminManagement = () => {
                             type="text"
                             placeholder={`Search by name or email...`}
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => dispatch(setSearchTerm(e.target.value))}
                             className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors"
                         />
                         <button 
@@ -679,7 +453,7 @@ const AdminManagement = () => {
                         {users._isSearchResult && searchTerm && (
                             <button 
                                 onClick={() => {
-                                    setSearchTerm('');
+                                    dispatch(setSearchTerm(''));
                                     fetchAllActiveUsers();
                                 }}
                                 className="text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-lg transition-colors font-semibold"
@@ -694,10 +468,8 @@ const AdminManagement = () => {
                         {activeRolesList.map(role => (
                             <button
                                 key={role}
-                                onClick={() => { 
-                                    setActiveRole(role); 
-                                    setSearchTerm(''); // Clear search term when switching roles
-                                    fetchAllActiveUsers(); // Reload data when switching roles
+                                onClick={() => {
+                                    dispatch(setActiveRole(role));
                                 }}
                                 style={activeRole === role ? {
                                     backgroundColor: THEME.primary,
@@ -750,7 +522,7 @@ const AdminManagement = () => {
                             type="text"
                             placeholder="Search removed users..."
                             value={removedSearchTerm}
-                            onChange={(e) => setRemovedSearchTerm(e.target.value)}
+                            onChange={(e) => dispatch(setRemovedSearchTerm(e.target.value))}
                             className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-colors"
                         />
                         <button 
@@ -763,8 +535,8 @@ const AdminManagement = () => {
                         {removedSearchTerm && (
                             <button 
                                 onClick={() => {
-                                    setRemovedSearchTerm('');
-                                    fetchRemovedAccounts();
+                                    dispatch(setRemovedSearchTerm(''));
+                                    fetchRemovedAccountsData();
                                 }}
                                 className="text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-lg transition-colors font-semibold"
                             >
@@ -779,9 +551,7 @@ const AdminManagement = () => {
                             <button
                                 key={`removed-${role}`}
                                 onClick={() => { 
-                                    setRemovedRole(role); 
-                                    setRemovedSearchTerm(''); // Clear search term when switching roles
-                                    fetchRemovedAccounts(); // Reload data when switching roles
+                                    dispatch(setRemovedRole(role));
                                 }}
                                 style={removedRole === role ? {
                                     backgroundColor: THEME.danger,

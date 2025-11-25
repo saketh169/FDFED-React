@@ -1,209 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchUserStats,
+  fetchMembershipRevenue,
+  fetchConsultationRevenue,
+  fetchSubscriptions,
+  setExpandedSubscriptionId,
+} from '../../redux/slices/analyticsSlice';
 
 // --- Constants ---
-const PRIMARY_GREEN = '#28a745';
-const DARK_GREEN = '#218838';
-const RED = '#dc3545';
-
-// --- Data Fetching Functions ---
-
-const formatDate = (date) => {
-    if (!date) return 'N/A';
-    try {
-        const parsedDate = new Date(date);
-        if (isNaN(parsedDate.getTime())) return 'N/A';
-        return parsedDate.toISOString().split('T')[0];
-    } catch {
-        return 'N/A';
-    }
-};
-
-const formatDisplayDate = (date) => {
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-};
-
-const formatDisplayMonth = (date) => {
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-};
-
-const getDateRanges = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const dailyDates = [];
-    for (let i = 0; i < 7; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        dailyDates.push({
-            date: formatDate(date),
-            displayDate: formatDisplayDate(date)
-        });
-    }
-
-    const monthlyPeriods = [];
-    for (let i = 0; i < 6; i++) {
-        const date = new Date(today);
-        date.setMonth(today.getMonth() - i);
-        date.setDate(1);
-        monthlyPeriods.push({
-            start: formatDate(date),
-            displayMonth: formatDisplayMonth(date),
-            year: date.getFullYear(),
-            month: date.getMonth() + 1
-        });
-    }
-
-    const yearlyPeriods = [];
-    for (let i = 0; i < 4; i++) {
-        const year = today.getFullYear() - i;
-        yearlyPeriods.push({
-            year,
-            start: `${year}-01-01`,
-            end: `${year}-12-31`
-        });
-    }
-
-    return { dailyDates, monthlyPeriods, yearlyPeriods };
-};
-
-// Simplified fetch utility using axios
-const fetchAPI = async (url) => {
-    try {
-        // Authorization token would be included here: 
-        // headers: { Authorization: `Bearer ${localStorage.getItem('adminAuthToken')}` }
-        const response = await axios.get(url, { withCredentials: true });
-        
-        // Assuming API returns { data: [...] } or just [...]
-        return response.data.data || response.data; 
-    } catch (error) {
-        const message = error.response?.data?.message || error.message || 'Network Error';
-        if (error.response?.status === 401) {
-            console.error('Unauthorized access. Redirecting.');
-            // Implement navigation to login page here in a real app
-        }
-        throw new Error(message);
-    }
-};
-
-// --- Dashboard Component ---
+const THEME = {
+  primary: '#27AE60',      // Primary green
+  secondary: '#1E6F5C',    // Darker green
+  light: '#E8F5E9',        // Light green background
+  lightBg: '#F0F9F7',      // Very light green
+  success: '#27AE60',      // Success green
+  danger: '#DC3545',       // Red for errors
+  warning: '#FFC107',      // Yellow for warning
+  info: '#17A2B8',         // Blue for info
+  dark: '#1A4A40',         // Dark gray
+  lightGray: '#F8F9FA',    // Light gray background
+  borderColor: '#E0E0E0',  // Border color
+};// --- Dashboard Component ---
 
 const Analytics = () => {
     const navigate = useNavigate();
-    const [membershipRevenue, setMembershipRevenue] = useState({ daily: 0, monthly: 0, yearly: 0 });
-    const [userStats, setUserStats] = useState({ totalRegistered: 0, totalUsers: 0, totalDietitians: 0, verifyingOrganizations: 0, activeDietPlans: 0 });
-    const [consultationRevenue, setConsultationRevenue] = useState({ dailyPeriods: [], monthlyPeriods: [], yearlyPeriods: [] });
-    const [subscriptions, setSubscriptions] = useState([]);
-    const [errorMessage, setErrorMessage] = useState(null);
-    const [expandedSubscriptionId, setExpandedSubscriptionId] = useState(null);
+    const dispatch = useDispatch();
+
+    // Get data from Redux state
+    const {
+        userStats,
+        membershipRevenue,
+        consultationRevenue,
+        subscriptions,
+        expandedSubscriptionId,
+        isLoading,
+        error: errorMessage
+    } = useSelector(state => state.analytics);
 
     const toggleDetails = (id) => {
-        setExpandedSubscriptionId(expandedSubscriptionId === id ? null : id);
-    };
-
-    const runAnalytics = async () => {
-        setErrorMessage(null);
-        try {
-            const [usersRes, dietitiansRes, organizationsRes, dietPlansRes, subscriptionsRes, consultationRes] = await Promise.all([
-                fetchAPI('/users-list'),
-                fetchAPI('/dietitian-list'),
-                fetchAPI('/verifying-organizations'),
-                fetchAPI('/active-diet-plans'),
-                fetchAPI('/subscriptions'),
-                fetchAPI('/consultation-revenue')
-            ]);
-            
-            // --- 1. User Statistics ---
-            const totalRegistered = (usersRes.length || 0) + (dietitiansRes.length || 0);
-            setUserStats({
-                totalRegistered,
-                totalUsers: usersRes.length || 0,
-                totalDietitians: dietitiansRes.length || 0,
-                verifyingOrganizations: organizationsRes.length || 0, // Assuming this endpoint returns an array
-                activeDietPlans: dietPlansRes.length || 0, // Assuming this endpoint returns an array
-            });
-
-            // --- 2. Membership Revenue Calculation ---
-            const validSubscriptions = subscriptionsRes.filter(sub => sub.status === 'success' && sub.amount > 0);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const dailyRevenue = validSubscriptions
-                .filter(sub => new Date(sub.createdAt).setHours(0,0,0,0) === today.getTime())
-                .reduce((sum, sub) => sum + sub.amount, 0);
-
-            const monthlyRevenue = validSubscriptions
-                .filter(sub => new Date(sub.createdAt).getMonth() === today.getMonth() && new Date(sub.createdAt).getFullYear() === today.getFullYear())
-                .reduce((sum, sub) => sum + sub.amount, 0);
-
-            const yearlyRevenue = validSubscriptions
-                .filter(sub => new Date(sub.createdAt).getFullYear() === today.getFullYear())
-                .reduce((sum, sub) => sum + sub.amount, 0);
-
-            setMembershipRevenue({ daily: dailyRevenue, monthly: monthlyRevenue, yearly: yearlyRevenue });
-            
-            // --- 3. Consultation Revenue Calculation ---
-            const adminFeePercentage = 0.2;
-            const { dailyDates, monthlyPeriods, yearlyPeriods } = getDateRanges();
-            
-            // Daily Consultation Revenue
-            const dailyConsultationRevenue = dailyDates.map(day => {
-                const revenue = consultationRes
-                    .filter(con => formatDate(con.date) === day.date)
-                    .reduce((sum, con) => sum + (con.amount * adminFeePercentage), 0);
-                return { ...day, revenue };
-            }).reverse();
-
-            // Monthly Consultation Revenue
-            const monthlyConsultationRevenue = monthlyPeriods.map(period => {
-                const revenue = consultationRes
-                    .filter(con => {
-                        const conDate = new Date(con.date);
-                        return conDate.getFullYear() === period.year && conDate.getMonth() === period.month - 1;
-                    })
-                    .reduce((sum, con) => sum + (con.amount * adminFeePercentage), 0);
-                return { month: period.displayMonth, revenue };
-            }).reverse();
-
-            // Yearly Consultation Revenue
-            const yearlyConsultationRevenue = yearlyPeriods.map(period => {
-                const revenue = consultationRes
-                    .filter(con => new Date(con.date).getFullYear() === period.year)
-                    .reduce((sum, con) => sum + (con.amount * adminFeePercentage), 0);
-                return { year: period.year, revenue };
-            }).reverse();
-            
-            setConsultationRevenue({ 
-                dailyPeriods: dailyConsultationRevenue, 
-                monthlyPeriods: monthlyConsultationRevenue, 
-                yearlyPeriods: yearlyConsultationRevenue 
-            });
-
-            // --- 4. Subscriptions Table Data ---
-            const formattedSubscriptions = subscriptionsRes.filter(sub => sub.userId && sub.userId.name).map(sub => ({
-                id: sub._id,
-                name: sub.userId.name || 'Unknown',
-                plan: sub.name || 'N/A',
-                cycle: sub.billingType || 'N/A',
-                startDate: formatDate(sub.createdAt),
-                revenue: sub.amount || 0,
-                paymentMethod: sub.paymentMethod || 'N/A',
-                transactionId: sub.transactionId || 'N/A',
-                expiresAt: formatDate(sub.expiresAt)
-            }));
-            setSubscriptions(formattedSubscriptions);
-
-
-        } catch (error) {
-            setErrorMessage(error.message);
-            console.error('Initialization Error:', error);
-        }
+        dispatch(setExpandedSubscriptionId(expandedSubscriptionId === id ? null : id));
     };
 
     useEffect(() => {
-        runAnalytics();
-    }, []);
+        // Dispatch all analytics data fetching actions
+        dispatch(fetchUserStats());
+        dispatch(fetchMembershipRevenue());
+        dispatch(fetchConsultationRevenue());
+        dispatch(fetchSubscriptions());
+    }, [dispatch]);
     
     // --- Aggregated Totals ---
     const dailyConsultationTotal = consultationRevenue.dailyPeriods.reduce((sum, p) => sum + p.revenue, 0);
@@ -218,57 +64,57 @@ const Analytics = () => {
     // --- UI Renderers ---
     
     const RevenueTable = ({ data, periodKey, total }) => (
-        <table className="table min-w-full">
-            <thead>
+        <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden border-collapse">
+            <thead style={{ backgroundColor: THEME.primary }} className="text-white">
                 <tr>
-                    <th>{periodKey}</th>
-                    <th className="text-right">Revenue</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">{periodKey}</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">Revenue</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white divide-y divide-gray-200">
                 {data.map((item, index) => (
-                    <tr key={index}>
-                        <td>{item[periodKey]}</td>
-                        <td className="text-right">₹{item.revenue.toFixed(2)}</td>
+                    <tr key={`revenue-${periodKey}-${index}`} className="hover:bg-green-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item[periodKey]}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">₹{item.revenue.toFixed(2)}</td>
                     </tr>
                 ))}
             </tbody>
-            <tfoot>
+            <tfoot className="bg-gray-50">
                 <tr>
-                    <td>Total</td>
-                    <td className="text-right">₹{total.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">Total</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">₹{total.toFixed(2)}</td>
                 </tr>
             </tfoot>
         </table>
     );
 
     const renderSubscriptionTable = () => (
-        <table className="table subscription-table min-w-full">
-            <thead>
+        <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden border-collapse">
+            <thead style={{ backgroundColor: THEME.primary }} className="text-white">
                 <tr>
-                    <th>Name</th>
-                    <th className="w-1/4">Start Date</th>
-                    <th className="w-1/5 text-center">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Start Date</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-48">Actions</th>
                 </tr>
             </thead>
-            <tbody id="usersTableBody">
-                {subscriptions.map(sub => (
-                    <React.Fragment key={sub.id}>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td>{sub.name}</td>
-                            <td>{sub.startDate}</td>
-                            <td className="text-end">
+            <tbody className="bg-white divide-y divide-gray-200">
+                {subscriptions.map((sub, index) => (
+                    <React.Fragment key={`subscription-${sub.id}-${index}`}>
+                        <tr className="hover:bg-green-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{sub.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sub.startDate}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                                 <button 
                                     style={{
-                                        backgroundColor: expandedSubscriptionId === sub.id ? '#6B7280' : PRIMARY_GREEN,
+                                        backgroundColor: expandedSubscriptionId === sub.id ? '#6B7280' : THEME.primary,
                                         color: 'white',
                                         padding: '0.5rem 0.75rem',
                                         borderRadius: '9999px',
                                         border: 'none',
                                         cursor: 'pointer'
                                     }}
-                                    onMouseEnter={(e) => { if (expandedSubscriptionId !== sub.id) e.target.style.backgroundColor = DARK_GREEN; }}
-                                    onMouseLeave={(e) => { if (expandedSubscriptionId !== sub.id) e.target.style.backgroundColor = PRIMARY_GREEN; }}
+                                    onMouseEnter={(e) => { if (expandedSubscriptionId !== sub.id) e.target.style.backgroundColor = THEME.secondary; }}
+                                    onMouseLeave={(e) => { if (expandedSubscriptionId !== sub.id) e.target.style.backgroundColor = THEME.primary; }}
                                     onClick={() => toggleDetails(sub.id)}
                                 >
                                     <i className="fas fa-eye mr-2"></i> 
@@ -277,8 +123,8 @@ const Analytics = () => {
                             </td>
                         </tr>
                         {expandedSubscriptionId === sub.id && (
-                            <tr>
-                                <td colSpan="3" className="p-0">
+                            <tr key={`expanded-${sub.id}`}>
+                                <td colSpan="3" className="px-6 py-0">
                                     <div className="bg-gray-50 p-4 border-l-4 border-green-500">
                                         <p><strong>Plan:</strong> {sub.plan} ({sub.cycle})</p>
                                         <p><strong>Revenue Generated:</strong> ₹{sub.revenue.toFixed(2)}</p>
@@ -296,9 +142,9 @@ const Analytics = () => {
     );
 
     return (
-        <div className="min-h-screen p-2 sm:p-4 bg-gray-100" style={{ paddingTop: '0.5rem' }}>
+        <div className="min-h-screen p-2 sm:p-4 bg-green-50" style={{ paddingTop: '0.5rem' }}>
             {/* Back Button */}
-            <div onClick={() => navigate(-1)} style={{ color: PRIMARY_GREEN, cursor: 'pointer' }} className="fixed top-4 left-4 text-4xl hover:opacity-80 transition-opacity z-50" onMouseEnter={(e) => e.currentTarget.style.color = DARK_GREEN} onMouseLeave={(e) => e.currentTarget.style.color = PRIMARY_GREEN}>
+            <div onClick={() => navigate(-1)} style={{ color: THEME.primary, cursor: 'pointer' }} className="fixed top-4 left-4 text-4xl hover:opacity-80 transition-opacity z-50" onMouseEnter={(e) => e.currentTarget.style.color = THEME.secondary} onMouseLeave={(e) => e.currentTarget.style.color = THEME.primary}>
                 <i className="fa-solid fa-xmark"></i>
             </div>
 
@@ -306,16 +152,24 @@ const Analytics = () => {
                 {/* Logo and Title */}
                 <div className="flex justify-center items-center my-2">
                     <div className="flex items-center font-bold text-3xl text-gray-800">
-                        <div style={{ backgroundColor: PRIMARY_GREEN }} className="flex items-center justify-center w-10 h-10 rounded-full mr-2">
+                        <div style={{ backgroundColor: THEME.primary }} className="flex items-center justify-center w-10 h-10 rounded-full mr-2">
                             <i className="fas fa-leaf text-xl text-white"></i>
                         </div>
                         <span>
-                            <span style={{ color: PRIMARY_GREEN }}>N</span>utri
-                            <span style={{ color: PRIMARY_GREEN }}>C</span>onnect
+                            <span style={{ color: THEME.primary }}>N</span>utri
+                            <span style={{ color: THEME.primary }}>C</span>onnect
                         </span>
                     </div>
                 </div>
-                <h1 style={{ color: PRIMARY_GREEN }} className="text-4xl font-extrabold text-center mb-4">Analytics Dashboard</h1>
+                <h1 style={{ color: THEME.primary }} className="text-4xl font-extrabold text-center mb-4">Analytics Dashboard</h1>
+                
+                {/* Loading Indicator */}
+                {isLoading && (
+                    <div className="bg-blue-100 text-blue-700 p-3 rounded-lg text-center mb-6">
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        Loading analytics data...
+                    </div>
+                )}
                 
                 {/* Error Message */}
                 {errorMessage && (
@@ -324,30 +178,30 @@ const Analytics = () => {
 
                 <div className="grid grid-cols-1 gap-6">
                     {/* --- Card 1: Revenue from Memberships --- */}
-                    <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500 hover:shadow-xl transition-all duration-300">
-                        <h2 style={{ color: PRIMARY_GREEN }} className="text-xl font-bold mb-4">
-                            <i style={{ color: PRIMARY_GREEN }} className="fas fa-chart-line mr-2"></i> Revenue from Memberships
+                    <div className="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 hover:shadow-2xl transition-all duration-300">
+                        <h2 style={{ color: THEME.primary }} className="text-xl font-bold mb-4">
+                            <i style={{ color: THEME.primary }} className="fas fa-chart-line mr-2"></i> Revenue from Memberships
                         </h2>
                         <div className="revenue-table">
-                            <table className="table min-w-full">
-                                <thead>
+                            <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden border-collapse">
+                                <thead style={{ backgroundColor: THEME.primary }} className="text-white">
                                     <tr>
-                                        <th>Period</th>
-                                        <th className="text-right">Revenue</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Period</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">Revenue</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Daily (Today)</td>
-                                        <td className="text-right">₹{membershipRevenue.daily.toFixed(2)}</td>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Daily (Today)</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">₹{membershipRevenue.daily.toFixed(2)}</td>
                                     </tr>
-                                    <tr>
-                                        <td>Monthly (This Month)</td>
-                                        <td className="text-right">₹{membershipRevenue.monthly.toFixed(2)}</td>
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Monthly (This Month)</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">₹{membershipRevenue.monthly.toFixed(2)}</td>
                                     </tr>
-                                    <tr>
-                                        <td>Yearly (This Year)</td>
-                                        <td className="text-right">₹{membershipRevenue.yearly.toFixed(2)}</td>
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Yearly (This Year)</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">₹{membershipRevenue.yearly.toFixed(2)}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -355,22 +209,53 @@ const Analytics = () => {
                     </div>
 
                     {/* --- Card 2: User Statistics --- */}
-                    <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500 hover:shadow-xl transition-all duration-300">
-                        <h2 style={{ color: PRIMARY_GREEN }} className="text-xl font-bold mb-4">
-                            <i style={{ color: PRIMARY_GREEN }} className="fas fa-users mr-2"></i> User Statistics
+                    <div className="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 hover:shadow-2xl transition-all duration-300">
+                        <h2 style={{ color: THEME.primary }} className="text-xl font-bold mb-4">
+                            <i style={{ color: THEME.primary }} className="fas fa-users mr-2"></i> User Statistics
                         </h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <table className="table min-w-full">
-                                <tbody>
-                                    <tr><td>Total Registered</td><td className="text-right">{userStats.totalRegistered}</td></tr>
-                                    <tr><td>Active Clients</td><td className="text-right">{userStats.totalUsers}</td></tr>
-                                    <tr><td>Active Dietitians</td><td className="text-right">{userStats.totalDietitians}</td></tr>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden border-collapse">
+                                <thead style={{ backgroundColor: THEME.primary }} className="text-white">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Metric</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total Registered</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{userStats.totalRegistered}</td>
+                                    </tr>
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Active Clients</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{userStats.totalUsers}</td>
+                                    </tr>
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Active Dietitians</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{userStats.totalDietitians}</td>
+                                    </tr>
                                 </tbody>
                             </table>
-                            <table className="table min-w-full">
-                                <tbody>
-                                    <tr><td>Organizations</td><td className="text-right">{userStats.verifyingOrganizations}</td></tr>
-                                    <tr><td>Active Diet Plans</td><td className="text-right">{userStats.activeDietPlans}</td></tr>
+                            <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden border-collapse">
+                                <thead style={{ backgroundColor: THEME.primary }} className="text-white">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Metric</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Verifying Organizations</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{userStats.totalOrganizations}</td>
+                                    </tr>
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Corporate Partners</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{userStats.totalCorporatePartners}</td>
+                                    </tr>
+                                    <tr className="hover:bg-green-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Active Diet Plans</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{userStats.activeDietPlans}</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -378,9 +263,9 @@ const Analytics = () => {
                 </div>
 
                 {/* --- Card 3: Revenue from Consultations (Full Width) --- */}
-                <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500 hover:shadow-xl transition-all duration-300 mt-6">
-                    <h2 style={{ color: PRIMARY_GREEN }} className="text-xl font-bold mb-4">
-                        <i style={{ color: PRIMARY_GREEN }} className="fas fa-stethoscope mr-2"></i> Revenue from Consultations (Admin Fee Share)
+                <div className="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 hover:shadow-2xl transition-all duration-300 mt-6">
+                    <h2 style={{ color: THEME.primary }} className="text-xl font-bold mb-4">
+                        <i style={{ color: THEME.primary }} className="fas fa-stethoscope mr-2"></i> Revenue from Consultations (Admin Fee Share)
                     </h2>
                     
                     <div className="grid grid-cols-1 gap-6">
@@ -400,30 +285,30 @@ const Analytics = () => {
                 </div>
 
                 {/* --- Card 4: Total Revenue Summary (Full Width) --- */}
-                <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500 hover:shadow-xl transition-all duration-300 mt-6">
+                <div className="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 hover:shadow-2xl transition-all duration-300 mt-6">
                     <h2 className={`text-xl font-bold text-gray-700 mb-4`}>
                         <i className={`fas fa-chart-bar text-gray-700 mr-2`}></i> Total Platform Revenue Summary (Membership + Consultation Fee)
                     </h2>
                     <div className="revenue-table">
-                        <table className="table min-w-full">
-                            <thead>
+                        <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden border-collapse">
+                            <thead style={{ backgroundColor: THEME.primary }} className="text-white">
                                 <tr>
-                                    <th>Period</th>
-                                    <th className="text-right">Revenue</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Period</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">Revenue</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Total (Lifetime/Yearly Basis)</td>
-                                    <td className="text-right font-bold text-xl">₹{totalRevenue.toFixed(2)}</td>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                <tr className="hover:bg-green-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total (Lifetime/Yearly Basis)</td>
+                                    <td className="px-6 py-4 whitespace-nowrap  font-bold text-sm text-gray-900 text-right">₹{totalRevenue.toFixed(2)}</td>
                                 </tr>
-                                <tr>
-                                    <td>Monthly (Avg./Current)</td>
-                                    <td className="text-right">₹{totalMonthlyRevenue.toFixed(2)}</td>
+                                <tr className="hover:bg-green-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Monthly (Avg./Current)</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">₹{totalMonthlyRevenue.toFixed(2)}</td>
                                 </tr>
-                                <tr>
-                                    <td>Yearly (Current)</td>
-                                    <td className="text-right">₹{totalYearlyRevenue.toFixed(2)}</td>
+                                <tr className="hover:bg-green-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Yearly (Current)</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">₹{totalYearlyRevenue.toFixed(2)}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -431,7 +316,7 @@ const Analytics = () => {
                 </div>
 
                 {/* --- Card 5: Subscriptions Detail Table (Full Width) --- */}
-                <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500 hover:shadow-xl transition-all duration-300 mt-6 mb-8">
+                <div className="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 hover:shadow-2xl transition-all duration-300 mt-6 mb-8">
                     <h2 className={`text-xl font-bold text-gray-700 mb-4`}>
                         <i className={`fas fa-list-alt text-gray-700 mr-2`}></i> Users and Their Subscription Plans
                     </h2>

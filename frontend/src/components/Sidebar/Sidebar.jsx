@@ -43,9 +43,11 @@ const Sidebar = () => {
     { name: 'Home', href: '/corporatepartner', icon: 'fas fa-home' },
     { name: 'My Verification', href: '/corporatepartner/doc-status', icon: 'fas fa-handshake' },
     { name: 'Plans/Offers', href: '/corporatepartner/plans-offers', icon: 'fas fa-briefcase' },
-    { name: 'Renewal', href: '/corporatepartner/renewal', icon: 'fas fa-sync-alt' },
+    { name: 'Employee Management', href: '/corporatepartner/employee-management', icon: 'fas fa-users' },
     { name: 'Bookings', href: '/corporatepartner/bookings', icon: 'fas fa-bookmark' },
-    { name: 'Chatbot', href: '/user/chatbot', icon: 'fas fa-robot' },
+    { name: 'Analytics', href: '/corporatepartner/analytics', icon: 'fas fa-chart-bar' },
+    { name: 'Renewal', href: '/corporatepartner/renewal', icon: 'fas fa-sync-alt' },
+    { name: 'API Docs', href: '/corporatepartner/api_docs', icon: 'fas fa-code' },
   ];
 
   const adminNavLinks = [
