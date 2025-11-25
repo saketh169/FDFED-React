@@ -280,7 +280,7 @@ const UserDashboard = () => {
 
             <div className="space-y-3">
               <button
-                onClick={() => navigate("/user/schedule")}
+                onClick={() => navigate("/user/dietitian-profiles")}
                 className="w-full bg-amber-500 text-white font-semibold py-3 rounded-full hover:bg-amber-600 transition shadow flex items-center justify-center gap-2"
               >
                 <i className="fas fa-calendar-alt"></i> Book Consultation
@@ -355,7 +355,7 @@ const UserDashboard = () => {
 
           <div className="text-center mt-5">
             <button
-              onClick={() => navigate("/user-progress")}
+              onClick={() => navigate("/user/progress")}
               className="text-blue-600 hover:text-blue-800 font-medium text-sm"
             >
               View all activities →

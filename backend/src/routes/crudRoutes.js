@@ -11,22 +11,8 @@ const {
 
 // Middleware to check admin authentication
 const requireAdmin = (req, res, next) => {
-    // Check for admin token in header or session
-    const token = req.headers.authorization?.replace('Bearer ', '') ||
-                  req.headers['admin-auth-token'];
-
-    if (!token) {
-        return res.status(401).json({ success: false, message: 'Admin authentication required' });
-    }
-
-    // In a real implementation, you'd verify the JWT token here
-    // For now, we'll just check if it exists
-    if (token === 'admin-token-placeholder') {
-        return next();
-    }
-
-    // You can add more sophisticated token verification here
-    next(); // Temporarily allow all requests for development
+    // For development, allow all requests without authentication
+    next();
 };
 
 // Apply admin middleware to all routes

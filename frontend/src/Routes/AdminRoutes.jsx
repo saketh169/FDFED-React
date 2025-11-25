@@ -7,6 +7,7 @@ import AdminManagement from '../pages/Admin/AdminManagement';
 import OrgVerify from '../pages/Verify/OrgVeify'; 
 import Analytics from '../pages/Admin/Analytics';
 import AdminQueries from '../pages/Admin/AdminQueries';
+import AdminSettings from '../pages/Admin/AdminSettings';
 
 import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
@@ -26,6 +27,7 @@ export default function AdminRoutes() {
           <Route path="analytics" element={<Analytics/>} />
           <Route path="verify-organizations" element={<OrgVerify />} /> 
           <Route path="queries" element={<AdminQueries />} />
+          <Route path="settings" element={<AdminSettings />} />
           
           <Route path="change-pass" element={<ChangePassword />} />
           <Route path="edit-profile" element={<EditProfile />} />

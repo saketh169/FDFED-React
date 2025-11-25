@@ -16,6 +16,7 @@ const mealPlanRoutes = require('./routes/mealPlanRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const labReportRoutes = require('./routes/labReportRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 
 // Load environment variables from .env file
@@ -85,6 +86,9 @@ app.use('/api/payments', paymentRoutes);
 
 // Lab report routes mounted at '/api/lab-reports'
 app.use('/api/lab-reports', labReportRoutes);
+
+// Analytics routes mounted at '/api'
+app.use('/api', analyticsRoutes);
 
 
 // Simple test route (kept from your original code)
