@@ -4,6 +4,7 @@ import InputArea from './InputArea';
 import MessageList from './MessageList';
 import NutritionCard from './NutritionCard';
 import axios from 'axios';
+import SubscriptionAlert from '../../components/SubscriptionAlert';
 
 function ChatBotPage() {
   const [messages, setMessages] = useState([
@@ -19,6 +20,8 @@ function ChatBotPage() {
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
+  const [subscriptionAlertData, setSubscriptionAlertData] = useState({});
 
   // Feature: Keyboard shortcut (Ctrl/Cmd + K to clear chat)
   useEffect(() => {
@@ -148,15 +151,29 @@ function ChatBotPage() {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add error message with retry option
-      const errorMessage = {
-        type: 'bot',
-        content: 'Sorry, I encountered an error connecting to the server. Please try again.',
-        timestamp: new Date(),
-        isError: true,
-        failedMessage: messageText
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      
+      // Check if it's a subscription limit error
+      if (error.response?.data?.limitReached) {
+        const errorData = error.response.data;
+        setSubscriptionAlertData({
+          message: errorData.message,
+          planType: errorData.planType || 'free',
+          limitType: 'chatbot',
+          currentCount: errorData.currentCount || 0,
+          limit: errorData.limit || 0
+        });
+        setShowSubscriptionAlert(true);
+      } else {
+        // Add error message with retry option
+        const errorMessage = {
+          type: 'bot',
+          content: 'Sorry, I encountered an error connecting to the server. Please try again.',
+          timestamp: new Date(),
+          isError: true,
+          failedMessage: messageText
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
     } finally {
       setIsTyping(false);
     }
@@ -251,6 +268,18 @@ function ChatBotPage() {
       <div className="shrink-0">
         <InputArea onSendMessage={handleSendMessage} />
       </div>
+
+      {/* Subscription Alert Modal */}
+      {showSubscriptionAlert && (
+        <SubscriptionAlert
+          message={subscriptionAlertData.message}
+          planType={subscriptionAlertData.planType}
+          limitType={subscriptionAlertData.limitType}
+          currentCount={subscriptionAlertData.currentCount}
+          limit={subscriptionAlertData.limit}
+          onClose={() => setShowSubscriptionAlert(false)}
+        />
+      )}
     </div>
   );
 }

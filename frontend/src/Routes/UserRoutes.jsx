@@ -23,6 +23,13 @@ import DietitianProfile from '../pages/Consultations/DietitianProfile';
 import DietitiansList from '../pages/Appointments/DietitiansList';
 import ChatPage from '../pages/Chat/ChatPage';
 
+// Payment pages
+import Pricing from '../pages/Payments/Pricing';
+import PricingPlan from '../pages/Payments/PricingPlan';
+import Payment from '../pages/Payments/Payment';
+import PaymentSuccess from '../pages/Payments/PaymentSuccess';
+import SubscriptionDashboard from '../pages/Payments/SubscriptionDashboard';
+
 import ClientLabReportViewer from '../pages/LabReports/ClientLabReportViewer';
 import LabReportUploader from '../pages/LabReports/LabReportUploader';
 
@@ -63,7 +70,12 @@ export default function UserRoutes() {
         {/* Lab Reports Routes */}
         <Route path="lab-reports/:dietitianId" element={<ClientLabReportViewer />} />
         <Route path="submit-lab-report/:dietitianId" element={<LabReportUploader />} />
-        
+         {/* Payment Routes */}
+        <Route path="pricing" element={<Pricing />} />
+        <Route path="pricing-plan" element={<PricingPlan />} />
+        <Route path="payment" element={<Payment />} />
+        <Route path="payment-success" element={<PaymentSuccess />} />
+        <Route path="subscription" element={<SubscriptionDashboard />} />
        
         {/* Dietitian Routes */}
         <Route path="dietitian-profiles" element={<AllDietitiansPage />} />

@@ -475,10 +475,6 @@ exports.getBookedSlots = async (req, res) => {
       }
     });
 
-    console.log(`Booked slots for dietitian ${dietitianId} on ${date}:`);
-    console.log("- Other users:", bookedSlots);
-    console.log("- Current user:", userBookings);
-
     res.status(200).json({
       success: true,
       bookedSlots, // Slots booked by other users

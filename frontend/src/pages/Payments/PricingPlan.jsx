@@ -1,0 +1,112 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+
+const PricingPlan = () => {
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const planType = params.get("plan");
+  const billingType = params.get("billing");
+  const amount = params.get("amount");
+  const { isAuthenticated } = useAuth('user');
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      alert('Please login to continue');
+      navigate('/role');
+    }
+  }, [isAuthenticated, navigate]);
+
+  const plans = {
+    basic: {
+      heading: "Basic Plan",
+      price: billingType === "yearly" ? "₹999/year" : "₹299/month",
+      features: [
+        "Up to 4 daily consultations",
+        "Generate up to 4 meal plans",
+        "Access to blog posting",
+        "Personalized support",
+        "Admin contact support",
+      ],
+    },
+    premium: {
+      heading: "Premium Plan",
+      price: billingType === "yearly" ? "₹1999/year" : "₹599/month",
+      features: [
+        "Up to 6 daily consultations",
+        "Generate up to 20 meal plans",
+        "Access to blog posting",
+        "Personalized support",
+        "Admin contact support",
+      ],
+    },
+    ultimate: {
+      heading: "Ultimate Plan",
+      price: billingType === "yearly" ? "₹2999/year" : "₹899/month",
+      features: [
+        "Up to 8 daily consultations",
+        "Unlimited meal plans",
+        "Access to blog posting",
+        "Personalized support",
+        "Admin contact support",
+      ],
+    },
+  };
+
+  const plan = plans[planType] || { heading: "Plan Not Found", features: [] };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div
+        className="cursor-pointer hover:opacity-80 mb-8 flex items-center"
+        style={{ color: '#27AE60' }}
+        onClick={() => navigate(-1)}
+      >
+        <i className="fa-solid fa-arrow-left mr-2"></i>
+        Back
+      </div>
+
+      <div className="max-w-2xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-8" style={{ color: '#1A4A40' }}>{plan.heading}</h2>
+
+        <div className="bg-white rounded-2xl shadow-lg p-8" style={{ borderTop: '4px solid #27AE60' }}>
+          <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium mb-6" style={{ backgroundColor: '#27AE60', color: 'white' }}>
+            {billingType === "yearly" ? "Annual Billing" : "Monthly Billing"}
+          </div>
+
+          <div className="text-4xl font-bold mb-8" style={{ color: '#1A4A40' }}>
+            {plan.price}
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {plan.features.map((feature, index) => (
+              <div
+                key={index}
+                className="flex items-center p-4 bg-gray-50 rounded-lg"
+              >
+                <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: '#27AE60' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span style={{ color: '#2F4F4F' }}>{feature}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8">
+            <button
+              className="w-full text-white py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
+              style={{ backgroundColor: '#27AE60' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
+              onClick={() => navigate(`/user/payment?plan=${planType}&billing=${billingType}&amount=${amount}`)}
+            >
+              Pay Amount
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PricingPlan;

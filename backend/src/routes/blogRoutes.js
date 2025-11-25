@@ -11,6 +11,7 @@ const {
     uploadBlogImage, 
     uploadToCloudinary 
 } = require('../middlewares/cloudinaryMiddleware');
+const { checkBlogLimit } = require('../middlewares/subscriptionMiddleware');
 
 // ----------------------------------------------------------------------
 // PUBLIC ROUTES (No authentication required or optional)
@@ -29,11 +30,12 @@ router.get('/:id', optionalAuth, blogController.getBlogById);
 // PROTECTED ROUTES (Authentication required)
 // ----------------------------------------------------------------------
 
-// Create new blog post (only users and dietitians)
+// Create new blog post (only users and dietitians with subscription check)
 router.post(
     '/', 
     verifyBlogAuth,
     canCreateBlog,
+    checkBlogLimit,
     uploadBlogImage.single('featuredImage'),
     uploadToCloudinary,
     blogController.createBlog

@@ -2,19 +2,26 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 //const { Dietitian, Organization, CorporatePartner } = require('../models/userModel');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-development';
+
 // JWT authentication helper
 function authenticateJWT(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
+    console.log('❌ No token provided in request');
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ success: false, message: 'Invalid token' });
+      console.error('❌ JWT verification failed:', err.message);
+      console.error('Token preview:', token.substring(0, 20) + '...');
+      console.error('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+      return res.status(403).json({ success: false, message: 'Invalid token', error: err.message });
     }
+    console.log('✅ Token verified successfully. User:', { userId: user.userId, role: user.role });
     req.user = user;
     next();
   });
@@ -29,7 +36,7 @@ function ensureDietitianAuthenticated(req, res, next) {
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ success: false, message: 'Invalid token' });
     }
@@ -50,7 +57,7 @@ function ensureOrganizationAuthenticated(req, res, next) {
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ success: false, message: 'Invalid token' });
     }
@@ -71,7 +78,7 @@ function ensureCorporatePartnerAuthenticated(req, res, next) {
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ success: false, message: 'Invalid token' });
     }
