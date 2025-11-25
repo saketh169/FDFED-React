@@ -201,10 +201,22 @@ const Header = () => {
       const iconButtonBaseClass = "relative flex items-center justify-center p-2 rounded-full transition-all duration-300 group";
       const tooltipTextClass = "absolute top-full mt-2 px-3 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10";
 
-      // If in any role area, show Profile and Logout buttons
+      // If in any role area, show Profile, Payment (for users), and Logout buttons
       return (
         
         <div className="flex space-x-3 items-center -mr-20">
+          {/* Show Pricing button only for user role */}
+          {currentRole === 'user' && (
+            <button
+              onClick={() => navigate('/user/pricing')}
+              className={`${iconButtonBaseClass} border border-[#FFD700] text-[#FFD700] hover:bg-[#FFD700] hover:text-white overflow-visible`}
+              aria-label="Subscription Plans"
+            >
+              <i className="fas fa-crown text-3xl"></i>
+              <span className={tooltipTextClass}>Subscription</span>
+            </button>
+          )}
+          
           <button
             onClick={() => navigate(getProfilePath())}
             className={`${iconButtonBaseClass} border border-[#28B463] text-[#28B463] hover:bg-[#28B463] hover:text-white overflow-visible`}

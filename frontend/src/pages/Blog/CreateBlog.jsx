@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
 import axios from 'axios';
 import { FaArrowLeft, FaSave, FaImage } from 'react-icons/fa';
+import SubscriptionAlert from '../../components/SubscriptionAlert';
 
 const CreateBlog = () => {
     const navigate = useNavigate();
@@ -34,6 +35,8 @@ const CreateBlog = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [isEditMode, setIsEditMode] = useState(false);
+    const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
+    const [subscriptionAlertData, setSubscriptionAlertData] = useState({});
 
     useEffect(() => {
         // Scroll to top when component mounts
@@ -206,7 +209,21 @@ const CreateBlog = () => {
             console.error('Error submitting blog:', error);
             console.error('Error response:', error.response?.data);
             console.error('Error status:', error.response?.status);
-            setError(error.response?.data?.message || 'Failed to submit blog post');
+            
+            // Check if it's a subscription limit error
+            if (error.response?.data?.limitReached) {
+                const errorData = error.response.data;
+                setShowSubscriptionAlert(true);
+                setSubscriptionAlertData({
+                    message: errorData.message,
+                    planType: errorData.planType || 'free',
+                    limitType: 'blog',
+                    currentCount: errorData.currentCount || 0,
+                    limit: errorData.limit || 0
+                });
+            } else {
+                setError(error.response?.data?.message || 'Failed to submit blog post');
+            }
         } finally {
             setLoading(false);
         }
@@ -383,6 +400,18 @@ const CreateBlog = () => {
                     </div>
                 </form>
             </div>
+
+            {/* Subscription Alert Modal */}
+            {showSubscriptionAlert && (
+                <SubscriptionAlert
+                    message={subscriptionAlertData.message}
+                    planType={subscriptionAlertData.planType}
+                    limitType={subscriptionAlertData.limitType}
+                    currentCount={subscriptionAlertData.currentCount}
+                    limit={subscriptionAlertData.limit}
+                    onClose={() => setShowSubscriptionAlert(false)}
+                />
+            )}
         </div>
     );
 };

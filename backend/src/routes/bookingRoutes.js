@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const bookingController = require("../controllers/bookingController");
+const { checkBookingLimit } = require("../middlewares/subscriptionMiddleware");
 
 /**
  * BOOKING ROUTES
@@ -8,8 +9,8 @@ const bookingController = require("../controllers/bookingController");
  */
 
 // --- CREATE BOOKING ---
-// POST /api/bookings/create
-router.post("/create", bookingController.createBooking);
+// POST /api/bookings/create (with subscription limit check)
+router.post("/create", checkBookingLimit, bookingController.createBooking);
 
 // --- GET BOOKINGS ---
 // GET /api/bookings/user/:userId

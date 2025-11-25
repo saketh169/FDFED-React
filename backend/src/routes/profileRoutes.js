@@ -45,5 +45,9 @@ router.get('/getcorporatepartnerdetails', getCorporatePartnerDetails);
 // Update Profile Route - Works for all roles
 router.put('/update-profile', updateUserProfile);
 
+// Subscription Status Route
+const { getSubscriptionStatus } = require('../middlewares/subscriptionMiddleware');
+router.get('/subscription-status', getSubscriptionStatus);
+
 
 module.exports = router;

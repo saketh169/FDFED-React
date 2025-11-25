@@ -78,7 +78,7 @@ const BookingSchema = new Schema({
   },
   paymentMethod: { 
     type: String, 
-    enum: ['UPI', 'Credit Card', 'PayPal'],
+    enum: ['card', 'netbanking', 'upi', 'emi', 'UPI', 'Credit Card', 'PayPal'],
     required: true 
   },
   paymentId: { 
