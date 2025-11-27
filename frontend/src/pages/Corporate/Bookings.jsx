@@ -57,7 +57,10 @@ const Bookings = () => {
       employeeCount: newBooking.employeeCount,
       startDate: newBooking.startDate,
       status: 'Pending',
-      createdAt: new Date().toISOString().split('T')[0]
+      createdAt: (() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      })()
     };
     setBookings(prev => [booking, ...prev]);
     setNewBooking({ planId: '', employeeCount: 1, startDate: '', notes: '' });

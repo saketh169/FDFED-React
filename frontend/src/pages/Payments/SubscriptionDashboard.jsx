@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
-import Footer from '../../components/Footer/Footer';
+
 
 const SubscriptionDashboard = () => {
   const navigate = useNavigate();
@@ -83,11 +83,23 @@ const SubscriptionDashboard = () => {
   return (
     <>
       <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f0fdf4, #ffffff)' }}>
-        <div className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="pt-18 pb-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl font-bold mb-8" style={{ color: '#1A4A40' }}>
-              My Subscription
-            </h1>
+            <div className="flex items-center justify-between mb-8">
+              <h1 className="text-4xl font-bold" style={{ color: '#1A4A40' }}>
+                My Subscription
+              </h1>
+              <button
+                onClick={() => navigate('/user/pricing')}
+                className="px-6 py-3 rounded-lg font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                style={{ backgroundColor: '#27AE60' }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
+              >
+                <i className="fas fa-chevron-left"></i>
+                Back to Pricing
+              </button>
+            </div>
 
             {/* Active Subscription */}
             {subscription ? (
@@ -170,8 +182,8 @@ const SubscriptionDashboard = () => {
                         </svg>
                         <span className="text-sm" style={{ color: '#2F4F4F' }}>
                           {subscription.features?.monthlyMealPlans === -1 
-                            ? 'Unlimited Meal Plans' 
-                            : `${subscription.features?.monthlyMealPlans || 0} Meal Plans/Month`}
+                            ? 'Unlimited User Daily Progress Plans' 
+                            : `${subscription.features?.monthlyMealPlans || 0} User Daily Progress Plans/Month`}
                         </span>
                       </div>
                       <div className="flex items-center p-3 bg-green-50 rounded-lg">

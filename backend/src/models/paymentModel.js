@@ -51,8 +51,12 @@ const paymentSchema = new mongoose.Schema({
   },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'processing', 'success', 'failed', 'refunded'],
+    enum: ['pending', 'success', 'failed', 'refunded'],
     default: 'pending'
+  },
+  paymentDate: {
+    type: Date,
+    default: Date.now
   },
   paymentDetails: {
     // For card payments
@@ -133,6 +137,7 @@ paymentSchema.methods.activateSubscription = function() {
   
   this.subscriptionStartDate = startDate;
   this.subscriptionEndDate = endDate;
+  this.paymentDate = new Date(); // Set payment date when activated
   this.isActive = true;
   this.paymentStatus = 'success';
   

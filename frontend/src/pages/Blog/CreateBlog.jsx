@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
 import axios from 'axios';
 import { FaArrowLeft, FaSave, FaImage } from 'react-icons/fa';
-import SubscriptionAlert from '../../components/SubscriptionAlert';
+import SubscriptionAlert from '../../middleware/SubscriptionAlert';
 
 const CreateBlog = () => {
     const navigate = useNavigate();

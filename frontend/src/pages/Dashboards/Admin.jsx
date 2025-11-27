@@ -9,6 +9,8 @@ import {
   fetchUserGrowth,
   fetchMembershipRevenue,
   fetchConsultationRevenue,
+  fetchSubscriptions,
+  fetchRevenueAnalytics,
 } from "../../redux/slices/analyticsSlice";
 
 // --- Mock Data & API Call Simulation ---
@@ -194,6 +196,8 @@ const AdminDashboard = () => {
     userGrowth,
     membershipRevenue,
     consultationRevenue,
+    subscriptions,
+    revenueAnalytics,
     isLoading,
     error: analyticsError
   } = useSelector(state => state.analytics);
@@ -204,10 +208,17 @@ const AdminDashboard = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = React.useRef(null);
 
+  // State for calculated data like in Analytics.jsx
+  const [calculatedData, setCalculatedData] = useState({
+    monthWiseWithZeros: {},
+    monthTotal: 0,
+  });
+
   // Calculate revenue from Redux state
-  const yearlySubRevenue = membershipRevenue.yearly || 0;
-  const yearlyConRevenue = consultationRevenue.yearlyPeriods?.reduce((sum, period) => sum + period.revenue, 0) || 0;
-  const totalRevenue = yearlySubRevenue + yearlyConRevenue;
+  // Prefer values computed in the Analytics page (redux `revenueAnalytics.summary`) when available
+  const yearlySubRevenue = revenueAnalytics?.summary?.totalSubscriptionRevenue ?? membershipRevenue.yearly ?? 0;
+  const yearlyConRevenue = revenueAnalytics?.summary?.totalConsultationRevenue ?? (consultationRevenue.yearlyPeriods?.reduce((sum, period) => sum + period.revenue, 0) || 0);
+  const totalRevenue = revenueAnalytics?.summary?.totalRevenue ?? (yearlySubRevenue + yearlyConRevenue);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -217,6 +228,8 @@ const AdminDashboard = () => {
       dispatch(fetchUserGrowth());
       dispatch(fetchMembershipRevenue());
       dispatch(fetchConsultationRevenue());
+      dispatch(fetchSubscriptions());
+      dispatch(fetchRevenueAnalytics());
 
       // Keep organization fetching as is (not part of analytics)
       const fetchedOrgs = await mockFetchOrganizations();
@@ -236,6 +249,48 @@ const AdminDashboard = () => {
       setProfileImage(null);
     }
   }, [user, user?.profileImage]);
+
+  // Calculate membership revenue data like in Analytics.jsx
+  useEffect(() => {
+    if (subscriptions.length > 0) {
+      const now = new Date();
+      const sixMonthsAgo = new Date(now);
+      sixMonthsAgo.setMonth(now.getMonth() - 6);
+
+      const last6Months = subscriptions.filter(sub => new Date(sub.startDate) >= sixMonthsAgo);
+
+      const monthWiseLast6Months = last6Months.reduce((acc, sub) => {
+        const date = new Date(sub.startDate);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!acc[monthKey]) acc[monthKey] = [];
+        acc[monthKey].push(sub);
+        return acc;
+      }, {});
+
+      // Generate all months for last 6 months
+      const allMonths = [];
+      let currentMonth = new Date();
+      for (let i = 0; i < 6; i++) {
+        const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+        const yearShort = currentMonth.getFullYear().toString().slice(-2);
+        const displayMonth = `${currentMonth.toLocaleDateString('en-US', { month: 'long' })} ${yearShort}`;
+        allMonths.push({ key: monthKey, display: displayMonth });
+        currentMonth.setMonth(currentMonth.getMonth() - 1);
+      }
+
+      const monthWiseWithZeros = allMonths.reduce((acc, monthObj) => {
+        acc[monthObj.display] = (monthWiseLast6Months[monthObj.key] || []).reduce((sum, sub) => sum + sub.revenue, 0);
+        return acc;
+      }, {});
+
+      const monthTotal = Object.values(monthWiseWithZeros).reduce((sum, val) => sum + val, 0);
+
+      setCalculatedData({
+        monthWiseWithZeros,
+        monthTotal,
+      });
+    }
+  }, [subscriptions]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -408,20 +463,12 @@ const AdminDashboard = () => {
           ) : (
             <div className="h-96">
               <GrowthChart data={{
-                labels: userGrowth.monthlyGrowth?.length > 0
-                  ? userGrowth.monthlyGrowth.map(item => item.month)
-                  : consultationRevenue.monthlyPeriods?.length > 0
-                  ? consultationRevenue.monthlyPeriods.map(period => period.month)
-                  : ['Current'],
-                subscriptions: userGrowth.monthlyGrowth?.length > 0
-                  ? userGrowth.monthlyGrowth.map(() => membershipRevenue.monthly || 0)
-                  : consultationRevenue.monthlyPeriods?.length > 0
-                  ? consultationRevenue.monthlyPeriods.map(() => membershipRevenue.monthly || 0)
-                  : [membershipRevenue.monthly || 0],
-                consultations: userGrowth.monthlyGrowth?.length > 0
+                labels: Object.keys(calculatedData.monthWiseWithZeros).reverse(),
+                subscriptions: Object.values(calculatedData.monthWiseWithZeros).reverse(),
+                consultations: consultationRevenue.monthlyPeriods?.length > 0
+                  ? consultationRevenue.monthlyPeriods.map(period => period.revenue).reverse()
+                  : userGrowth.monthlyGrowth?.length > 0
                   ? userGrowth.monthlyGrowth.map(() => yearlyConRevenue / 12)
-                  : consultationRevenue.monthlyPeriods?.length > 0
-                  ? consultationRevenue.monthlyPeriods.map(period => period.revenue)
                   : [yearlyConRevenue / 12],
                 users: userGrowth.monthlyGrowth?.length > 0
                   ? userGrowth.monthlyGrowth.map(item => item.cumulative)

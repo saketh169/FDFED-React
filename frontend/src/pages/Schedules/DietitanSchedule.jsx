@@ -24,7 +24,7 @@ const generateWeekDates = () => {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
         const dayKey = days[date.getDay()].toLowerCase(); // Use day name as key for simple rendering
-        const fullDateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD for matching backend data
+        const fullDateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; // YYYY-MM-DD using local date
 
         weekDates[dayKey] = {
             name: dayKey.charAt(0).toUpperCase() + dayKey.slice(1),
@@ -116,9 +116,10 @@ const DietitianSchedule = () => {
     const bookingsByDay = useMemo(() => {
         const grouped = {};
         bookings.forEach(booking => {
-            // Fix timezone issue - parse date string directly for IST
-            // The date comes from backend as YYYY-MM-DD, use it directly
-            const dateKey = booking.date.split('T')[0];
+            // Fix timezone issue - convert UTC date to local date
+            const utcDate = new Date(booking.date);
+            const localDate = new Date(utcDate.getTime() - (utcDate.getTimezoneOffset() * 60000));
+            const dateKey = localDate.toISOString().split('T')[0];
             
             if (!grouped[dateKey]) {
                 grouped[dateKey] = [];

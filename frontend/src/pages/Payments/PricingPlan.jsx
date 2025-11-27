@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import axios from "axios";
 
 const PricingPlan = () => {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ const PricingPlan = () => {
   const planType = params.get("plan");
   const billingType = params.get("billing");
   const amount = params.get("amount");
-  const { isAuthenticated } = useAuth('user');
+  const { isAuthenticated, token } = useAuth('user');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -23,7 +24,7 @@ const PricingPlan = () => {
       price: billingType === "yearly" ? "₹999/year" : "₹299/month",
       features: [
         "Up to 4 daily consultations",
-        "Generate up to 4 meal plans",
+        "Generate up to 4 user daily progress plans",
         "Access to blog posting",
         "Personalized support",
         "Admin contact support",
@@ -34,7 +35,7 @@ const PricingPlan = () => {
       price: billingType === "yearly" ? "₹1999/year" : "₹599/month",
       features: [
         "Up to 6 daily consultations",
-        "Generate up to 20 meal plans",
+        "Generate up to 20 user daily progress plans",
         "Access to blog posting",
         "Personalized support",
         "Admin contact support",
@@ -45,7 +46,7 @@ const PricingPlan = () => {
       price: billingType === "yearly" ? "₹2999/year" : "₹899/month",
       features: [
         "Up to 8 daily consultations",
-        "Unlimited meal plans",
+        "Unlimited user daily progress plans",
         "Access to blog posting",
         "Personalized support",
         "Admin contact support",
@@ -98,7 +99,28 @@ const PricingPlan = () => {
               style={{ backgroundColor: '#27AE60' }}
               onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
-              onClick={() => navigate(`/user/payment?plan=${planType}&billing=${billingType}&amount=${amount}`)}
+              onClick={async () => {
+                try {
+                  // Check if user has active subscription before proceeding to payment
+                  const response = await axios.get('/api/payments/subscription/active', {
+                    headers: { Authorization: `Bearer ${token}` }
+                  });
+                  
+                  if (response.data.success && response.data.hasActiveSubscription) {
+                    const subscription = response.data.subscription;
+                    const endDate = new Date(subscription.subscriptionEndDate).toLocaleDateString();
+                    alert(`You already have an active ${subscription.planType} Plan subscription that expires on ${endDate}. You cannot purchase a new subscription until your current one expires.`);
+                    return;
+                  }
+                  
+                  // If no active subscription, proceed to payment
+                  navigate(`/user/payment?plan=${planType}&billing=${billingType}&amount=${amount}`);
+                } catch (error) {
+                  console.error('Error checking subscription status:', error);
+                  // If API fails, allow user to proceed (fail-safe)
+                  navigate(`/user/payment?plan=${planType}&billing=${billingType}&amount=${amount}`);
+                }
+              }}
             >
               Pay Amount
             </button>

@@ -1,6 +1,7 @@
 const { User, Dietitian, Organization, CorporatePartner } = require('../models/userModel');
 const Booking = require('../models/bookingModel');
 const MealPlan = require('../models/mealPlanModel');
+const Payment = require('../models/paymentModel');
 
 // Get all users
 exports.getUsersList = async (req, res) => {
@@ -62,25 +63,28 @@ exports.getActiveDietPlans = async (req, res) => {
     }
 };
 
-// Get subscriptions (placeholder - using MealPlan as subscription)
+// Get subscriptions (using Payment model)
 exports.getSubscriptions = async (req, res) => {
     try {
-        // Assuming MealPlan represents subscriptions
-        const subscriptions = await MealPlan.find({})
+        // Using Payment model for subscriptions
+        const payments = await Payment.find({ paymentStatus: 'success' })
             .populate('userId', 'name')
-            .select('planName dietType calories createdAt userId');
+            .select('planType billingCycle amount paymentMethod transactionId subscriptionStartDate subscriptionEndDate createdAt paymentDate userId userName');
         // Format to match frontend expectation
-        const formatted = subscriptions.map(sub => ({
-            _id: sub._id,
-            name: sub.planName, // plan name
-            billingType: 'monthly', // placeholder
-            createdAt: sub.createdAt,
-            amount: sub.calories * 0.1, // placeholder amount
-            paymentMethod: 'UPI', // placeholder
-            transactionId: sub._id.toString(),
-            expiresAt: new Date(sub.createdAt.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days later
-            status: 'success',
-            userId: { name: sub.userId.name }
+        const formatted = payments.map(payment => ({
+            id: payment._id,
+            name: payment.userName,
+            plan: payment.planType,
+            cycle: payment.billingCycle,
+            revenue: payment.amount,
+            paymentMethod: payment.paymentMethod,
+            transactionId: payment.transactionId,
+            startDate: payment.subscriptionStartDate || payment.createdAt,
+            expiresAt: payment.subscriptionEndDate,
+            status: payment.paymentStatus,
+            createdAt: payment.createdAt,
+            paymentDate: payment.paymentDate,
+            userId: { name: payment.userId?.name || payment.userName }
         }));
         res.json({ data: formatted });
     } catch (error) {
@@ -91,7 +95,7 @@ exports.getSubscriptions = async (req, res) => {
 // Get consultation revenue
 exports.getConsultationRevenue = async (req, res) => {
     try {
-        const consultations = await Booking.find({ paymentStatus: 'completed' }, 'date amount');
+        const consultations = await Booking.find({ paymentStatus: 'completed' }, 'date amount createdAt');
         res.json({ data: consultations });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching consultation revenue', error: error.message });

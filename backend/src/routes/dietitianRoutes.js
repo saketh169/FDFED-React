@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Dietitian, UserAuth } = require('../models/userModel');
 const Booking = require('../models/bookingModel');
+const { authenticateJWT } = require('../middlewares/authMiddleware');
 
 // Get all verified dietitians
 router.get('/dietitians', async (req, res) => {
@@ -260,6 +261,140 @@ router.post('/dietitian-profile-setup/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error setting up dietitian profile'
+    });
+  }
+});
+
+// Get available slots for a dietitian on a specific date
+router.get('/dietitians/:id/slots', authenticateJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, userId } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date parameter is required'
+      });
+    }
+
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Use YYYY-MM-DD'
+      });
+    }
+
+    const dietitian = await Dietitian.findById(id);
+    if (!dietitian) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dietitian not found'
+      });
+    }
+
+    // For now, assume standard working hours: 9:00 AM to 8:00 PM (20:00)
+    // In a real implementation, this would come from dietitian's availability settings
+    const startHour = 9;
+    const endHour = 20; // 8:00 PM
+    const slotDuration = 30; // minutes
+
+    let availableSlots = [];
+    let currentHour = startHour;
+    let currentMinute = 0;
+
+    // Generate 30-minute slots from start to end time
+    while (currentHour < endHour || (currentHour === endHour && currentMinute === 0)) {
+      const slot = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      availableSlots.push(slot);
+
+      currentMinute += slotDuration;
+      if (currentMinute >= 60) {
+        currentHour += 1;
+        currentMinute = 0;
+      }
+    }
+
+    // Parse and normalize the query date
+    const queryDate = new Date(date);
+    queryDate.setHours(0, 0, 0, 0);
+
+    const nextDay = new Date(queryDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // Fetch slots booked by the current user for ANY dietitian on this date
+    const userBookedSlots = await Booking.find({
+      userId,
+      date: { $gte: queryDate, $lt: nextDay },
+      status: { $in: ['confirmed', 'completed'] }
+    }).select('time dietitianName');
+
+    // Fetch slots booked for this specific dietitian by ANY user on this date
+    const dietitianBookedSlots = await Booking.find({
+      dietitianId: id,
+      date: { $gte: queryDate, $lt: nextDay },
+      status: { $in: ['confirmed', 'completed'] }
+    }).select('time userId');
+
+    // Create maps for quick lookup
+    const userBookedMap = new Map();
+    userBookedSlots.forEach(booking => {
+      userBookedMap.set(booking.time, booking.dietitianName);
+    });
+
+    const dietitianBookedMap = new Map();
+    dietitianBookedSlots.forEach(booking => {
+      dietitianBookedMap.set(booking.time, booking.userId);
+    });
+
+    // Categorize each slot
+    const slotsWithStatus = availableSlots.map(slot => {
+      let status = 'available';
+      let dietitianName = null;
+      let isUserBooking = false;
+
+      if (userBookedMap.has(slot)) {
+        if (dietitianBookedMap.has(slot) && dietitianBookedMap.get(slot).toString() === userId.toString()) {
+          // User has booked with this dietitian
+          status = 'booked_with_this_dietitian';
+          isUserBooking = true;
+        } else {
+          // User has booked with another dietitian
+          status = 'you_are_booked';
+          dietitianName = userBookedMap.get(slot);
+        }
+      } else if (dietitianBookedMap.has(slot)) {
+        // Slot booked with this dietitian by someone else
+        status = 'booked';
+      }
+
+      return {
+        time: slot,
+        status,
+        dietitianName,
+        isUserBooking
+      };
+    });
+
+    // Filter to only show slots associated with this user and dietitian
+    const filteredSlots = slotsWithStatus.filter(slot => {
+      return slot.status === 'available' || 
+             slot.status === 'booked_with_this_dietitian' || 
+             slot.status === 'you_are_booked';
+    });
+
+    res.json({
+      success: true,
+      slots: filteredSlots,
+      date: queryDate
+    });
+  } catch (error) {
+    console.error('Error fetching available slots:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching available slots'
     });
   }
 });

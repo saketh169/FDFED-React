@@ -8,8 +8,9 @@ const {
     getAllCorporatePartners,
     getActiveDietPlans,
     getSubscriptions,
-    getConsultationRevenue
-} = require('../controllers/analyticsContrller');
+    getConsultationRevenue,
+    getRevenueAnalytics
+} = require('../controllers/analyticsController');
 
 // Analytics routes
 router.get('/users-list', getUsersList);
@@ -20,5 +21,6 @@ router.get('/corporate-partners-list', getAllCorporatePartners);
 router.get('/active-diet-plans', getActiveDietPlans);
 router.get('/subscriptions', getSubscriptions);
 router.get('/consultation-revenue', getConsultationRevenue);
+router.get('/revenue-analytics', getRevenueAnalytics);
 
 module.exports = router;

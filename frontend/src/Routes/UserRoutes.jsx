@@ -70,6 +70,7 @@ export default function UserRoutes() {
         {/* Lab Reports Routes */}
         <Route path="lab-reports/:dietitianId" element={<ClientLabReportViewer />} />
         <Route path="submit-lab-report/:dietitianId" element={<LabReportUploader />} />
+         
          {/* Payment Routes */}
         <Route path="pricing" element={<Pricing />} />
         <Route path="pricing-plan" element={<PricingPlan />} />

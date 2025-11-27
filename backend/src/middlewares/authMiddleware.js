@@ -117,7 +117,26 @@ function validateCorporateObjectId(req, res, next) {
   next();
 }
 
-// Middleware to handle Multer errors
+// Middleware for admin-only access
+function ensureAdminAuthenticated(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    if (user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    req.user = user;
+    next();
+  });
+}
 function handleMulterError(err, req, res, next) {
     if (err instanceof require('multer').MulterError) {
         console.error('Multer Error:', err);
@@ -152,6 +171,7 @@ module.exports = {
     ensureDietitianAuthenticated,
     ensureOrganizationAuthenticated,
     ensureCorporatePartnerAuthenticated,
+    ensureAdminAuthenticated,
     validateDietitianObjectId,
     validateOrganizationObjectId,
     validateCorporateObjectId,
