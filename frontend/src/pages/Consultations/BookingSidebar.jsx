@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuthContext } from "../../hooks/useAuthContext";
+import SubscriptionAlert from '../../middleware/SubscriptionAlert';
 
 const BookingSidebar = ({
   isOpen,
@@ -10,8 +11,59 @@ const BookingSidebar = ({
 }) => {
   const { user } = useAuthContext();
 
+  const [hasLoggedBookings, setHasLoggedBookings] = useState(false);
+
+  // Log current user ID and dietitian ID when sidebar opens
+  useEffect(() => {
+    if (isOpen && dietitianId) {
+      console.log("Current User ID from auth context:", user?.id || user?._id);
+      console.log("Selected Dietitian ID:", dietitianId);
+    }
+  }, [isOpen, dietitianId, user]);
+
+  // Dummy call to fetch and log all booking slots for the user
+  useEffect(() => {
+    const fetchAllUserBookings = async () => {
+      const userId = user?.id || user?._id || localStorage.getItem("userId");
+      if (!userId || !dietitianId || hasLoggedBookings) return;
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/bookings/user/${userId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          const bookingSlots = data.data
+            .filter(booking => booking.dietitianId !== dietitianId)
+            .map(booking => ({
+              date: new Date(booking.date).toISOString().split('T')[0],
+              time: booking.time,
+              dietitianName: booking.dietitianName,
+              dietitianId: booking.dietitianId,
+              status: booking.status
+            }));
+          console.log("All booking slots for user", userId, "(excluding current dietitian):", bookingSlots);
+          setHasLoggedBookings(true);
+        } else {
+          console.error("Failed to fetch user bookings:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching user bookings:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchAllUserBookings();
+    }
+  }, [user, dietitianId, isOpen, hasLoggedBookings]);
+
   const [selectedDate, setSelectedDate] = useState(
-    () => new Date().toISOString().split("T")[0]
+    () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
   );
   const [selectedTime, setSelectedTime] = useState("");
   const [consultationType, setConsultationType] = useState("Online");
@@ -22,6 +74,8 @@ const BookingSidebar = ({
   });
   const [bookedSlots, setBookedSlots] = useState([]);
   const [userBookedSlots, setUserBookedSlots] = useState([]); // NEW: Track user's bookings
+  const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
+  const [subscriptionAlertData, setSubscriptionAlertData] = useState({});
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -39,7 +93,7 @@ const BookingSidebar = ({
         const data = await response.json();
 
         if (data.success) {
-          console.log("Fetched dietitian booked slots:", data.bookedSlots);
+          console.log("Fetched dietitian booked slots for user", user?.id || user?._id, "and dietitian", dietitianId, "on date", date, ":", data.bookedSlots);
           setBookedSlots(data.bookedSlots || []);
         } else {
           console.error("Failed to fetch booked slots:", data.message);
@@ -159,7 +213,7 @@ const BookingSidebar = ({
     return conflict;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedDate || !selectedTime) {
       setMessage("Please select a date and time slot.");
       return;
@@ -172,6 +226,44 @@ const BookingSidebar = ({
         `You already have an appointment with ${conflict.dietitianName} at ${selectedTime}. Please select a different time.`
       );
       return;
+    }
+
+    // Check subscription limits before proceeding
+    try {
+      const userId = localStorage.getItem("userId");
+      const token = localStorage.getItem("token"); // Assuming token is stored in localStorage
+
+      const response = await fetch(`http://localhost:5000/api/bookings/check-limits`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          userId: userId || user?.id,
+          date: selectedDate,
+          time: selectedTime,
+          dietitianId: dietitianId
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.success && data.limitReached) {
+        // Show subscription alert
+        setSubscriptionAlertData({
+          message: data.message,
+          planType: data.planType || 'free',
+          limitType: data.maxAdvanceDays ? 'advance' : 'booking',
+          currentCount: data.currentCount || 0,
+          limit: data.limit || data.maxAdvanceDays || 0
+        });
+        setShowSubscriptionAlert(true);
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking subscription limits:', error);
+      // If API fails, allow user to proceed (fail-safe)
     }
 
     // Get userId from localStorage
@@ -201,10 +293,21 @@ const BookingSidebar = ({
     onProceedToPayment(dataToSend);
   };
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = (() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
   const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 21);
-  const maxDateStr = maxDate.toISOString().split("T")[0];
+  const maxDateStr = (() => {
+    const year = maxDate.getFullYear();
+    const month = String(maxDate.getMonth() + 1).padStart(2, '0');
+    const day = String(maxDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
 
   // Helper function to render time slot button
   const renderTimeSlot = (time) => {
@@ -230,7 +333,7 @@ const BookingSidebar = ({
     } else if (userConflict) {
       // User has appointment with another dietitian at this time
       buttonClass +=
-        "bg-orange-100 text-orange-700 cursor-not-allowed opacity-80 border-orange-300";
+        "bg-red-100 text-red-700 cursor-not-allowed opacity-80 border-red-300";
       isDisabled = true;
       label = (
         <span className="block text-[9px] mt-1 font-bold uppercase">
@@ -264,7 +367,7 @@ const BookingSidebar = ({
           <span className="absolute inset-0 flex items-center justify-center">
             <span
               className={`block w-full h-0.5 ${
-                isDietitianBooked ? "bg-red-700" : "bg-orange-700"
+                isDietitianBooked ? "bg-red-700" : "bg-red-700"
               }`}
             ></span>
           </span>
@@ -345,22 +448,26 @@ const BookingSidebar = ({
           {/* Legend */}
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-xs font-semibold mb-2 text-gray-700">Legend:</p>
-            <div className="flex flex-wrap gap-2 text-xs">
+            <div className="flex flex-col gap-1 text-xs">
               <span className="flex items-center">
-                <span className="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded mr-1"></span>
+                <span className="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded mr-2"></span>
                 Available
               </span>
               <span className="flex items-center">
-                <span className="w-4 h-4 bg-emerald-600 rounded mr-1"></span>
+                <span className="w-4 h-4 bg-emerald-600 rounded mr-2"></span>
                 Selected
               </span>
               <span className="flex items-center">
-                <span className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded mr-1"></span>
+                <span className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded mr-2"></span>
                 Booked
               </span>
               <span className="flex items-center">
-                <span className="w-4 h-4 bg-orange-100 border-2 border-orange-300 rounded mr-1"></span>
-                Your Appointment
+                <span className="w-4 h-4 bg-orange-100 border-2 border-orange-300 rounded mr-2"></span>
+                You are booked
+              </span>
+              <span className="flex items-center">
+                <span className="w-4 h-4 bg-blue-100 border-2 border-blue-300 rounded mr-2"></span>
+                Booked with this dietitian
               </span>
             </div>
           </div>
@@ -448,6 +555,18 @@ const BookingSidebar = ({
           </button>
         </div>
       </div>
+
+      {/* Subscription Alert Modal */}
+      {showSubscriptionAlert && (
+        <SubscriptionAlert
+          message={subscriptionAlertData.message}
+          planType={subscriptionAlertData.planType}
+          limitType={subscriptionAlertData.limitType}
+          currentCount={subscriptionAlertData.currentCount}
+          limit={subscriptionAlertData.limit}
+          onClose={() => setShowSubscriptionAlert(false)}
+        />
+      )}
     </div>
   );
 };

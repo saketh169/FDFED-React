@@ -137,33 +137,22 @@ export const fetchUserStats = createAsyncThunk(
 export const fetchMembershipRevenue = createAsyncThunk(
   'analytics/fetchMembershipRevenue',
   async () => {
-    const fallbackData = { daily: 0, monthly: 0, yearly: 0 };
+    const fallbackData = {
+      dailyPeriods: [],
+      monthlyPeriods: [],
+      yearlyPeriods: [],
+      daily: 0,
+      monthly: 0,
+      yearly: 0
+    };
 
     const data = await handleApiCall(async (token) => {
-      const response = await axios.get('/api/subscriptions', {
+      const response = await axios.get('/api/membership-revenue', {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
 
-      const subscriptions = response.data.data || response.data || [];
-      const validSubscriptions = subscriptions.filter(sub => sub.status === 'success' && sub.amount > 0);
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const dailyRevenue = validSubscriptions
-        .filter(sub => new Date(sub.createdAt).setHours(0,0,0,0) === today.getTime())
-        .reduce((sum, sub) => sum + sub.amount, 0);
-
-      const monthlyRevenue = validSubscriptions
-        .filter(sub => new Date(sub.createdAt).getMonth() === today.getMonth() && new Date(sub.createdAt).getFullYear() === today.getFullYear())
-        .reduce((sum, sub) => sum + sub.amount, 0);
-
-      const yearlyRevenue = validSubscriptions
-        .filter(sub => new Date(sub.createdAt).getFullYear() === today.getFullYear())
-        .reduce((sum, sub) => sum + sub.amount, 0);
-
-      return { daily: dailyRevenue, monthly: monthlyRevenue, yearly: yearlyRevenue };
+      return response.data;
     }, fallbackData);
 
     return data;
@@ -187,33 +176,32 @@ export const fetchConsultationRevenue = createAsyncThunk(
       });
 
       const consultationData = response.data.data || response.data || [];
-      const adminFeePercentage = 0.2;
       const { dailyDates, monthlyPeriods, yearlyPeriods } = getDateRanges();
 
       // Daily Consultation Revenue
       const dailyConsultationRevenue = dailyDates.map(day => {
         const revenue = consultationData
-          .filter(con => formatDate(con.date) === day.date)
-          .reduce((sum, con) => sum + (con.amount * adminFeePercentage), 0);
+          .filter(con => formatDate(con.createdAt) === day.date)
+          .reduce((sum, con) => sum + (con.amount || 0), 0);
         return { ...day, revenue };
-      }).reverse();
+      });
 
       // Monthly Consultation Revenue
       const monthlyConsultationRevenue = monthlyPeriods.map(period => {
         const revenue = consultationData
           .filter(con => {
-            const conDate = new Date(con.date);
+            const conDate = new Date(con.createdAt);
             return conDate.getFullYear() === period.year && conDate.getMonth() === period.month - 1;
           })
-          .reduce((sum, con) => sum + (con.amount * adminFeePercentage), 0);
+          .reduce((sum, con) => sum + (con.amount || 0), 0);
         return { month: period.displayMonth, revenue };
-      }).reverse();
+      });
 
       // Yearly Consultation Revenue
       const yearlyConsultationRevenue = yearlyPeriods.map(period => {
         const revenue = consultationData
-          .filter(con => new Date(con.date).getFullYear() === period.year)
-          .reduce((sum, con) => sum + (con.amount * adminFeePercentage), 0);
+          .filter(con => new Date(con.createdAt).getFullYear() === period.year)
+          .reduce((sum, con) => sum + (con.amount || 0), 0);
         return { year: period.year, revenue };
       }).reverse();
 
@@ -298,6 +286,39 @@ export const fetchSubscriptions = createAsyncThunk(
   }
 );
 
+// Fetch revenue analytics with commission calculations
+export const fetchRevenueAnalytics = createAsyncThunk(
+  'analytics/fetchRevenueAnalytics',
+  async () => {
+    const fallbackData = {
+      summary: {
+        totalRevenue: 0,
+        totalSubscriptionRevenue: 0,
+        totalConsultationRevenue: 0,
+        totalPlatformEarnings: 0,
+        totalDietitianEarnings: 0,
+        commissionRates: {
+          consultationCommission: '15%',
+          platformShare: '20%'
+        }
+      },
+      monthlyBreakdown: [],
+      recentConsultations: []
+    };
+
+    const data = await handleApiCall(async (token) => {
+      const response = await axios.get('/api/revenue-analytics', {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
+
+      return response.data.data || response.data || fallbackData;
+    }, fallbackData);
+
+    return data;
+  }
+);
+
 // --- Initial State ---
 const initialState = {
   userStats: {
@@ -313,6 +334,9 @@ const initialState = {
     totalUsers: 0,
   },
   membershipRevenue: {
+    dailyPeriods: [],
+    monthlyPeriods: [],
+    yearlyPeriods: [],
     daily: 0,
     monthly: 0,
     yearly: 0,
@@ -321,6 +345,21 @@ const initialState = {
     dailyPeriods: [],
     monthlyPeriods: [],
     yearlyPeriods: [],
+  },
+  revenueAnalytics: {
+    summary: {
+      totalRevenue: 0,
+      totalSubscriptionRevenue: 0,
+      totalConsultationRevenue: 0,
+      totalPlatformEarnings: 0,
+      totalDietitianEarnings: 0,
+      commissionRates: {
+        consultationCommission: '15%',
+        platformShare: '20%'
+      }
+    },
+    monthlyBreakdown: [],
+    recentConsultations: []
   },
   subscriptions: [],
   expandedSubscriptionId: null,
@@ -408,6 +447,20 @@ const analyticsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchSubscriptions.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message;
+      })
+
+      // Fetch Revenue Analytics
+      .addCase(fetchRevenueAnalytics.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchRevenueAnalytics.fulfilled, (state, action) => {
+        state.revenueAnalytics = action.payload;
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(fetchRevenueAnalytics.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message;
       });

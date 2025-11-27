@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import axios from 'axios';
-import SubscriptionAlert from '../../components/SubscriptionAlert';
+import SubscriptionAlert from '../../middleware/SubscriptionAlert';
 
 const PaymentNotificationModal = ({
   isOpen,
@@ -198,6 +198,8 @@ const PaymentNotificationModal = ({
         errors.upi = "Please enter UPI ID or select a UPI app";
       } else if (upiId && !validateUpiId(upiId)) {
         errors.upi = "Invalid UPI ID format. Use format: 9876543210@paytm";
+      } else if (!upiVerified) {
+        errors.upi = "Please verify your UPI ID before proceeding";
       }
     }
 
@@ -901,11 +903,11 @@ const PaymentNotificationModal = ({
             <button
               type="button"
               onClick={handleFormSubmit}
-              disabled={isProcessing || !selectedMethod}
-              className={`flex-1 px-4 py-3 rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${!selectedMethod ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'text-white'}`}
-              style={selectedMethod ? { backgroundColor: '#27AE60' } : {}}
-              onMouseEnter={(e) => selectedMethod && !isProcessing && (e.target.style.backgroundColor = '#1A4A40')}
-              onMouseLeave={(e) => selectedMethod && !isProcessing && (e.target.style.backgroundColor = '#27AE60')}
+              disabled={isProcessing || !selectedMethod || (selectedMethod === 'upi' && !upiVerified)}
+              className={`flex-1 px-4 py-3 rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${(!selectedMethod || (selectedMethod === 'upi' && !upiVerified)) ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'text-white'}`}
+              style={selectedMethod && !(selectedMethod === 'upi' && !upiVerified) ? { backgroundColor: '#27AE60' } : {}}
+              onMouseEnter={(e) => selectedMethod && !(selectedMethod === 'upi' && !upiVerified) && !isProcessing && (e.target.style.backgroundColor = '#1A4A40')}
+              onMouseLeave={(e) => selectedMethod && !(selectedMethod === 'upi' && !upiVerified) && !isProcessing && (e.target.style.backgroundColor = '#27AE60')}
             >
               {isProcessing ? (
                 <>

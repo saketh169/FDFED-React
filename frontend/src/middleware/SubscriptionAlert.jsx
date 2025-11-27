@@ -35,11 +35,6 @@ const SubscriptionAlert = ({
       icon: '📝',
       title: 'Blog Post Limit Reached',
       upgradeMessage: 'Upgrade to post more blogs'
-    },
-    mealplan: {
-      icon: '🍽️',
-      title: 'Meal Plan Limit Reached',
-      upgradeMessage: 'Upgrade for more meal plans'
     }
   };
 
@@ -47,9 +42,9 @@ const SubscriptionAlert = ({
 
   const planBenefits = {
     free: ['Limited features', 'No consultations', 'Basic chatbot'],
-    basic: ['2 consultations/month', '4 meal plans', '20 chatbot queries/day'],
-    premium: ['8 consultations/month', '15 meal plans', '50 chatbot queries/day'],
-    ultimate: ['20 consultations/month', 'Unlimited meal plans', 'Unlimited chatbot']
+    basic: ['2 consultations/month', '4 user daily progress plans', '20 chatbot queries/day'],
+    premium: ['8 consultations/month', '15 user daily progress plans', '50 chatbot queries/day'],
+    ultimate: ['20 consultations/month', 'Unlimited user daily progress plans', 'Unlimited chatbot']
   };
 
   return (

@@ -16,7 +16,9 @@ const Payment = () => {
   const [showModal, setShowModal] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentId, setPaymentId] = useState(null);
-  const [transactionId, setTransactionId] = useState(null);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [activeSubscription, setActiveSubscription] = useState(null);
+  // const [transactionId, setTransactionId] = useState(null); // Removed unused variable
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -183,8 +185,9 @@ const Payment = () => {
         errors.upi = "Please enter UPI ID or select a UPI app";
       } else if (upiId && !validateUpiId(upiId)) {
         errors.upi = "Invalid UPI ID format. Use format: 9876543210@paytm";
+      } else if (!upiVerified) {
+        errors.upi = "Please verify your UPI ID before proceeding";
       }
-      // Removed strict verification requirement - optional verification for UX
 
     } else if (selectedMethod === 'emi') {
       if (!emiBank) {
@@ -269,6 +272,24 @@ const Payment = () => {
         return;
       }
 
+      // First, check if user has an active subscription
+      console.log('Checking for active subscription...');
+      const subResponse = await axios.get('/api/payments/subscription/active', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (subResponse.data.success && subResponse.data.hasActiveSubscription) {
+        const subscription = subResponse.data.subscription;
+        setActiveSubscription(subscription);
+        setShowSubscriptionModal(true);
+        setIsProcessing(false);
+        setPaymentStatus(null);
+        return;
+      }
+
       // Check if token is expired (basic check by decoding payload)
       try {
         const tokenParts = token.split('.');
@@ -329,7 +350,7 @@ const Payment = () => {
 
         if (initResponse.data.success) {
           setPaymentId(initResponse.data.payment.id);
-          setTransactionId(initResponse.data.payment.transactionId);
+          // setTransactionId(initResponse.data.payment.transactionId); // Removed unused setter
 
           // Now process the payment
           const processResponse = await axios.post(
@@ -876,7 +897,7 @@ const Payment = () => {
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {[3, 6, 12].map((months) => {
-                  const monthlyAmount = Math.round(amount / months);
+                  // const monthlyAmount = Math.round(amount / months); // Removed unused variable
                   const interest = months === 3 ? 12 : months === 6 ? 14 : 16;
                   const totalInterest = Math.round((amount * interest * months) / (12 * 100));
                   const totalAmount = parseInt(amount) + totalInterest;
@@ -945,7 +966,7 @@ const Payment = () => {
         <span className="mr-2">←</span> Back
       </div>
 
-      <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+      <div className="w-[70%] mx-auto bg-white rounded-lg shadow-lg p-8">
         <h3 className="text-2xl font-bold mb-6" style={{ color: '#1A4A40' }}>Payment Method</h3>
         <div className="bg-gray-50 rounded-md p-4 mb-6 text-lg font-semibold" style={{ color: '#2F4F4F' }}>
           Amount to be Paid: ₹{amount || "---"}
@@ -976,14 +997,14 @@ const Payment = () => {
 
         <button
           onClick={handleProceed}
-          className={`w-full mt-8 py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${selectedMethod
+          className={`w-full mt-8 py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${selectedMethod && !(selectedMethod === 'upi' && !upiVerified)
             ? "text-white"
             : "bg-gray-300 cursor-not-allowed text-gray-500"
             }`}
-          style={selectedMethod ? { backgroundColor: '#27AE60' } : {}}
-          onMouseEnter={(e) => selectedMethod && (e.target.style.backgroundColor = '#1A4A40')}
-          onMouseLeave={(e) => selectedMethod && (e.target.style.backgroundColor = '#27AE60')}
-          disabled={!selectedMethod}
+          style={selectedMethod && !(selectedMethod === 'upi' && !upiVerified) ? { backgroundColor: '#27AE60' } : {}}
+          onMouseEnter={(e) => selectedMethod && !(selectedMethod === 'upi' && !upiVerified) && (e.target.style.backgroundColor = '#1A4A40')}
+          onMouseLeave={(e) => selectedMethod && !(selectedMethod === 'upi' && !upiVerified) && (e.target.style.backgroundColor = '#27AE60')}
+          disabled={!selectedMethod || (selectedMethod === 'upi' && !upiVerified)}
         >
           Proceed to Payment
         </button>
@@ -994,7 +1015,7 @@ const Payment = () => {
         <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
           <Header />
           <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl mx-auto">
+            <div className="w-[70%] mx-auto">
               <div className="bg-white rounded-lg shadow-lg p-8 text-center">
                 {paymentStatus === "processing" ? (
                   <div>
@@ -1095,6 +1116,61 @@ const Payment = () => {
             </div>
           </div>
           <Footer />
+        </div>
+      )}
+
+      {/* Active Subscription Modal */}
+      {showSubscriptionModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-linear-to-br from-black/60 via-gray-900/50 to-black/60 backdrop-blur-md">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="bg-yellow-50 px-6 py-4 rounded-t-lg border-b border-yellow-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-yellow-800">Active Subscription Detected</h3>
+                <button
+                  onClick={() => setShowSubscriptionModal(false)}
+                  className="text-yellow-600 hover:text-yellow-800 text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="px-6 py-6 text-center">
+              <div className="mb-4">
+                <svg className="mx-auto h-16 w-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <p className="text-gray-700 mb-2">
+                You currently have an active subscription:
+              </p>
+              <p className="text-lg font-semibold text-gray-900 mb-2">
+                {activeSubscription?.planType} Plan
+              </p>
+              <p className="text-gray-600 mb-6">
+                Valid until: <span className="font-medium">{activeSubscription ? new Date(activeSubscription.subscriptionEndDate).toLocaleDateString() : ''}</span>
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                To purchase a new subscription, please wait until your current subscription expires.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setShowSubscriptionModal(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSubscriptionModal(false);
+                    navigate('/user/subscription-dashboard');
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  View Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

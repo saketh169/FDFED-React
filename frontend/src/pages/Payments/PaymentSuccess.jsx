@@ -183,8 +183,8 @@ const PaymentSuccess = () => {
                   </svg>
                   <span style={{ color: '#2F4F4F' }}>
                     {paymentDetails.features?.monthlyMealPlans === -1 
-                      ? 'Unlimited Meal Plans' 
-                      : `${paymentDetails.features?.monthlyMealPlans || 0} Meal Plans per Month`}
+                      ? 'Unlimited User Daily Progress Plans' 
+                      : `${paymentDetails.features?.monthlyMealPlans || 0} User Daily Progress Plans per Month`}
                   </span>
                 </div>
                 <div className="flex items-center p-4 bg-green-50 rounded-lg">
@@ -227,7 +227,7 @@ const PaymentSuccess = () => {
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
               onClick={() => navigate('/user/home')}
               className="px-8 py-4 rounded-xl font-semibold text-lg text-white transition-all shadow-lg hover:shadow-xl"
@@ -235,10 +235,10 @@ const PaymentSuccess = () => {
               onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
             >
-              Go to Dashboard
+              Go to Home Page
             </button>
             <button
-              onClick={() => navigate('/user/profile')}
+              onClick={() => navigate('/user')}
               className="px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-xl"
               style={{ backgroundColor: '#f3f4f6', color: '#2F4F4F' }}
               onMouseEnter={(e) => {
@@ -248,7 +248,7 @@ const PaymentSuccess = () => {
                 e.target.style.backgroundColor = '#f3f4f6';
               }}
             >
-              View Profile
+              Go to Dashboard
             </button>
           </div>
 

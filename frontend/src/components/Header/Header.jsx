@@ -205,17 +205,6 @@ const Header = () => {
       return (
         
         <div className="flex space-x-3 items-center -mr-20">
-          {/* Show Pricing button only for user role */}
-          {currentRole === 'user' && (
-            <button
-              onClick={() => navigate('/user/pricing')}
-              className={`${iconButtonBaseClass} border border-[#FFD700] text-[#FFD700] hover:bg-[#FFD700] hover:text-white overflow-visible`}
-              aria-label="Subscription Plans"
-            >
-              <i className="fas fa-crown text-3xl"></i>
-              <span className={tooltipTextClass}>Subscription</span>
-            </button>
-          )}
           
           <button
             onClick={() => navigate(getProfilePath())}

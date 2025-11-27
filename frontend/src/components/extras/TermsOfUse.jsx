@@ -1,15 +1,87 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const TermsOfUse = () => {
   const navigate = useNavigate();
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const handleClose = () => {
     navigate('/');
   };
 
+  useEffect(() => {
+    const fetchTermsOfUse = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('http://localhost:5000/api/settings');
+        setContent(response.data.termsOfService || 'Terms of service content not available.');
+      } catch (err) {
+        console.error('Error fetching terms of use:', err);
+        setError('Failed to load terms of use. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTermsOfUse();
+  }, []);
+
+  // Simple markdown renderer for basic formatting
+  const renderMarkdown = (text) => {
+    if (!text) return '<p class="text-gray-500 italic">Content not available.</p>';
+
+    return text
+      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mb-2 text-[#28B463]">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mb-3 text-[#28B463] border-b-2 border-[#E8F5E9] pb-1">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mb-4 text-[#1E6F5C]">$1</h1>')
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+      .replace(/- (.*$)/gim, '<li class="flex items-start"><span class="text-[#28B463] mr-2">•</span>$1</li>')
+      .replace(/\n\n/g, '</p><p class="mb-4">')
+      .replace(/\n/g, '<br/>');
+  };
+
+  if (loading) {
+    return (
+      <main className="flex-1 w- mx-auto p-8 bg-cover bg-center min-h-screen bg-green-50">
+        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-7xl mx-auto border-2 border-[#E8F5E9]">
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <i className="fas fa-spinner fa-spin text-4xl text-[#28B463] mb-4"></i>
+              <p className="text-gray-600">Loading Terms of Use...</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="flex-1 w- mx-auto p-8 bg-cover bg-center min-h-screen bg-green-50">
+        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-7xl mx-auto border-2 border-[#E8F5E9]">
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <i className="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+              <p className="text-red-600 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-[#28B463] text-white px-6 py-2 rounded-lg hover:bg-[#1E6F5C] transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="flex-1 w-[100%] mx-auto p-8 bg-cover bg-center min-h-screen bg-green-50">
+    <main className="flex-1 w- mx-auto p-8 bg-cover bg-center min-h-screen bg-green-50">
       <div className="bg-white rounded-xl shadow-2xl p-8 max-w-7xl mx-auto border-2 border-[#E8F5E9]">
         {/* Close Button */}
         <div className="flex justify-end mb-4">
@@ -28,127 +100,14 @@ const TermsOfUse = () => {
           <p className="text-gray-600 mt-3 max-w-2xl mx-auto">
             Welcome to Nutri-Connect! By accessing this website, we assume you accept these terms and conditions. Do not continue to use Nutri-Connect if you do not agree to all the terms and conditions stated on this page.
           </p>
-          <p className="text-sm text-gray-500 mt-2">Last Updated: October 22, 2025</p>
+          <p className="text-sm text-gray-500 mt-2">Last Updated: November 26, 2025</p>
         </div>
 
-        {/* Content */}
-        <div className="space-y-8 text-gray-700">
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              1. Intellectual Property Rights
-            </h2>
-            <p>
-              Other than the content you own, under these terms, Nutri-Connect and/or its licensors own all the intellectual property rights and materials contained in this website. You are granted a limited license only for purposes of viewing the material contained on this site.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              2. Restrictions
-            </h2>
-            <p>You are specifically restricted from:</p>
-            <ul className="mt-2 space-y-1 ml-5">
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Publishing any website material in any other media without prior consent.</li>
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Selling, sublicensing, and/or otherwise commercializing any website material.</li>
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Using this website in any way that is or may be damaging to the website.</li>
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Using this website in any way that impacts user access to this website.</li>
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Engaging in any data mining, data harvesting, data extracting, or any other similar activity.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              3. User Responsibilities
-            </h2>
-            <p>As a user of Nutri-Connect, you agree to:</p>
-            <ul className="mt-2 space-y-1 ml-5">
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Provide accurate and complete information when using our services.</li>
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Use the website only for lawful purposes and in accordance with these terms.</li>
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Not use the website to engage in any fraudulent or harmful activities.</li>
-              <li className="flex items-start"><span className="text-[#28B463] mr-2">•</span> Not share your account credentials with others or use another user's account.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              4. Nutrition Disclaimer
-            </h2>
-            <p>
-              The content provided on Nutri-Connect is for informational purposes only and is not intended as medical advice. Always consult a qualified healthcare professional before making any dietary or lifestyle changes.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              5. Privacy Policy
-            </h2>
-            <p>
-              Your use of Nutri-Connect is also governed by our{' '}
-              <a href="/privacy-policy" className="text-[#28B463] underline hover:text-[#1E6F5C]">
-                Privacy Policy
-              </a>
-              . Please review our Privacy Policy to understand how we collect, use, and protect your personal information.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              6. Limitation of Liability
-            </h2>
-            <p>
-              In no event shall Nutri-Connect, nor any of its officers, directors, and employees, be held liable for anything arising out of or in any way connected with your use of this website.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              7. Indemnification
-            </h2>
-            <p>
-              You hereby indemnify Nutri-Connect from and against any and/or all liabilities, costs, demands, causes of action, damages, and expenses arising in any way related to your breach of any of the provisions of these terms.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              8. Severability
-            </h2>
-            <p>
-              If any provision of these terms is found to be invalid under any applicable law, such provisions shall be deleted without affecting the remaining provisions herein.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              9. Variation of Terms
-            </h2>
-            <p>
-              Nutri-Connect is permitted to revise these terms at any time, and by using this website, you are expected to review these terms on a regular basis.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              10. Governing Law & Jurisdiction
-            </h2>
-            <p>
-              These terms will be governed by and interpreted in accordance with the laws of <strong>India</strong>, and you submit to the jurisdiction of the courts located in <strong>[Your City], India</strong>.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-[#28B463] mb-3 border-b-2 border-[#E8F5E9] pb-1 inline-block">
-              11. Contact Information
-            </h2>
-            <p>
-              If you have any questions about these terms, please contact us at{' '}
-              <a href="mailto:nutriconnect6@gmail.com" className="text-[#28B463] underline hover:text-[#1E6F5C]">
-                nutriconnect6@gmail.com
-              </a>.
-            </p>
-          </section>
-
+        {/* Dynamic Content */}
+        <div className="prose prose-lg max-w-none text-gray-700">
+          <div
+            dangerouslySetInnerHTML={{ __html: `<p class="mb-4">${renderMarkdown(content)}</p>` }}
+          />
         </div>
       </div>
     </main>

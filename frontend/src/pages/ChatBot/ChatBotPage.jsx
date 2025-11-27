@@ -4,7 +4,7 @@ import InputArea from './InputArea';
 import MessageList from './MessageList';
 import NutritionCard from './NutritionCard';
 import axios from 'axios';
-import SubscriptionAlert from '../../components/SubscriptionAlert';
+import SubscriptionAlert from '../../middleware/SubscriptionAlert';
 
 function ChatBotPage() {
   const [messages, setMessages] = useState([

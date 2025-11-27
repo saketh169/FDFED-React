@@ -457,28 +457,44 @@ exports.getBookedSlots = async (req, res) => {
     nextDay.setDate(nextDay.getDate() + 1);
 
     // Find all confirmed/completed bookings for this dietitian on this date
-    const bookings = await Booking.find({
+    const dietitianBookings = await Booking.find({
       dietitianId,
       date: { $gte: queryDate, $lt: nextDay },
       status: { $in: ["confirmed", "completed"] },
     }).select("time userId");
 
-    // Separate user's bookings from others' bookings
-    const bookedSlots = [];
-    const userBookings = [];
+    // Find all confirmed/completed bookings for this user on this date (with any dietitian)
+    const userBookings = await Booking.find({
+      userId,
+      date: { $gte: queryDate, $lt: nextDay },
+      status: { $in: ["confirmed", "completed"] },
+    }).select("time dietitianName");
 
-    bookings.forEach((booking) => {
-      if (userId && booking.userId === userId) {
-        userBookings.push(booking.time);
+    // Separate user's bookings from others' bookings for this dietitian
+    const bookedSlots = [];
+    const userBookingsWithThisDietitian = [];
+
+    dietitianBookings.forEach((booking) => {
+      if (userId && booking.userId.toString() === userId) {
+        userBookingsWithThisDietitian.push(booking.time);
       } else {
         bookedSlots.push(booking.time);
       }
     });
 
+    // Get times when user has any bookings (conflicts with booking multiple dietitians at same time)
+    const userConflictingTimes = userBookings.map(booking => booking.time);
+
+    // Return all booked slots for this dietitian (including user's own)
+    const allBookedSlots = [...bookedSlots, ...userBookingsWithThisDietitian];
+
+    console.log("Fetched dietitian booked slots for user", userId, "and dietitian", dietitianId, "on date", queryDate.toISOString().split('T')[0], ":", allBookedSlots);
+
     res.status(200).json({
       success: true,
-      bookedSlots, // Slots booked by other users
-      userBookings, // Slots booked by current user
+      bookedSlots: allBookedSlots, // All slots booked with this dietitian
+      userBookings: userBookingsWithThisDietitian, // Slots booked by current user with this dietitian
+      userConflictingTimes, // All times when user has bookings with any dietitian
       date: queryDate,
     });
   } catch (error) {
