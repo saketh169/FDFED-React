@@ -4,6 +4,22 @@ import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar co
 import Status from "../../middleware/StatusBadge"; // Import Status component
 import { useAuthContext } from "../../hooks/useAuthContext"; // Import useAuthContext hook
 
+// Helper function to format relative time for notifications
+const formatRelativeTime = (timestamp) => {
+  const now = new Date();
+  const date = new Date(timestamp);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 // Mock Data (Replace with actual API data)
 const mockDietitian = {
   name: "Dr. Alex Chen",
@@ -22,6 +38,52 @@ const DietitianDashboard = () => {
   const [profileImage, setProfileImage] = useState(mockDietitian.profileImage);
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = React.useRef(null);
+  const [notifications, setNotifications] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState({});
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
+
+  // Fetch dashboard data (notifications and activities) from API
+  const fetchDashboardData = async (showLoading = true) => {
+    if (!user?.id || !token) return;
+    
+    try {
+      if (showLoading) setIsLoadingDashboard(true);
+      const response = await fetch(`/api/analytics/dietitian/${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setNotifications(data.data.notifications || []);
+        setActivities(data.data.activities || []);
+        setDashboardStats(data.data.stats || {});
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      if (showLoading) setIsLoadingDashboard(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchDashboardData();
+  }, [user?.id, token]);
+
+  // Real-time polling for notifications (every 30 seconds)
+  useEffect(() => {
+    if (!user?.id || !token) return;
+    
+    const pollInterval = setInterval(() => {
+      fetchDashboardData(false); // Don't show loading spinner on poll
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [user?.id, token]);
 
   // Set profile image from user data when available
   useEffect(() => {
@@ -214,20 +276,39 @@ const DietitianDashboard = () => {
             Notifications
           </h3>
 
-          <ul className="space-y-3">
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
-              <i className="fas fa-bell text-yellow-500"></i>
-              <span>You have a <span className="font-semibold text-gray-900">new client request</span>.</span>
-            </li>
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
-              <i className="fas fa-calendar-alt text-blue-500"></i>
-              <span>Your appointment with <span className="font-semibold text-gray-900">John Doe</span> is scheduled for tomorrow.</span>
-            </li>
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
-              <i className="fas fa-check-circle text-green-500"></i>
-              <span>Your documents have been <span className="font-semibold text-gray-900">successfully verified</span>.</span>
-            </li>
-          </ul>
+          {isLoadingDashboard ? (
+            <div className="flex justify-center py-4">
+              <i className="fas fa-spinner fa-spin text-green-600 text-2xl"></i>
+            </div>
+          ) : notifications.length > 0 ? (
+            <ul className="space-y-3">
+              {notifications.map((notification, index) => (
+                <li key={notification.id || index} className="flex items-start gap-3 text-gray-700 p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition rounded-lg">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                    notification.type === 'appointment' ? 'bg-blue-100' :
+                    notification.type === 'new_booking' ? 'bg-yellow-100' :
+                    notification.type === 'verification' ? 'bg-green-100' :
+                    'bg-gray-100'
+                  }`}>
+                    <i className={`${notification.icon} ${notification.iconColor}`}></i>
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm" dangerouslySetInnerHTML={{ __html: notification.message }}></span>
+                    {notification.timestamp && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatRelativeTime(notification.timestamp)}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              <i className="fas fa-bell-slash text-3xl mb-2 text-gray-300"></i>
+              <p>No new notifications</p>
+            </div>
+          )}
         </div>
 
         {/* 5. Recent Activities */}
@@ -236,20 +317,54 @@ const DietitianDashboard = () => {
             Recent Activities
           </h3>
 
-          <ul className="space-y-3">
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
-              <i className="fas fa-circle text-xs text-teal-600"></i>
-              <span>Logged in today at <span className="font-semibold text-gray-900">10:00 AM</span></span>
-            </li>
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
-              <i className="fas fa-circle text-xs text-teal-600"></i>
-              <span>Created a new meal plan for <span className="font-semibold text-gray-900">John Doe</span></span>
-            </li>
-            <li className="flex items-center gap-2 text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
-              <i className="fas fa-circle text-xs text-teal-600"></i>
-              <span>Uploaded <span className="font-semibold text-gray-900">new certification documents</span></span>
-            </li>
-          </ul>
+          {isLoadingDashboard ? (
+            <div className="flex justify-center py-4">
+              <i className="fas fa-spinner fa-spin text-green-600 text-2xl"></i>
+            </div>
+          ) : activities.length > 0 ? (
+            <ul className="space-y-3">
+              {activities.slice(0, 5).map((activity, index) => (
+                <li key={activity.id || index} className="flex items-start gap-3 text-sm text-gray-700 p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                    activity.type === 'booking' ? 'bg-blue-100' : 'bg-green-100'
+                  }`}>
+                    <i className={`${activity.icon} ${activity.iconColor} text-xs`}></i>
+                  </div>
+                  <div className="flex-1">
+                    <span 
+                      className="font-medium text-gray-800"
+                      dangerouslySetInnerHTML={{ __html: activity.description }}
+                    ></span>
+                    <p className="text-xs text-gray-500 mt-1">{activity.details}</p>
+                  </div>
+                  {activity.status && (
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      activity.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                      activity.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                      activity.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {activity.status}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              <i className="fas fa-history text-3xl mb-2 text-gray-300"></i>
+              <p>No recent activities</p>
+            </div>
+          )}
+
+          <div className="text-center mt-5">
+            <button
+              onClick={() => navigate("/dietitian/activities")}
+              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+            >
+              View all activities →
+            </button>
+          </div>
         </div>
 
         {/* Image Modal */}

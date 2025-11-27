@@ -32,6 +32,7 @@ import SubscriptionDashboard from '../pages/Payments/SubscriptionDashboard';
 
 import ClientLabReportViewer from '../pages/LabReports/ClientLabReportViewer';
 import LabReportUploader from '../pages/LabReports/LabReportUploader';
+import UserActivities from '../pages/Dashboards/UserActivities';
 
 
 
@@ -46,6 +47,7 @@ export default function UserRoutes() {
         {/* All routes are automatically protected by ProtectedProvider in Layout.jsx */}
         <Route path="home" element={<UserHome />} />
         <Route path="profile" element={<UserDashboard />} />
+        <Route path="activities" element={<UserActivities />} />
         <Route path="schedule" element={<UserSchedule />} />
         <Route path="progress" element={<UserProgress />} />  
         <Route path="get-plans" element={<UserGetPlanForm />} />   

@@ -1,17 +1,57 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { 
     FaHeart, FaRegHeart, FaComment, FaEye, FaEdit, FaTrash, 
     FaArrowLeft, FaFlag, FaShare, FaPaperPlane 
 } from 'react-icons/fa';
 
+// Redux imports
+import {
+    fetchBlogById,
+    toggleLike,
+    addComment,
+    deleteComment,
+    deleteBlog,
+    reportBlog,
+    clearCurrentBlog,
+    clearError,
+    clearSuccessMessage,
+    selectCurrentBlog,
+    selectIsLoadingCurrentBlog,
+    selectIsSubmitting,
+    selectError,
+    selectSuccessMessage
+} from '../../redux/slices/blogSlice';
+
 const BlogPost = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useDispatch();
     const { id } = useParams();
     
+    // Redux state
+    const blog = useSelector(selectCurrentBlog);
+    const loading = useSelector(selectIsLoadingCurrentBlog);
+    const isSubmitting = useSelector(selectIsSubmitting);
+    const reduxError = useSelector(selectError);
+    const reduxSuccessMessage = useSelector(selectSuccessMessage);
+    
+    // Local state
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [userId, setUserId] = useState(null);
+    const [userRole, setUserRole] = useState(null);
+    const [isLiked, setIsLiked] = useState(false);
+    const [commentText, setCommentText] = useState('');
+    const [reportReason, setReportReason] = useState('');
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showCommentDeleteConfirm, setShowCommentDeleteConfirm] = useState(false);
+    const [commentToDelete, setCommentToDelete] = useState(null);
+    const [showSuccessMessage, setShowSuccessMessage] = useState('');
+    const [showErrorMessage, setShowErrorMessage] = useState('');
+
     // Get role from URL path
     const getRoleFromPath = useCallback(() => {
         const path = location.pathname;
@@ -22,66 +62,11 @@ const BlogPost = () => {
         if (path.startsWith('/corporatepartner')) return 'corporatepartner';
         return null;
     }, [location.pathname]);
-    
-    const [blog, setBlog] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [userId, setUserId] = useState(null);
-    const [userRole, setUserRole] = useState(null);
-    const [isLiked, setIsLiked] = useState(false);
-    const [commentText, setCommentText] = useState('');
-    const [reportReason, setReportReason] = useState('');
-    const [showReportModal, setShowReportModal] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [showCommentDeleteConfirm, setShowCommentDeleteConfirm] = useState(false);
-    const [commentToDelete, setCommentToDelete] = useState(null);
-    const [showSuccessMessage, setShowSuccessMessage] = useState('');
-    const [showErrorMessage, setShowErrorMessage] = useState('');
 
-    const getAuthToken = useCallback(() => {
-        // Get the current role from URL and use ONLY that token
-        const currentRole = getRoleFromPath();
-        const token = currentRole ? localStorage.getItem(`authToken_${currentRole}`) : null;
-        return token;
-    }, [getRoleFromPath]);
-
-    const fetchBlog = useCallback(async () => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            
-            const config = token ? {
-                headers: { Authorization: `Bearer ${token}` }
-            } : {};
-
-            const response = await axios.get(`http://localhost:5000/api/blogs/${id}`, config);
-            
-            if (response.data.success) {
-                setBlog(response.data.blog);
-                
-                // Check if user has liked this blog
-                if (token && response.data.blog.likes) {
-                    const userLike = response.data.blog.likes.find(
-                        like => like.userId === userId
-                    );
-                    setIsLiked(!!userLike);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching blog:', error);
-            setError(error.response?.data?.message || 'Failed to load blog post');
-        } finally {
-            setLoading(false);
-        }
-    }, [id, getAuthToken, userId]);
-
+    // Initialize and fetch blog
     useEffect(() => {
-        // Scroll to top when component mounts
         window.scrollTo(0, 0);
         
-        // Get role from URL and use ONLY that token
         const roleFromUrl = getRoleFromPath();
         const token = roleFromUrl ? localStorage.getItem(`authToken_${roleFromUrl}`) : null;
         
@@ -96,7 +81,7 @@ const BlogPost = () => {
                 const parts = token.split('.');
                 if (parts.length === 3) {
                     const payload = JSON.parse(atob(parts[1]));
-                    actualUserId = payload.roleId; // This is the actual User/Dietitian ID
+                    actualUserId = payload.roleId;
                 }
             } catch (e) {
                 console.error('Error decoding token:', e);
@@ -108,8 +93,43 @@ const BlogPost = () => {
             setUserRole(roleFromUrl);
         }
         
-        fetchBlog();
-    }, [id, location.pathname, fetchBlog, getRoleFromPath]);
+        // Fetch blog using Redux
+        dispatch(fetchBlogById({ blogId: id, role: roleFromUrl }));
+        
+        // Cleanup on unmount
+        return () => {
+            dispatch(clearCurrentBlog());
+        };
+    }, [id, location.pathname, getRoleFromPath, dispatch]);
+
+    // Update isLiked when blog data changes
+    useEffect(() => {
+        if (blog && blog.likes && userId) {
+            const userLike = blog.likes.find(like => like.userId === userId);
+            setIsLiked(!!userLike);
+        }
+    }, [blog, userId]);
+
+    // Handle Redux success/error messages
+    useEffect(() => {
+        if (reduxSuccessMessage) {
+            setShowSuccessMessage(reduxSuccessMessage);
+            setTimeout(() => {
+                setShowSuccessMessage('');
+                dispatch(clearSuccessMessage());
+            }, 3000);
+        }
+    }, [reduxSuccessMessage, dispatch]);
+
+    useEffect(() => {
+        if (reduxError) {
+            setShowErrorMessage(reduxError);
+            setTimeout(() => {
+                setShowErrorMessage('');
+                dispatch(clearError());
+            }, 3000);
+        }
+    }, [reduxError, dispatch]);
 
     const handleLike = async () => {
         if (!isAuthenticated) {
@@ -117,23 +137,9 @@ const BlogPost = () => {
             return;
         }
 
-        try {
-            const token = getAuthToken();
-            const response = await axios.post(
-                `http://localhost:5000/api/blogs/${id}/like`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                setIsLiked(response.data.liked);
-                setBlog(prev => ({
-                    ...prev,
-                    likesCount: response.data.likesCount
-                }));
-            }
-        } catch (error) {
-            console.error('Error toggling like:', error);
+        const result = await dispatch(toggleLike({ blogId: id, role: userRole }));
+        if (toggleLike.fulfilled.match(result)) {
+            setIsLiked(result.payload.liked);
         }
     };
 
@@ -147,32 +153,16 @@ const BlogPost = () => {
 
         if (!commentText.trim()) return;
 
-        try {
-            setSubmitting(true);
-            const token = getAuthToken();
-            const response = await axios.post(
-                `http://localhost:5000/api/blogs/${id}/comments`,
-                { content: commentText },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                // Add new comment to the list
-                setBlog(prev => ({
-                    ...prev,
-                    comments: [...prev.comments, response.data.comment],
-                    commentsCount: response.data.commentsCount
-                }));
-                setCommentText('');
-                setShowSuccessMessage('Comment posted successfully!');
-                setTimeout(() => setShowSuccessMessage(''), 3000);
-            }
-        } catch (error) {
-            console.error('Error posting comment:', error);
-            setShowErrorMessage(error.response?.data?.message || 'Failed to post comment');
-            setTimeout(() => setShowErrorMessage(''), 3000);
-        } finally {
-            setSubmitting(false);
+        const result = await dispatch(addComment({ 
+            blogId: id, 
+            content: commentText, 
+            role: userRole 
+        }));
+        
+        if (addComment.fulfilled.match(result)) {
+            setCommentText('');
+            setShowSuccessMessage('Comment posted successfully!');
+            setTimeout(() => setShowSuccessMessage(''), 3000);
         }
     };
 
@@ -184,30 +174,19 @@ const BlogPost = () => {
     const confirmDeleteComment = async () => {
         if (!commentToDelete) return;
 
-        try {
-            const token = getAuthToken();
-            const response = await axios.delete(
-                `http://localhost:5000/api/blogs/${id}/comments/${commentToDelete}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                setBlog(prev => ({
-                    ...prev,
-                    comments: prev.comments.filter(c => c._id !== commentToDelete),
-                    commentsCount: response.data.commentsCount
-                }));
-                setShowSuccessMessage('Comment deleted successfully!');
-                setTimeout(() => setShowSuccessMessage(''), 3000);
-            }
-        } catch (error) {
-            console.error('Error deleting comment:', error);
-            setShowErrorMessage(error.response?.data?.message || 'Failed to delete comment');
-            setTimeout(() => setShowErrorMessage(''), 3000);
-        } finally {
-            setShowCommentDeleteConfirm(false);
-            setCommentToDelete(null);
+        const result = await dispatch(deleteComment({ 
+            blogId: id, 
+            commentId: commentToDelete, 
+            role: userRole 
+        }));
+        
+        if (deleteComment.fulfilled.match(result)) {
+            setShowSuccessMessage('Comment deleted successfully!');
+            setTimeout(() => setShowSuccessMessage(''), 3000);
         }
+        
+        setShowCommentDeleteConfirm(false);
+        setCommentToDelete(null);
     };
 
     const handleReport = async () => {
@@ -217,27 +196,17 @@ const BlogPost = () => {
             return;
         }
 
-        try {
-            setSubmitting(true);
-            const token = getAuthToken();
-            const response = await axios.post(
-                `http://localhost:5000/api/blogs/${id}/report`,
-                { reason: reportReason },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                setShowReportModal(false);
-                setReportReason('');
-                setShowSuccessMessage('Blog post reported successfully. Thank you for helping keep our community safe.');
-                setTimeout(() => setShowSuccessMessage(''), 5000);
-            }
-        } catch (error) {
-            console.error('Error reporting blog:', error);
-            setShowErrorMessage(error.response?.data?.message || 'Failed to report blog post');
-            setTimeout(() => setShowErrorMessage(''), 3000);
-        } finally {
-            setSubmitting(false);
+        const result = await dispatch(reportBlog({ 
+            blogId: id, 
+            reason: reportReason, 
+            role: userRole 
+        }));
+        
+        if (reportBlog.fulfilled.match(result)) {
+            setShowReportModal(false);
+            setReportReason('');
+            setShowSuccessMessage('Blog post reported successfully. Thank you for helping keep our community safe.');
+            setTimeout(() => setShowSuccessMessage(''), 5000);
         }
     };
 
@@ -246,28 +215,18 @@ const BlogPost = () => {
     };
 
     const confirmDeleteBlog = async () => {
-        try {
-            const token = getAuthToken();
-            const response = await axios.delete(
-                `http://localhost:5000/api/blogs/${id}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                const blogsPath = userRole === 'dietitian' 
-                    ? '/dietitian/blogs' 
-                    : userRole === 'organization'
-                    ? '/organization/blogs'
-                    : '/user/blogs';
-                navigate(blogsPath);
-            }
-        } catch (error) {
-            console.error('Error deleting blog:', error);
-            setShowErrorMessage(error.response?.data?.message || 'Failed to delete blog post');
-            setTimeout(() => setShowErrorMessage(''), 3000);
-        } finally {
-            setShowDeleteConfirm(false);
+        const result = await dispatch(deleteBlog({ blogId: id, role: userRole }));
+        
+        if (deleteBlog.fulfilled.match(result)) {
+            const blogsPath = userRole === 'dietitian' 
+                ? '/dietitian/blogs' 
+                : userRole === 'organization'
+                ? '/organization/blogs'
+                : '/user/blogs';
+            navigate(blogsPath);
         }
+        
+        setShowDeleteConfirm(false);
     };
 
     const getCategoryColor = (category) => {
@@ -300,6 +259,7 @@ const BlogPost = () => {
     };
 
     const isAuthor = blog && userId && blog.author.userId === userId;
+    const error = reduxError;
 
     if (loading) {
         return (
@@ -530,7 +490,7 @@ const BlogPost = () => {
                                 />
                                 <button
                                     type="submit"
-                                    disabled={!commentText.trim() || submitting}
+                                    disabled={!commentText.trim() || isSubmitting}
                                     className="bg-[#1E6F5C] text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center gap-2"
                                 >
                                     <FaPaperPlane /> Post Comment
@@ -606,10 +566,10 @@ const BlogPost = () => {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={handleReport}
-                                disabled={!reportReason.trim() || submitting}
+                                disabled={!reportReason.trim() || isSubmitting}
                                 className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                             >
-                                {submitting ? 'Submitting...' : 'Submit Report'}
+                                {isSubmitting ? 'Submitting...' : 'Submit Report'}
                             </button>
                             <button
                                 onClick={() => {

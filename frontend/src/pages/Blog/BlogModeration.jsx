@@ -1,14 +1,34 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { FaTrash, FaEye, FaExclamationTriangle, FaUser, FaCheck } from 'react-icons/fa';
+
+// Redux imports
+import {
+    fetchReportedBlogs,
+    deleteBlog,
+    dismissReports,
+    selectReportedBlogs,
+    selectIsLoading,
+    selectError,
+    selectSuccessMessage,
+    clearError,
+    clearSuccessMessage
+} from '../../redux/slices/blogSlice';
 
 const BlogModeration = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [reportedBlogs, setReportedBlogs] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const dispatch = useDispatch();
+    
+    // Redux state
+    const reportedBlogs = useSelector(selectReportedBlogs);
+    const loading = useSelector(selectIsLoading);
+    const reduxError = useSelector(selectError);
+    const reduxSuccessMessage = useSelector(selectSuccessMessage);
+    
+    // Local state
     const [selectedBlog, setSelectedBlog] = useState(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
@@ -30,45 +50,38 @@ const BlogModeration = () => {
         return 'organization'; // default for this page
     }, [location.pathname]);
 
-    const getAuthToken = useCallback(() => {
-        // Get the current role from URL and use ONLY that token
-        const currentRole = getRoleFromPath();
-        const token = localStorage.getItem(`authToken_${currentRole}`);
-        return token;
-    }, [getRoleFromPath]);
-
-    const fetchReportedBlogs = useCallback(async () => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            
-            const response = await axios.get('http://localhost:5000/api/blogs/moderation/reported', {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    page: pagination.page,
-                    limit: 10
-                }
-            });
-
-            if (response.data.success) {
-                setReportedBlogs(response.data.blogs);
-                setPagination(response.data.pagination);
-            }
-        } catch (error) {
-            console.error('Error fetching reported blogs:', error);
-            setShowErrorMessage(error.response?.data?.message || 'Failed to fetch reported blogs');
-            setTimeout(() => setShowErrorMessage(''), 3000);
-        } finally {
-            setLoading(false);
-        }
-    }, [pagination.page, getAuthToken]);
-
     useEffect(() => {
-        // Scroll to top when component mounts
         window.scrollTo(0, 0);
         
-        fetchReportedBlogs();
-    }, [pagination.page, fetchReportedBlogs]);
+        const roleFromUrl = getRoleFromPath();
+        dispatch(fetchReportedBlogs({ page: pagination.page, role: roleFromUrl }));
+    }, [pagination.page, dispatch, getRoleFromPath]);
+
+    // Handle Redux success/error messages
+    useEffect(() => {
+        if (reduxSuccessMessage) {
+            setShowSuccessMessage(reduxSuccessMessage);
+            setTimeout(() => {
+                setShowSuccessMessage('');
+                dispatch(clearSuccessMessage());
+            }, 3000);
+        }
+    }, [reduxSuccessMessage, dispatch]);
+
+    useEffect(() => {
+        if (reduxError) {
+            setShowErrorMessage(reduxError);
+            setTimeout(() => {
+                setShowErrorMessage('');
+                dispatch(clearError());
+            }, 3000);
+        }
+    }, [reduxError, dispatch]);
+
+    // Update pagination total when reportedBlogs changes
+    useEffect(() => {
+        setPagination(prev => ({ ...prev, total: reportedBlogs.length }));
+    }, [reportedBlogs]);
 
     const handleViewDetails = (blog) => {
         setSelectedBlog(blog);
@@ -83,29 +96,16 @@ const BlogModeration = () => {
     const confirmDeleteBlog = async () => {
         if (!blogToDelete) return;
 
-        try {
-            const token = getAuthToken();
-            const response = await axios.delete(
-                `http://localhost:5000/api/blogs/${blogToDelete}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                setShowSuccessMessage('Blog post deleted successfully');
-                setTimeout(() => setShowSuccessMessage(''), 3000);
-                setReportedBlogs(reportedBlogs.filter(blog => blog._id !== blogToDelete));
-                setPagination(prev => ({ ...prev, total: prev.total - 1 }));
-                setShowDetailsModal(false);
-                setSelectedBlog(null);
-            }
-        } catch (error) {
-            console.error('Error deleting blog:', error);
-            setShowErrorMessage(error.response?.data?.message || 'Failed to delete blog post');
-            setTimeout(() => setShowErrorMessage(''), 3000);
-        } finally {
-            setShowDeleteConfirm(false);
-            setBlogToDelete(null);
+        const roleFromUrl = getRoleFromPath();
+        const result = await dispatch(deleteBlog({ blogId: blogToDelete, role: roleFromUrl }));
+        
+        if (deleteBlog.fulfilled.match(result)) {
+            setShowDetailsModal(false);
+            setSelectedBlog(null);
         }
+        
+        setShowDeleteConfirm(false);
+        setBlogToDelete(null);
     };
 
     const handleDismissReports = (blogId) => {
@@ -116,31 +116,16 @@ const BlogModeration = () => {
     const confirmDismissReports = async () => {
         if (!blogToDismiss) return;
 
-        try {
-            const token = getAuthToken();
-            const response = await axios.put(
-                `http://localhost:5000/api/blogs/${blogToDismiss}/moderation/dismiss`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                setShowSuccessMessage('Reports dismissed successfully');
-                setTimeout(() => setShowSuccessMessage(''), 3000);
-                // Remove the blog from the reported list since reports are dismissed
-                setReportedBlogs(reportedBlogs.filter(blog => blog._id !== blogToDismiss));
-                setPagination(prev => ({ ...prev, total: prev.total - 1 }));
-                setShowDetailsModal(false);
-                setSelectedBlog(null);
-            }
-        } catch (error) {
-            console.error('Error dismissing reports:', error);
-            setShowErrorMessage(error.response?.data?.message || 'Failed to dismiss reports');
-            setTimeout(() => setShowErrorMessage(''), 3000);
-        } finally {
-            setShowDismissConfirm(false);
-            setBlogToDismiss(null);
+        const roleFromUrl = getRoleFromPath();
+        const result = await dispatch(dismissReports({ blogId: blogToDismiss, role: roleFromUrl }));
+        
+        if (dismissReports.fulfilled.match(result)) {
+            setShowDetailsModal(false);
+            setSelectedBlog(null);
         }
+        
+        setShowDismissConfirm(false);
+        setBlogToDismiss(null);
     };
 
     const getCategoryColor = (category) => {

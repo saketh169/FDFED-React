@@ -399,4 +399,251 @@ router.get('/dietitians/:id/slots', authenticateJWT, async (req, res) => {
   }
 });
 
+// ==================== TESTIMONIAL ROUTES ====================
+
+// Add a testimonial to a dietitian (only if user has consulted this dietitian)
+router.post('/dietitians/:id/testimonials', authenticateJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, rating } = req.body;
+    const userId = req.user.roleId || req.user.userId;
+    
+    console.log('Adding testimonial - userId:', userId, 'dietitianId:', id);
+    
+    // Validate required fields
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Review text is required'
+      });
+    }
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rating must be between 1 and 5'
+      });
+    }
+
+    const dietitian = await Dietitian.findById(id);
+    if (!dietitian) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dietitian not found'
+      });
+    }
+
+    // Check if user has consulted this dietitian (has a confirmed or completed booking)
+    const hasConsulted = await Booking.findOne({
+      userId: userId,
+      dietitianId: id,
+      status: { $in: ['confirmed', 'completed'] }
+    });
+
+    if (!hasConsulted) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only review dietitians you have consulted with'
+      });
+    }
+
+    // Check if user has already submitted a review
+    const existingReview = dietitian.testimonials?.find(
+      t => t.authorId && t.authorId.toString() === userId.toString()
+    );
+
+    if (existingReview) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already submitted a review for this dietitian'
+      });
+    }
+
+    // Get user info for author name
+    const { User } = require('../models/userModel');
+    const mongoose = require('mongoose');
+    const user = await User.findById(userId);
+    const authorName = user?.name || 'Anonymous User';
+
+    // Create new testimonial with proper ObjectId
+    const newTestimonial = {
+      text: text.trim(),
+      author: authorName,
+      rating: rating,
+      authorId: new mongoose.Types.ObjectId(userId),
+      createdAt: new Date()
+    };
+
+    // Add to testimonials array
+    if (!dietitian.testimonials) {
+      dietitian.testimonials = [];
+    }
+    dietitian.testimonials.unshift(newTestimonial);
+
+    // Recalculate average rating
+    const totalRatings = dietitian.testimonials.reduce((sum, t) => sum + (t.rating || 0), 0);
+    dietitian.rating = Number((totalRatings / dietitian.testimonials.length).toFixed(1));
+
+    await dietitian.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Review added successfully',
+      testimonial: newTestimonial,
+      newRating: dietitian.rating,
+      totalReviews: dietitian.testimonials.length
+    });
+  } catch (error) {
+    console.error('Error adding testimonial:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding review'
+    });
+  }
+});
+
+// Delete a testimonial (only by the author)
+router.delete('/dietitians/:id/testimonials/:testimonialIndex', authenticateJWT, async (req, res) => {
+  try {
+    const { id, testimonialIndex } = req.params;
+    const userId = req.user.roleId || req.user.userId;
+
+    const dietitian = await Dietitian.findById(id);
+    if (!dietitian) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dietitian not found'
+      });
+    }
+
+    const index = parseInt(testimonialIndex);
+    if (isNaN(index) || index < 0 || index >= dietitian.testimonials.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Testimonial not found'
+      });
+    }
+
+    const testimonial = dietitian.testimonials[index];
+    
+    // Check if the user is the author
+    if (testimonial.authorId && testimonial.authorId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete your own reviews'
+      });
+    }
+
+    // Remove testimonial
+    dietitian.testimonials.splice(index, 1);
+
+    // Recalculate average rating
+    if (dietitian.testimonials.length > 0) {
+      const totalRatings = dietitian.testimonials.reduce((sum, t) => sum + (t.rating || 0), 0);
+      dietitian.rating = Number((totalRatings / dietitian.testimonials.length).toFixed(1));
+    } else {
+      dietitian.rating = 0;
+    }
+
+    await dietitian.save();
+
+    res.json({
+      success: true,
+      message: 'Review deleted successfully',
+      newRating: dietitian.rating,
+      totalReviews: dietitian.testimonials.length
+    });
+  } catch (error) {
+    console.error('Error deleting testimonial:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting review'
+    });
+  }
+});
+
+// Get dietitian stats (rating, consultation count)
+router.get('/dietitians/:id/stats', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const dietitian = await Dietitian.findById(id).select('rating testimonials');
+    if (!dietitian) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dietitian not found'
+      });
+    }
+
+    // Get total consultations count (confirmed + completed)
+    const totalConsultations = await Booking.countDocuments({
+      dietitianId: id,
+      status: { $in: ['confirmed', 'completed'] }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        rating: dietitian.rating || 0,
+        totalReviews: dietitian.testimonials?.length || 0,
+        completedConsultations: totalConsultations
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching dietitian stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching stats'
+    });
+  }
+});
+
+// Check if user can add a review (has consulted and hasn't already reviewed)
+router.get('/dietitians/:id/can-review', authenticateJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.roleId || req.user.userId;
+
+    // Check if user has consulted this dietitian
+    const hasConsulted = await Booking.findOne({
+      userId: userId,
+      dietitianId: id,
+      status: { $in: ['confirmed', 'completed'] }
+    });
+
+    if (!hasConsulted) {
+      return res.json({
+        success: true,
+        canReview: false,
+        reason: 'You need to consult this dietitian before adding a review'
+      });
+    }
+
+    // Check if user has already submitted a review
+    const dietitian = await Dietitian.findById(id).select('testimonials');
+    const hasReviewed = dietitian?.testimonials?.some(
+      t => t.authorId && t.authorId.toString() === userId.toString()
+    );
+
+    if (hasReviewed) {
+      return res.json({
+        success: true,
+        canReview: false,
+        reason: 'You have already submitted a review for this dietitian'
+      });
+    }
+
+    res.json({
+      success: true,
+      canReview: true
+    });
+  } catch (error) {
+    console.error('Error checking review eligibility:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking review eligibility'
+    });
+  }
+});
+
 module.exports = router;

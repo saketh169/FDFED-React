@@ -1,15 +1,37 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Editor } from '@tinymce/tinymce-react';
-import axios from 'axios';
 import { FaArrowLeft, FaSave, FaImage } from 'react-icons/fa';
 import SubscriptionAlert from '../../middleware/SubscriptionAlert';
+
+// Redux imports
+import {
+    fetchCategories,
+    fetchBlogById,
+    createBlog,
+    updateBlog,
+    clearCurrentBlog,
+    clearError,
+    clearSuccessMessage,
+    selectCategories,
+    selectCurrentBlog,
+    selectIsSubmitting,
+    selectError
+} from '../../redux/slices/blogSlice';
 
 const CreateBlog = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useDispatch();
     const { id } = useParams(); // For edit mode
     const editorRef = useRef(null);
+    
+    // Redux state
+    const categories = useSelector(selectCategories);
+    const currentBlog = useSelector(selectCurrentBlog);
+    const isSubmitting = useSelector(selectIsSubmitting);
+    const reduxError = useSelector(selectError);
     
     // Get role from URL path
     const getRoleFromPath = useCallback(() => {
@@ -22,57 +44,6 @@ const CreateBlog = () => {
         return 'user'; // fallback
     }, [location.pathname]);
 
-    const getAuthToken = useCallback(() => {
-        // Get the current role from URL and use ONLY that token
-        const currentRole = getRoleFromPath();
-        const token = localStorage.getItem(`authToken_${currentRole}`);
-        return token;
-    }, [getRoleFromPath]);
-
-    const fetchCategories = useCallback(async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/blogs/categories');
-            if (response.data.success) {
-                setCategories(response.data.categories);
-                if (!id && response.data.categories.length > 0) {
-                    setFormData(prev => ({ ...prev, category: response.data.categories[0] }));
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        }
-    }, [id]);
-
-    const fetchBlogData = useCallback(async () => {
-        try {
-            const token = getAuthToken();
-            const response = await axios.get(`http://localhost:5000/api/blogs/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (response.data.success) {
-                const blog = response.data.blog;
-                setFormData({
-                    title: blog.title,
-                    content: blog.content,
-                    category: blog.category,
-                    tags: blog.tags.join(', '),
-                    excerpt: blog.excerpt || ''
-                });
-                
-                if (blog.featuredImage?.url) {
-                    setImagePreview(blog.featuredImage.url);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching blog:', error);
-            setError('Failed to load blog data');
-        }
-    }, [id, getAuthToken]);
-
-    useEffect(() => {
-    }, [location.pathname]);
-    
     const [formData, setFormData] = useState({
         title: '',
         content: '',
@@ -82,28 +53,53 @@ const CreateBlog = () => {
     });
     const [featuredImage, setFeaturedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
-    const [categories, setCategories] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [isEditMode, setIsEditMode] = useState(false);
     const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
     const [subscriptionAlertData, setSubscriptionAlertData] = useState({});
 
     useEffect(() => {
-        // Scroll to top when component mounts
         window.scrollTo(0, 0);
         
-        console.log('CreateBlog - id from params:', id);
-        console.log('CreateBlog - isEditMode:', !!id);
-        
-        fetchCategories();
+        // Fetch categories using Redux
+        dispatch(fetchCategories());
         
         // If id exists, fetch blog data for editing
         if (id) {
             setIsEditMode(true);
-            fetchBlogData();
+            const roleFromUrl = getRoleFromPath();
+            dispatch(fetchBlogById({ blogId: id, role: roleFromUrl }));
         }
-    }, [id, fetchBlogData, fetchCategories]);
+        
+        // Cleanup on unmount
+        return () => {
+            dispatch(clearCurrentBlog());
+        };
+    }, [id, dispatch, getRoleFromPath]);
+
+    // Set form data when currentBlog is loaded (edit mode)
+    useEffect(() => {
+        if (currentBlog && id) {
+            setFormData({
+                title: currentBlog.title,
+                content: currentBlog.content,
+                category: currentBlog.category,
+                tags: currentBlog.tags?.join(', ') || '',
+                excerpt: currentBlog.excerpt || ''
+            });
+            
+            if (currentBlog.featuredImage?.url) {
+                setImagePreview(currentBlog.featuredImage.url);
+            }
+        }
+    }, [currentBlog, id]);
+
+    // Set default category when categories load
+    useEffect(() => {
+        if (!id && categories.length > 0 && !formData.category) {
+            setFormData(prev => ({ ...prev, category: categories[0] }));
+        }
+    }, [categories, id, formData.category]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -140,13 +136,13 @@ const CreateBlog = () => {
             return;
         }
 
+        let content = formData.content;
         if (editorRef.current) {
-            const content = editorRef.current.getContent();
+            content = editorRef.current.getContent();
             if (!content || content.trim().length < 50) {
                 setError('Content must be at least 50 characters');
                 return;
             }
-            formData.content = content;
         }
 
         if (!formData.category) {
@@ -154,81 +150,67 @@ const CreateBlog = () => {
             return;
         }
 
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            
-            if (!token) {
-                setError('You must be logged in to create a blog post');
-                setLoading(false);
-                return;
-            }
-            
-            console.log('Token found:', token ? 'Yes' : 'No');
-            
-            const submitData = new FormData();
-            submitData.append('title', formData.title);
-            submitData.append('content', formData.content);
-            submitData.append('category', formData.category);
-            submitData.append('tags', formData.tags);
-            submitData.append('excerpt', formData.excerpt);
-            
-            if (featuredImage) {
-                submitData.append('featuredImage', featuredImage);
-            }
+        const roleFromUrl = getRoleFromPath();
+        const token = roleFromUrl ? localStorage.getItem(`authToken_${roleFromUrl}`) : null;
+        
+        if (!token) {
+            setError('You must be logged in to create a blog post');
+            return;
+        }
+        
+        const submitData = new FormData();
+        submitData.append('title', formData.title);
+        submitData.append('content', content);
+        submitData.append('category', formData.category);
+        submitData.append('tags', formData.tags);
+        submitData.append('excerpt', formData.excerpt);
+        
+        if (featuredImage) {
+            submitData.append('featuredImage', featuredImage);
+        }
 
-            let response;
-            console.log('Submitting - isEditMode:', isEditMode, 'id:', id);
-            if (isEditMode) {
-                response = await axios.put(
-                    `http://localhost:5000/api/blogs/${id}`,
-                    submitData,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }
-                );
-            } else {
-                response = await axios.post(
-                    'http://localhost:5000/api/blogs',
-                    submitData,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }
-                );
-            }
-
-            if (response.data.success) {
-                // Get user role from URL path to navigate to correct route
-                const userRole = getRoleFromPath();
-                navigate(`/${userRole}/blog/${response.data.blog._id}`);
-            }
-        } catch (error) {
-            console.error('Error submitting blog:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
+        let result;
+        if (isEditMode) {
+            result = await dispatch(updateBlog({ 
+                blogId: id, 
+                formData: submitData, 
+                role: roleFromUrl 
+            }));
             
-            // Check if it's a subscription limit error
-            if (error.response?.data?.limitReached) {
-                const errorData = error.response.data;
+            if (updateBlog.fulfilled.match(result)) {
+                navigate(`/${roleFromUrl}/blog/${result.payload._id}`);
+            } else if (result.payload?.limitReached) {
                 setShowSubscriptionAlert(true);
                 setSubscriptionAlertData({
-                    message: errorData.message,
-                    planType: errorData.planType || 'free',
+                    message: result.payload.message,
+                    planType: result.payload.planType || 'free',
                     limitType: 'blog',
-                    currentCount: errorData.currentCount || 0,
-                    limit: errorData.limit || 0
+                    currentCount: result.payload.currentCount || 0,
+                    limit: result.payload.limit || 0
                 });
             } else {
-                setError(error.response?.data?.message || 'Failed to submit blog post');
+                setError(result.payload || 'Failed to update blog post');
             }
-        } finally {
-            setLoading(false);
+        } else {
+            result = await dispatch(createBlog({ 
+                formData: submitData, 
+                role: roleFromUrl 
+            }));
+            
+            if (createBlog.fulfilled.match(result)) {
+                navigate(`/${roleFromUrl}/blog/${result.payload._id}`);
+            } else if (result.payload?.limitReached) {
+                setShowSubscriptionAlert(true);
+                setSubscriptionAlertData({
+                    message: result.payload.message,
+                    planType: result.payload.planType || 'free',
+                    limitType: 'blog',
+                    currentCount: result.payload.currentCount || 0,
+                    limit: result.payload.limit || 0
+                });
+            } else {
+                setError(result.payload || 'Failed to create blog post');
+            }
         }
     };
 
@@ -387,11 +369,11 @@ const CreateBlog = () => {
                     <div className="flex items-center gap-4 pt-4">
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={isSubmitting}
                             className="bg-[#1E6F5C] text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center gap-2"
                         >
                             <FaSave />
-                            {loading ? 'Publishing...' : (isEditMode ? 'Update Post' : 'Publish Post')}
+                            {isSubmitting ? 'Publishing...' : (isEditMode ? 'Update Post' : 'Publish Post')}
                         </button>
                         <button
                             type="button"

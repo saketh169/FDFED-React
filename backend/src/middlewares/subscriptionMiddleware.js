@@ -1,6 +1,41 @@
 const Payment = require('../models/paymentModel');
 const Booking = require('../models/bookingModel');
 const { Blog } = require('../models/blogModel');
+const Progress = require('../models/progressModel');
+
+// Progress plan types available for each subscription tier
+const PROGRESS_PLAN_ACCESS = {
+  free: [
+    'general',      // General Wellness - basic overall health tracking
+    'weight-loss',  // Weight Loss - most common goal
+    'hydration'     // Hydration Goal - simple water tracking
+  ],
+  basic: [
+    // Includes free plans plus:
+    'general', 'weight-loss', 'hydration',
+    'balanced-diet',   // Balanced Diet - meal planning basics
+    'cardio',          // Cardio Fitness - running, cycling
+    'energy',          // Energy Boost - nutrition optimization
+    'flexibility'      // Flexibility & Mobility - yoga, stretching
+  ],
+  premium: [
+    // Includes basic plans plus:
+    'general', 'weight-loss', 'hydration', 'balanced-diet', 'cardio', 'energy', 'flexibility',
+    'muscle-gain',     // Muscle Gain - protein & strength training
+    'stamina',         // Stamina Building - endurance training
+    'detox',           // Detox Program - clean eating
+    'stress',          // Stress Relief - mental wellness
+    'maintenance'      // Weight Maintenance - long-term tracking
+  ],
+  ultimate: [
+    // All plans including specialized ones:
+    'general', 'weight-loss', 'hydration', 'balanced-diet', 'cardio', 'energy', 'flexibility',
+    'muscle-gain', 'stamina', 'detox', 'stress', 'maintenance',
+    'diabetes',        // Diabetes Management - specialized health tracking
+    'recovery',        // Post-Injury Recovery - rehabilitation
+    'athletic'         // Athletic Performance - sport-specific training
+  ]
+};
 
 // Subscription feature limits configuration
 const SUBSCRIPTION_LIMITS = {
@@ -9,28 +44,32 @@ const SUBSCRIPTION_LIMITS = {
     advanceBookingDays: 0,
     chatbotDailyQueries: 5,
     monthlyBlogPosts: 0,
-    monthlyMealPlans: 0
+    monthlyMealPlans: 0,
+    progressPlans: PROGRESS_PLAN_ACCESS.free // Array of accessible plan types
   },
   basic: {
     monthlyBookings: 2,
     advanceBookingDays: 3,
     chatbotDailyQueries: 20,
     monthlyBlogPosts: 2,
-    monthlyMealPlans: 4
+    monthlyMealPlans: 4,
+    progressPlans: PROGRESS_PLAN_ACCESS.basic
   },
   premium: {
     monthlyBookings: 8,
     advanceBookingDays: 7,
     chatbotDailyQueries: 50,
     monthlyBlogPosts: 8,
-    monthlyMealPlans: 15
+    monthlyMealPlans: 15,
+    progressPlans: PROGRESS_PLAN_ACCESS.premium
   },
   ultimate: {
     monthlyBookings: 20,
     advanceBookingDays: 21,
     chatbotDailyQueries: -1, // unlimited
     monthlyBlogPosts: -1, // unlimited
-    monthlyMealPlans: -1 // unlimited
+    monthlyMealPlans: -1, // unlimited
+    progressPlans: PROGRESS_PLAN_ACCESS.ultimate // All plans
   }
 };
 
@@ -347,6 +386,75 @@ async function checkMealPlanLimit(req, res, next) {
   }
 }
 
+// Check progress plan access based on subscription
+async function checkProgressLimit(req, res, next) {
+  try {
+    // Use roleId from JWT to match userId in payments collection (fallback to userId)
+    const userId = req.user?.roleId || req.user?.userId;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    const { planType, limits, hasSubscription } = await getUserSubscription(userId);
+    const requestedPlan = req.body.plan;
+
+    // Check if the requested plan is accessible for this subscription
+    const accessiblePlans = limits.progressPlans || PROGRESS_PLAN_ACCESS.free;
+    
+    if (requestedPlan && !accessiblePlans.includes(requestedPlan)) {
+      // Find what tier this plan belongs to
+      let requiredTier = 'ultimate';
+      if (PROGRESS_PLAN_ACCESS.premium.includes(requestedPlan)) requiredTier = 'premium';
+      if (PROGRESS_PLAN_ACCESS.basic.includes(requestedPlan)) requiredTier = 'basic';
+      if (PROGRESS_PLAN_ACCESS.free.includes(requestedPlan)) requiredTier = 'free';
+      
+      const planNames = {
+        'weight-loss': 'Weight Loss',
+        'muscle-gain': 'Muscle Gain',
+        'cardio': 'Cardio Fitness',
+        'hydration': 'Hydration Goal',
+        'balanced-diet': 'Balanced Diet',
+        'energy': 'Energy Boost',
+        'detox': 'Detox Program',
+        'stamina': 'Stamina Building',
+        'maintenance': 'Weight Maintenance',
+        'flexibility': 'Flexibility & Mobility',
+        'recovery': 'Post-Injury Recovery',
+        'diabetes': 'Diabetes Management',
+        'stress': 'Stress Relief',
+        'athletic': 'Athletic Performance',
+        'general': 'General Wellness'
+      };
+      
+      return res.status(403).json({
+        success: false,
+        message: `The "${planNames[requestedPlan] || requestedPlan}" plan requires a ${requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1)} subscription or higher. Upgrade to access this plan!`,
+        planRestricted: true,
+        requestedPlan: requestedPlan,
+        requiredTier: requiredTier,
+        currentTier: planType,
+        accessiblePlans: accessiblePlans
+      });
+    }
+
+    req.subscriptionInfo = { 
+      planType, 
+      limits, 
+      hasSubscription,
+      accessiblePlans
+    };
+    next();
+  } catch (error) {
+    console.error('Error checking progress plan access:', error);
+    // Don't block progress creation if check fails
+    next();
+  }
+}
+
 // Get subscription status endpoint
 async function getSubscriptionStatus(req, res) {
   try {
@@ -425,7 +533,9 @@ module.exports = {
   checkBlogLimit,
   checkChatbotLimit,
   checkMealPlanLimit,
+  checkProgressLimit,
   getSubscriptionStatus,
   getUserSubscription,
-  SUBSCRIPTION_LIMITS
+  SUBSCRIPTION_LIMITS,
+  PROGRESS_PLAN_ACCESS
 };

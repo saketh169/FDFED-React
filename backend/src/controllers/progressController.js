@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-development';
 
-// Extract userId from JWT token
+// Extract roleId (user profile ID) from JWT token
 const getUserIdFromToken = (req) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -11,7 +11,8 @@ const getUserIdFromToken = (req) => {
     const token = authHeader.split(' ')[1];
     if (!token) return null;
     const decoded = jwt.verify(token, JWT_SECRET);
-    return decoded.userId;
+    // Use roleId (profile ID) instead of userId (auth ID) for consistency
+    return decoded.roleId || decoded.userId;
   } catch (error) {
     console.error('Error decoding token:', error);
     return null;
