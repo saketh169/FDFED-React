@@ -116,10 +116,8 @@ const DietitianSchedule = () => {
     const bookingsByDay = useMemo(() => {
         const grouped = {};
         bookings.forEach(booking => {
-            // Fix timezone issue - convert UTC date to local date
-            const utcDate = new Date(booking.date);
-            const localDate = new Date(utcDate.getTime() - (utcDate.getTimezoneOffset() * 60000));
-            const dateKey = localDate.toISOString().split('T')[0];
+            // Use the date directly as stored in UTC (backend now stores correct UTC dates)
+            const dateKey = new Date(booking.date).toISOString().split('T')[0];
             
             if (!grouped[dateKey]) {
                 grouped[dateKey] = [];

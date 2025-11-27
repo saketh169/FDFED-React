@@ -102,6 +102,8 @@ const AllDietitiansPage = () => {
     setNotification({ show: false, message: "", type: "" });
   };
 
+  const [specializations, setSpecializations] = useState([]);
+
   // Load dietitians data from API
   useEffect(() => {
     const loadDietitians = async () => {
@@ -124,6 +126,22 @@ const AllDietitiansPage = () => {
           const filteredData = response.data.data.filter((d) => d.specialties && d.specialties.length > 0);
           setAllDietitians(filteredData);
           setFilteredDietitians(filteredData);
+
+          // Extract unique specializations for filter - keep only primary 6 plus Others
+          const primarySpecializations = [
+            "Weight Loss",
+            "Diabetes Management", 
+            "Women's Health",
+            "Gut Health",
+            "Skin & Hair",
+            "Cardiac Health",
+            "Others"
+          ];
+          const specOptions = primarySpecializations.map(spec => ({
+            value: spec,
+            label: spec
+          }));
+          setSpecializations(specOptions);
         } else {
           throw new Error(response.data.message || 'Failed to fetch dietitians');
         }
@@ -162,32 +180,45 @@ const AllDietitiansPage = () => {
 
     // Specialization filter
     if (filters.specialization.length > 0) {
-      result = result.filter((d) =>
-        d.specialties?.some((s) => filters.specialization.some(f => f.toLowerCase() === s.toLowerCase()))
-      );
+      const primarySpecs = ["Weight Loss", "Diabetes Management", "Women's Health", "Gut Health", "Skin & Hair", "Cardiac Health"];
+
+      if (filters.specialization.includes("Others")) {
+        // If "Others" is selected, show only dietitians whose specializations don't match the primary 6
+        result = result.filter((d) =>
+          !d.specialties?.some((s) => primarySpecs.some(primary => primary.toLowerCase() === s.toLowerCase()))
+        );
+      } else {
+        // Normal filtering for primary specializations
+        result = result.filter((d) =>
+          d.specialties?.some((s) => filters.specialization.some(f => f.toLowerCase() === s.toLowerCase()))
+        );
+      }
     }
 
-    // Mode filter
+    // Mode filter - check both online/offline and onlineConsultation/offlineConsultation fields
     if (filters.mode.length > 0) {
       result = result.filter((d) =>
-        filters.mode.some((m) =>
-          m === "online" ? d.onlineConsultation : d.offlineConsultation
-        )
+        filters.mode.some((m) => {
+          if (m === "online") {
+            return d.onlineConsultation === true || d.online === true;
+          } else if (m === "offline") {
+            return d.offlineConsultation === true || d.offline === true;
+          }
+          return false;
+        })
       );
     }
 
-    // Experience filter
+    // Experience filter - single selection, show dietitians with experience >= selected value
     if (filters.experience.length > 0) {
-      result = result.filter((d) =>
-        filters.experience.some((exp) => d.yearsOfExperience >= exp)
-      );
+      const selectedExp = Math.max(...filters.experience); // Get the highest selected experience
+      result = result.filter((d) => (d.experience || d.yearsOfExperience || 0) >= selectedExp);
     }
 
-    // Fees filter
+    // Fees filter - single selection, show dietitians with fees <= selected value
     if (filters.fees.length > 0) {
-      result = result.filter((d) =>
-        filters.fees.some((fee) => d.fees <= fee)
-      );
+      const selectedFee = Math.max(...filters.fees); // Get the highest selected fee limit
+      result = result.filter((d) => d.fees <= selectedFee);
     }
 
     // Language filter
@@ -197,9 +228,10 @@ const AllDietitiansPage = () => {
       );
     }
 
-    // Rating filter
+    // Rating filter - single selection, show dietitians with rating >= selected value
     if (filters.rating.length > 0) {
-      result = result.filter((d) => filters.rating.some((r) => d.rating >= r));
+      const selectedRating = Math.max(...filters.rating); // Get the highest selected rating
+      result = result.filter((d) => d.rating >= selectedRating);
     }
 
     setFilteredDietitians(result);
@@ -299,7 +331,7 @@ const AllDietitiansPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 pb-2">
       {/* Header Section */}
       <div className="border-b-2 bg-white border-[#28B463] pt-2 fixed top-16 left-0 right-0 z-20">
         <div className="max-w-screen-2xl mx-auto px-6 py-1">
@@ -318,11 +350,10 @@ const AllDietitiansPage = () => {
       {/* Main Content */}
       <div className="max-w-screen-2xl mx-auto px-6 pt-17 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
+            <div className="lg:col-span-1">
             <div className="sticky top-24">
               <FilterSidebar
-                specializations={[]}
+                specializations={specializations}
                 onFilterChange={handleFilterChange}
                 onClearFilters={handleClearFilters}
                 filters={filters}
@@ -367,7 +398,7 @@ const AllDietitiansPage = () => {
               </div>
 
               {/* Results Grid */}
-              <div className="h-[1200px] overflow-y-auto">
+              <div className="h-[1650px] overflow-y-auto">
                 <div className="space-y-6">
                   {filteredDietitians.length > 0 ? (
                     filteredDietitians.map((dietitian) => (

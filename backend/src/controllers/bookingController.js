@@ -79,12 +79,13 @@ exports.createBooking = async (req, res) => {
     }
 
     // Validate date is in the future
-    const bookingDate = new Date(date);
-    bookingDate.setHours(0, 0, 0, 0);
+    // Parse date as UTC to avoid timezone issues
+    const [year, month, day] = date.split('-').map(Number);
+    const bookingDate = new Date(Date.UTC(year, month - 1, day)); // Create UTC date at midnight
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-    if (bookingDate < now) {
+    if (bookingDate < today) {
       return res.status(400).json({
         success: false,
         message: "Booking date must be today or in the future",
@@ -449,9 +450,9 @@ exports.getBookedSlots = async (req, res) => {
       });
     }
 
-    // Parse and normalize the date
-    const queryDate = new Date(date);
-    queryDate.setHours(0, 0, 0, 0);
+    // Parse and normalize the date as UTC
+    const [year, month, day] = date.split('-').map(Number);
+    const queryDate = new Date(Date.UTC(year, month - 1, day));
 
     const nextDay = new Date(queryDate);
     nextDay.setDate(nextDay.getDate() + 1);
@@ -522,9 +523,9 @@ exports.getUserBookedSlots = async (req, res) => {
       });
     }
 
-    // Parse and normalize the date
-    const queryDate = new Date(date);
-    queryDate.setHours(0, 0, 0, 0);
+    // Parse and normalize the date as UTC
+    const [year, month, day] = date.split('-').map(Number);
+    const queryDate = new Date(Date.UTC(year, month - 1, day));
 
     const nextDay = new Date(queryDate);
     nextDay.setDate(nextDay.getDate() + 1);

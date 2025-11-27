@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
@@ -26,7 +26,7 @@ const BlogPage = () => {
     const myBlogsRef = React.useRef(null);
 
     // Get role from URL path
-    const getRoleFromPath = () => {
+    const getRoleFromPath = useCallback(() => {
         const path = location.pathname;
         if (path.startsWith('/user')) return 'user';
         if (path.startsWith('/dietitian')) return 'dietitian';
@@ -34,34 +34,9 @@ const BlogPage = () => {
         if (path.startsWith('/admin')) return 'admin';
         if (path.startsWith('/corporatepartner')) return 'corporatepartner';
         return null;
-    };
+    }, [location.pathname]);
 
-    useEffect(() => {
-        // Scroll to top when component mounts
-        window.scrollTo(0, 0);
-        
-        // Get role from URL
-        const roleFromUrl = getRoleFromPath();
-        
-        // Check if user is authenticated for THIS specific role only
-        const token = roleFromUrl ? localStorage.getItem(`authToken_${roleFromUrl}`) : null;
-        
-        if (token) {
-            setIsAuthenticated(true);
-            // Fetch user's blogs if authenticated
-            fetchMyBlogs();
-        } else {
-            setIsAuthenticated(false);
-        }
-        
-        // Set role from URL path
-        setUserRole(roleFromUrl);
-        
-        fetchCategories();
-        fetchBlogs();
-    }, [selectedCategory, searchQuery, sortBy, pagination.page, location.pathname]);
-
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             const response = await axios.get('http://localhost:5000/api/blogs/categories');
             if (response.data.success) {
@@ -70,9 +45,9 @@ const BlogPage = () => {
         } catch (error) {
             console.error('Error fetching categories:', error);
         }
-    };
+    }, []);
 
-    const fetchBlogs = async () => {
+    const fetchBlogs = useCallback(async () => {
         try {
             setLoading(true);
             // Get the current role from URL and use ONLY that token
@@ -109,9 +84,9 @@ const BlogPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedCategory, searchQuery, sortBy, pagination.page, getRoleFromPath]);
 
-    const fetchMyBlogs = async () => {
+    const fetchMyBlogs = useCallback(async () => {
         try {
             setLoadingMyBlogs(true);
             const currentRole = getRoleFromPath();
@@ -147,7 +122,32 @@ const BlogPage = () => {
         } finally {
             setLoadingMyBlogs(false);
         }
-    };
+    }, [getRoleFromPath]);
+
+    useEffect(() => {
+        // Scroll to top when component mounts
+        window.scrollTo(0, 0);
+        
+        // Get role from URL
+        const roleFromUrl = getRoleFromPath();
+        
+        // Check if user is authenticated for THIS specific role only
+        const token = roleFromUrl ? localStorage.getItem(`authToken_${roleFromUrl}`) : null;
+        
+        if (token) {
+            setIsAuthenticated(true);
+            // Fetch user's blogs if authenticated
+            fetchMyBlogs();
+        } else {
+            setIsAuthenticated(false);
+        }
+        
+        // Set role from URL path
+        setUserRole(roleFromUrl);
+        
+        fetchCategories();
+        fetchBlogs();
+    }, [selectedCategory, searchQuery, sortBy, pagination.page, location.pathname, fetchBlogs, fetchMyBlogs, getRoleFromPath, fetchCategories]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -159,7 +159,15 @@ const BlogPage = () => {
         setSelectedCategory(category);
         // Scroll to blogs grid after a brief delay to allow state update
         setTimeout(() => {
-            blogsGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const element = blogsGridRef.current;
+            if (element) {
+                const rect = element.getBoundingClientRect();
+                const offsetPixels = 100; // Adjust this pixel value as needed
+                window.scrollTo({
+                    top: window.scrollY + rect.top - offsetPixels,
+                    behavior: 'smooth'
+                });
+            }
         }, 100);
     };
 
@@ -201,7 +209,7 @@ const BlogPage = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header Section */}
-            <div className="bg-white border-b-4 border-[#28B463] py-16 px-4">
+            <div className="bg-white border-b-4 border-[#28B463] py-4 px-4">
                 <div className="max-w-7xl mx-auto">
                     <h1 className="text-5xl font-bold mb-4 text-center text-[#1E6F5C]">Nutrition & Wellness Blog</h1>
                     <p className="text-xl text-center mb-8 text-gray-600">
@@ -225,7 +233,15 @@ const BlogPage = () => {
                                     setShowMyBlogsSection(!showMyBlogsSection);
                                     if (!showMyBlogsSection) {
                                         setTimeout(() => {
-                                            myBlogsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                            const element = myBlogsRef.current;
+                                            if (element) {
+                                                const rect = element.getBoundingClientRect();
+                                                const offsetPixels = 100; // Adjust this pixel value as needed
+                                                window.scrollTo({
+                                                    top: window.scrollY + rect.top - offsetPixels,
+                                                    behavior: 'smooth'
+                                                });
+                                            }
                                         }, 100);
                                     }
                                 }}
@@ -444,8 +460,8 @@ const BlogPage = () => {
                 )}
 
                 {/* All Blogs Section - Add ref here for smooth scroll */}
-                <div ref={blogsGridRef}>
-                    <h2 className="text-2xl font-bold text-[#1E6F5C] mb-6">All Blogs</h2>
+                <div>
+                    <h2 ref={blogsGridRef} className="text-2xl font-bold text-[#1E6F5C] mb-6">All Blogs</h2>
                 </div>
 
                 {/* Blog Grid */}

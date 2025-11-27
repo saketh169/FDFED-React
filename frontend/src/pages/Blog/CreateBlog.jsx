@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
 import axios from 'axios';
@@ -12,7 +12,7 @@ const CreateBlog = () => {
     const editorRef = useRef(null);
     
     // Get role from URL path
-    const getRoleFromPath = () => {
+    const getRoleFromPath = useCallback(() => {
         const path = location.pathname;
         if (path.startsWith('/user')) return 'user';
         if (path.startsWith('/dietitian')) return 'dietitian';
@@ -20,7 +20,58 @@ const CreateBlog = () => {
         if (path.startsWith('/admin')) return 'admin';
         if (path.startsWith('/corporatepartner')) return 'corporatepartner';
         return 'user'; // fallback
-    };
+    }, [location.pathname]);
+
+    const getAuthToken = useCallback(() => {
+        // Get the current role from URL and use ONLY that token
+        const currentRole = getRoleFromPath();
+        const token = localStorage.getItem(`authToken_${currentRole}`);
+        return token;
+    }, [getRoleFromPath]);
+
+    const fetchCategories = useCallback(async () => {
+        try {
+            const response = await axios.get('http://localhost:5000/api/blogs/categories');
+            if (response.data.success) {
+                setCategories(response.data.categories);
+                if (!id && response.data.categories.length > 0) {
+                    setFormData(prev => ({ ...prev, category: response.data.categories[0] }));
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    }, [id]);
+
+    const fetchBlogData = useCallback(async () => {
+        try {
+            const token = getAuthToken();
+            const response = await axios.get(`http://localhost:5000/api/blogs/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data.success) {
+                const blog = response.data.blog;
+                setFormData({
+                    title: blog.title,
+                    content: blog.content,
+                    category: blog.category,
+                    tags: blog.tags.join(', '),
+                    excerpt: blog.excerpt || ''
+                });
+                
+                if (blog.featuredImage?.url) {
+                    setImagePreview(blog.featuredImage.url);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching blog:', error);
+            setError('Failed to load blog data');
+        }
+    }, [id, getAuthToken]);
+
+    useEffect(() => {
+    }, [location.pathname]);
     
     const [formData, setFormData] = useState({
         title: '',
@@ -52,55 +103,7 @@ const CreateBlog = () => {
             setIsEditMode(true);
             fetchBlogData();
         }
-    }, [id]);
-
-    const getAuthToken = () => {
-        // Get the current role from URL and use ONLY that token
-        const currentRole = getRoleFromPath();
-        const token = localStorage.getItem(`authToken_${currentRole}`);
-        return token;
-    };
-
-    const fetchCategories = async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/blogs/categories');
-            if (response.data.success) {
-                setCategories(response.data.categories);
-                if (!isEditMode && response.data.categories.length > 0) {
-                    setFormData(prev => ({ ...prev, category: response.data.categories[0] }));
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        }
-    };
-
-    const fetchBlogData = async () => {
-        try {
-            const token = getAuthToken();
-            const response = await axios.get(`http://localhost:5000/api/blogs/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (response.data.success) {
-                const blog = response.data.blog;
-                setFormData({
-                    title: blog.title,
-                    content: blog.content,
-                    category: blog.category,
-                    tags: blog.tags.join(', '),
-                    excerpt: blog.excerpt || ''
-                });
-                
-                if (blog.featuredImage?.url) {
-                    setImagePreview(blog.featuredImage.url);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching blog:', error);
-            setError('Failed to load blog data');
-        }
-    };
+    }, [id, fetchBlogData, fetchCategories]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

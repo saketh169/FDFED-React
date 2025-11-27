@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
@@ -20,7 +20,7 @@ const BlogModeration = () => {
     const [blogToDismiss, setBlogToDismiss] = useState(null);
 
     // Get role from URL path
-    const getRoleFromPath = () => {
+    const getRoleFromPath = useCallback(() => {
         const path = location.pathname;
         if (path.startsWith('/user')) return 'user';
         if (path.startsWith('/dietitian')) return 'dietitian';
@@ -28,23 +28,16 @@ const BlogModeration = () => {
         if (path.startsWith('/admin')) return 'admin';
         if (path.startsWith('/corporatepartner')) return 'corporatepartner';
         return 'organization'; // default for this page
-    };
+    }, [location.pathname]);
 
-    const getAuthToken = () => {
+    const getAuthToken = useCallback(() => {
         // Get the current role from URL and use ONLY that token
         const currentRole = getRoleFromPath();
         const token = localStorage.getItem(`authToken_${currentRole}`);
         return token;
-    };
+    }, [getRoleFromPath]);
 
-    useEffect(() => {
-        // Scroll to top when component mounts
-        window.scrollTo(0, 0);
-        
-        fetchReportedBlogs();
-    }, [pagination.page]);
-
-    const fetchReportedBlogs = async () => {
+    const fetchReportedBlogs = useCallback(async () => {
         try {
             setLoading(true);
             const token = getAuthToken();
@@ -68,7 +61,14 @@ const BlogModeration = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, getAuthToken]);
+
+    useEffect(() => {
+        // Scroll to top when component mounts
+        window.scrollTo(0, 0);
+        
+        fetchReportedBlogs();
+    }, [pagination.page, fetchReportedBlogs]);
 
     const handleViewDetails = (blog) => {
         setSelectedBlog(blog);

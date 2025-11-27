@@ -42,7 +42,7 @@ const FloatingContactButton = ({ handleScrollToTop, contactPath }) => (
     to={contactPath} 
     onClick={handleScrollToTop}
     // positioned 180px below top of viewport; brighter green background, slightly darker on hover
-    className="fixed hidden md:flex items-center right-4 top-24 bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-40 group cursor-pointer"
+    className="fixed hidden md:flex items-center right-4 top-21 bg-[#059669] text-white p-3 rounded-full shadow-lg hover:bg-[#047857] transition-all duration-300 transform hover:scale-105 z-50 group cursor-pointer"
     aria-label="Contact Us"
     title="Contact Us"
   >
@@ -197,7 +197,6 @@ const Header = () => {
     const outlineButtonClass = `bg-transparent border border-[#28B463] text-[#28B463] ${isMobile ? 'w-28' : 'px-5'} py-2 rounded-full font-semibold hover:bg-[#28B463] hover:text-white transition-all duration-300 cursor-pointer text-center`;
 
     if (isLoggedInArea) {
-      const profileLink = getProfilePath();
       const iconButtonBaseClass = "relative flex items-center justify-center p-2 rounded-full transition-all duration-300 group";
       const tooltipTextClass = "absolute top-full mt-2 px-3 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10";
 

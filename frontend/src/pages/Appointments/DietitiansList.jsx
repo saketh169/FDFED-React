@@ -7,7 +7,7 @@ const DietitiansList = () => {
   const navigate = useNavigate();
   const { user, token } = useAuthContext();
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('Active');
+    const [statusFilter, setStatusFilter] = useState('All');
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedDietitian, setSelectedDietitian] = useState(null);
