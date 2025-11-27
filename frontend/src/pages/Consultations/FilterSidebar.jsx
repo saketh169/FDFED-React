@@ -5,6 +5,7 @@ const FilterSidebar = ({
   onFilterChange,
   onClearFilters,
   filters,
+  showModeFilter = true,
 }) => {
   const renderStars = (rating) => {
     const fullStars = Math.floor(rating);
@@ -42,6 +43,42 @@ const FilterSidebar = ({
         </button>
       </div>
 
+      {/* Mode Filter */}
+      {showModeFilter && (
+        <div className="mb-8">
+          <label
+            className="flex items-center gap-2 text-sm font-semibold text-emerald-700 mb-4 uppercase tracking-wide"
+            style={{
+              fontFamily: "'Inter', 'Segoe UI', sans-serif",
+              letterSpacing: "0.5px",
+            }}
+          >
+            <i className="fas fa-video text-emerald-600"></i> Consultation Mode
+          </label>
+          <div className="space-y-3">
+            {["online", "offline"].map((mode) => (
+              <label
+                key={mode}
+                className="flex items-center gap-3 cursor-pointer hover:bg-emerald-50 p-3 rounded-xl transition-all border border-transparent hover:border-emerald-200"
+              >
+                <input
+                  type="checkbox"
+                  checked={filters.mode.includes(mode)}
+                  onChange={() => onFilterChange("mode", mode)}
+                  className="w-4 h-4 text-emerald-600 rounded accent-emerald-600 cursor-pointer"
+                />
+                <span
+                  className="text-sm text-gray-700"
+                  style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}
+                >
+                  {mode === "online" ? "Online" : "In-person"}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Specialization Filter */}
       {specializations && specializations.length > 0 && (
         <div className="mb-8">
@@ -76,43 +113,7 @@ const FilterSidebar = ({
             ))}
           </div>
         </div>
-      )}
-
-      {/* Mode Filter */}
-      <div className="mb-8">
-        <label
-          className="flex items-center gap-2 text-sm font-semibold text-emerald-700 mb-4 uppercase tracking-wide"
-          style={{
-            fontFamily: "'Inter', 'Segoe UI', sans-serif",
-            letterSpacing: "0.5px",
-          }}
-        >
-          <i className="fas fa-video text-emerald-600"></i> Consultation Mode
-        </label>
-        <div className="space-y-3">
-          {["online", "offline"].map((mode) => (
-            <label
-              key={mode}
-              className="flex items-center gap-3 cursor-pointer hover:bg-emerald-50 p-3 rounded-xl transition-all border border-transparent hover:border-emerald-200"
-            >
-              <input
-                type="checkbox"
-                checked={filters.mode.includes(mode)}
-                onChange={() => onFilterChange("mode", mode)}
-                className="w-4 h-4 text-emerald-600 rounded accent-emerald-600 cursor-pointer"
-              />
-              <span
-                className="text-sm text-gray-700"
-                style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}
-              >
-                {mode === "online" ? "Online" : "In-person"}
-              </span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Experience Filter */}
+      )}      {/* Experience Filter */}
       <div className="mb-8">
         <label
           className="flex items-center gap-2 text-sm font-semibold text-emerald-700 mb-4 uppercase tracking-wide"

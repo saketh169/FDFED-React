@@ -16,7 +16,7 @@ const ClientsList = () => {
   }, [user]);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Active');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState(null);

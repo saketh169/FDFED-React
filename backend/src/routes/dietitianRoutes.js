@@ -317,9 +317,9 @@ router.get('/dietitians/:id/slots', authenticateJWT, async (req, res) => {
       }
     }
 
-    // Parse and normalize the query date
-    const queryDate = new Date(date);
-    queryDate.setHours(0, 0, 0, 0);
+    // Parse and normalize the query date as UTC
+    const [year, month, day] = date.split('-').map(Number);
+    const queryDate = new Date(Date.UTC(year, month - 1, day));
 
     const nextDay = new Date(queryDate);
     nextDay.setDate(nextDay.getDate() + 1);

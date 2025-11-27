@@ -11,51 +11,6 @@ const BookingSidebar = ({
 }) => {
   const { user } = useAuthContext();
 
-  const [hasLoggedBookings, setHasLoggedBookings] = useState(false);
-
-  // Log current user ID and dietitian ID when sidebar opens
-  useEffect(() => {
-    if (isOpen && dietitianId) {
-      console.log("Current User ID from auth context:", user?.id || user?._id);
-      console.log("Selected Dietitian ID:", dietitianId);
-    }
-  }, [isOpen, dietitianId, user]);
-
-  // Dummy call to fetch and log all booking slots for the user
-  useEffect(() => {
-    const fetchAllUserBookings = async () => {
-      const userId = user?.id || user?._id || localStorage.getItem("userId");
-      if (!userId || !dietitianId || hasLoggedBookings) return;
-
-      try {
-        const response = await fetch(`http://localhost:5000/api/bookings/user/${userId}`);
-        const data = await response.json();
-
-        if (data.success) {
-          const bookingSlots = data.data
-            .filter(booking => booking.dietitianId !== dietitianId)
-            .map(booking => ({
-              date: new Date(booking.date).toISOString().split('T')[0],
-              time: booking.time,
-              dietitianName: booking.dietitianName,
-              dietitianId: booking.dietitianId,
-              status: booking.status
-            }));
-          console.log("All booking slots for user", userId, "(excluding current dietitian):", bookingSlots);
-          setHasLoggedBookings(true);
-        } else {
-          console.error("Failed to fetch user bookings:", data.message);
-        }
-      } catch (error) {
-        console.error("Error fetching user bookings:", error);
-      }
-    };
-
-    if (isOpen) {
-      fetchAllUserBookings();
-    }
-  }, [user, dietitianId, isOpen, hasLoggedBookings]);
-
   const [selectedDate, setSelectedDate] = useState(
     () => {
       const now = new Date();
@@ -72,8 +27,59 @@ const BookingSidebar = ({
     afternoon: [],
     evening: [],
   });
+
+  // Log current user ID and dietitian ID when sidebar opens
+  useEffect(() => {
+    if (isOpen && dietitianId) {
+      console.log("Current User ID from auth context:", user?.id || user?._id);
+      console.log("Selected Dietitian ID:", dietitianId);
+    }
+  }, [isOpen, dietitianId, user]);
+
+  // Dummy call to fetch and log all booking slots for the user
+  // We also store the filtered result in `userBookedSlots` so the UI uses
+  // the same data you see in the console for the "You are booked" status.
+  useEffect(() => {
+    const fetchAllUserBookings = async () => {
+      const userId = user?.id || user?._id || localStorage.getItem("userId");
+      if (!userId || !dietitianId || !selectedDate) return;
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/bookings/user/${userId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          const bookingSlots = data.data
+            .filter(booking => booking.dietitianId !== dietitianId && new Date(booking.date).toISOString().split('T')[0] === selectedDate)
+            .map(booking => ({
+              date: new Date(booking.date).toISOString().split('T')[0],
+              time: booking.time,
+              dietitianName: booking.dietitianName,
+              dietitianId: booking.dietitianId,
+              status: booking.status
+            }));
+          console.log("Booking slots for user", userId, "on selected date", selectedDate, "(excluding current dietitian):", bookingSlots);
+
+          // Use this data directly for "You are booked" detection
+          setUserBookedSlots(bookingSlots);
+        } else {
+          console.error("Failed to fetch user bookings:", data.message);
+          setUserBookedSlots([]);
+        }
+      } catch (error) {
+        console.error("Error fetching user bookings:", error);
+        setUserBookedSlots([]);
+      }
+    };
+
+    if (isOpen) {
+      fetchAllUserBookings();
+    }
+  }, [user, dietitianId, isOpen, selectedDate]);
+
   const [bookedSlots, setBookedSlots] = useState([]);
-  const [userBookedSlots, setUserBookedSlots] = useState([]); // NEW: Track user's bookings
+  const [userBookedSlots, setUserBookedSlots] = useState([]); // Track user's bookings
+  const [currentUserBookedTimesWithDietitian, setCurrentUserBookedTimesWithDietitian] = useState([]);
   const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
   const [subscriptionAlertData, setSubscriptionAlertData] = useState({});
   const [message, setMessage] = useState("");
@@ -87,14 +93,32 @@ const BookingSidebar = ({
       setIsLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:5000/api/bookings/dietitian/${dietitianId}/booked-slots?date=${date}`
+          `http://localhost:5000/api/bookings/dietitian/${dietitianId}?date=${date}`
         );
 
         const data = await response.json();
 
         if (data.success) {
-          console.log("Fetched dietitian booked slots for user", user?.id || user?._id, "and dietitian", dietitianId, "on date", date, ":", data.bookedSlots);
-          setBookedSlots(data.bookedSlots || []);
+          // Filter bookings by date on frontend (since API may not filter)
+          const bookingsOnDate = data.data.filter(booking => 
+            new Date(booking.date).toISOString().split('T')[0] === date
+          );
+
+          // Filter out bookings by current user
+          const currentUserId = user?.id || user?._id || localStorage.getItem("userId");
+          const bookedSlotsExcludingCurrentUser = bookingsOnDate
+            .filter(booking => booking.userId !== currentUserId)
+            .map(booking => booking.time);
+
+          // Filter bookings by current user only
+          const currentUserBookingsWithDietitian = bookingsOnDate
+            .filter(booking => booking.userId === currentUserId);
+
+          console.log("Current user booked times with this dietitian:", currentUserBookingsWithDietitian.map(booking => booking.time));
+          console.log("Booked slots excluding current user for dietitian", dietitianId, "on date", date, ":", bookedSlotsExcludingCurrentUser);
+
+          setCurrentUserBookedTimesWithDietitian(currentUserBookingsWithDietitian.map(booking => booking.time));
+          setBookedSlots(bookedSlotsExcludingCurrentUser);
         } else {
           console.error("Failed to fetch booked slots:", data.message);
           setBookedSlots([]);
@@ -106,7 +130,7 @@ const BookingSidebar = ({
         setIsLoading(false);
       }
     },
-    [dietitianId]
+    [dietitianId, user]
   );
 
   // NEW: Fetch user's booked slots for the selected date
@@ -122,7 +146,12 @@ const BookingSidebar = ({
       const data = await response.json();
 
       if (data.success) {
-        console.log("Fetched user booked slots:", data.bookedSlots);
+        console.log("Fetched user booked slots (full entries):", data.bookedSlots);
+        // Filter slots booked by current user with this specific dietitian
+        const userSlotsWithThisDietitian = data.bookedSlots
+          .filter(slot => slot.dietitianId === dietitianId)
+          .map(slot => slot.time);
+        console.log("User booked slots with this dietitian", dietitianId, "on date", date, ":", userSlotsWithThisDietitian);
         setUserBookedSlots(data.bookedSlots || []);
       } else {
         console.error("Failed to fetch user booked slots:", data.message);
@@ -132,11 +161,13 @@ const BookingSidebar = ({
       console.error("Error fetching user booked slots:", error);
       setUserBookedSlots([]);
     }
-  }, []);
+  }, [dietitianId]);
 
   // Load available slots and booked slots
   useEffect(() => {
     if (!selectedDate || !dietitianId) return;
+
+    console.log("Selected date on calendar:", selectedDate);
 
     const loadSlots = () => {
       setMessage("");
@@ -180,7 +211,7 @@ const BookingSidebar = ({
         });
 
         // Categorize slots
-        setAvailableSlots({
+        const categorizedSlots = {
           morning: allSlots.filter((s) => {
             const [hour] = s.split(":").map(Number);
             return hour < 12;
@@ -193,11 +224,26 @@ const BookingSidebar = ({
             const [hour] = s.split(":").map(Number);
             return hour >= 17;
           }),
-        });
+        };
 
-        // Fetch both dietitian and user booked slots
+        setAvailableSlots(categorizedSlots);
+
+        // Auto-select the first available time slot
+        const firstAvailableSlot = 
+          categorizedSlots.morning[0] || 
+          categorizedSlots.afternoon[0] || 
+          categorizedSlots.evening[0];
+        
+        if (firstAvailableSlot) {
+          setSelectedTime(firstAvailableSlot);
+        } else {
+          setSelectedTime(""); // No slots available
+        }
+
+        // Fetch dietitian booked slots. For user's own booked slots we
+        // use the data saved from the earlier fetch (see useEffect above),
+        // so skip the separate fetch to avoid overwriting.
         fetchBookedSlots(selectedDate);
-        fetchUserBookedSlots(selectedDate);
       } catch (error) {
         console.error("Error loading slots:", error);
         setMessage("Error loading slots");
@@ -311,7 +357,8 @@ const BookingSidebar = ({
 
   // Helper function to render time slot button
   const renderTimeSlot = (time) => {
-    const isDietitianBooked = bookedSlots.includes(time);
+    const isBookedByCurrentUser = currentUserBookedTimesWithDietitian.includes(time);
+    const isBookedByOthers = bookedSlots.includes(time);
     const userConflict = getUserConflictAt(time);
     const isSelected = selectedTime === time;
 
@@ -320,26 +367,36 @@ const BookingSidebar = ({
     let isDisabled = false;
     let label = null;
 
-    if (isDietitianBooked) {
-      // Slot booked with this dietitian
-      buttonClass +=
-        "bg-red-100 text-red-700 cursor-not-allowed opacity-80 border-red-300";
-      isDisabled = true;
-      label = (
-        <span className="block text-[10px] mt-1 font-bold uppercase">
-          Booked
-        </span>
-      );
-    } else if (userConflict) {
-      // User has appointment with another dietitian at this time
-      buttonClass +=
-        "bg-red-100 text-red-700 cursor-not-allowed opacity-80 border-red-300";
-      isDisabled = true;
-      label = (
-        <span className="block text-[9px] mt-1 font-bold uppercase">
-          Busy ({userConflict.dietitianName})
-        </span>
-      );
+        if (isBookedByCurrentUser) {
+          // Slot booked by current user with this dietitian
+          buttonClass +=
+            "bg-red-100 text-red-700 cursor-not-allowed opacity-80 border-red-300";
+          isDisabled = true;
+          label = (
+            <span className="block text-[10px] mt-1 font-bold uppercase">
+              Booked
+            </span>
+          );
+        } else if (isBookedByOthers) {
+          // Slot booked by another user with this dietitian
+          buttonClass +=
+            "bg-orange-100 text-orange-700 cursor-not-allowed opacity-80 border-orange-300";
+          isDisabled = true;
+          label = (
+            <span className="block text-[9px] mt-1 font-bold uppercase">
+              Busy
+            </span>
+          );
+        } else if (userConflict) {
+          // User has appointment with another dietitian at this time
+          buttonClass +=
+            "bg-yellow-100 text-yellow-700 cursor-not-allowed opacity-80 border-yellow-300";
+          isDisabled = true;
+          label = (
+            <span className="block text-[9px] mt-1 font-bold uppercase">
+              {`Booked ${userConflict.dietitianName}`}
+            </span>
+          );
     } else if (isSelected) {
       buttonClass += "bg-emerald-600 text-white shadow-md border-emerald-600";
     } else {
@@ -355,19 +412,21 @@ const BookingSidebar = ({
         disabled={isDisabled}
         className={buttonClass}
         title={
-          isDietitianBooked
-            ? "This slot is booked with this dietitian"
+          isBookedByCurrentUser
+            ? "This slot is booked by you with this dietitian"
+            : isBookedByOthers
+            ? "This slot is booked by another user"
             : userConflict
             ? `You have an appointment with ${userConflict.dietitianName} at this time`
             : "Click to select this slot"
         }
       >
         {time}
-        {(isDietitianBooked || userConflict) && (
+        {(isBookedByCurrentUser || isBookedByOthers || userConflict) && (
           <span className="absolute inset-0 flex items-center justify-center">
             <span
               className={`block w-full h-0.5 ${
-                isDietitianBooked ? "bg-red-700" : "bg-red-700"
+                isBookedByCurrentUser ? "bg-red-700" : isBookedByOthers ? "bg-orange-700" : "bg-yellow-700"
               }`}
             ></span>
           </span>
@@ -448,7 +507,7 @@ const BookingSidebar = ({
           {/* Legend */}
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-xs font-semibold mb-2 text-gray-700">Legend:</p>
-            <div className="flex flex-col gap-1 text-xs">
+              <div className="grid grid-cols-3 gap-1 text-xs">
               <span className="flex items-center">
                 <span className="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded mr-2"></span>
                 Available
@@ -463,11 +522,11 @@ const BookingSidebar = ({
               </span>
               <span className="flex items-center">
                 <span className="w-4 h-4 bg-orange-100 border-2 border-orange-300 rounded mr-2"></span>
-                You are booked
+                Busy
               </span>
-              <span className="flex items-center">
-                <span className="w-4 h-4 bg-blue-100 border-2 border-blue-300 rounded mr-2"></span>
-                Booked with this dietitian
+                <span className="flex items-center">
+                <span className="w-4 h-4 bg-yellow-100 border-2 border-yellow-300 rounded mr-2"></span>
+                  Unavailable
               </span>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
@@ -13,7 +13,7 @@ const BlogPost = () => {
     const { id } = useParams();
     
     // Get role from URL path
-    const getRoleFromPath = () => {
+    const getRoleFromPath = useCallback(() => {
         const path = location.pathname;
         if (path.startsWith('/user')) return 'user';
         if (path.startsWith('/dietitian')) return 'dietitian';
@@ -21,7 +21,7 @@ const BlogPost = () => {
         if (path.startsWith('/admin')) return 'admin';
         if (path.startsWith('/corporatepartner')) return 'corporatepartner';
         return null;
-    };
+    }, [location.pathname]);
     
     const [blog, setBlog] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -39,6 +39,43 @@ const BlogPost = () => {
     const [commentToDelete, setCommentToDelete] = useState(null);
     const [showSuccessMessage, setShowSuccessMessage] = useState('');
     const [showErrorMessage, setShowErrorMessage] = useState('');
+
+    const getAuthToken = useCallback(() => {
+        // Get the current role from URL and use ONLY that token
+        const currentRole = getRoleFromPath();
+        const token = currentRole ? localStorage.getItem(`authToken_${currentRole}`) : null;
+        return token;
+    }, [getRoleFromPath]);
+
+    const fetchBlog = useCallback(async () => {
+        try {
+            setLoading(true);
+            const token = getAuthToken();
+            
+            const config = token ? {
+                headers: { Authorization: `Bearer ${token}` }
+            } : {};
+
+            const response = await axios.get(`http://localhost:5000/api/blogs/${id}`, config);
+            
+            if (response.data.success) {
+                setBlog(response.data.blog);
+                
+                // Check if user has liked this blog
+                if (token && response.data.blog.likes) {
+                    const userLike = response.data.blog.likes.find(
+                        like => like.userId === userId
+                    );
+                    setIsLiked(!!userLike);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching blog:', error);
+            setError(error.response?.data?.message || 'Failed to load blog post');
+        } finally {
+            setLoading(false);
+        }
+    }, [id, getAuthToken, userId]);
 
     useEffect(() => {
         // Scroll to top when component mounts
@@ -72,44 +109,7 @@ const BlogPost = () => {
         }
         
         fetchBlog();
-    }, [id, location.pathname]);
-
-    const getAuthToken = () => {
-        // Get the current role from URL and use ONLY that token
-        const currentRole = getRoleFromPath();
-        const token = currentRole ? localStorage.getItem(`authToken_${currentRole}`) : null;
-        return token;
-    };
-
-    const fetchBlog = async () => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            
-            const config = token ? {
-                headers: { Authorization: `Bearer ${token}` }
-            } : {};
-
-            const response = await axios.get(`http://localhost:5000/api/blogs/${id}`, config);
-            
-            if (response.data.success) {
-                setBlog(response.data.blog);
-                
-                // Check if user has liked this blog
-                if (token && response.data.blog.likes) {
-                    const userLike = response.data.blog.likes.find(
-                        like => like.userId === userId
-                    );
-                    setIsLiked(!!userLike);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching blog:', error);
-            setError(error.response?.data?.message || 'Failed to load blog post');
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [id, location.pathname, fetchBlog, getRoleFromPath]);
 
     const handleLike = async () => {
         if (!isAuthenticated) {

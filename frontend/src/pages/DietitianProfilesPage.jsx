@@ -97,7 +97,6 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     specialization: [],
-    mode: [],
     experience: [],
     fees: [],
     language: [],
@@ -178,7 +177,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
     };
 
     loadDietitians();
-  }, [specializationType]);
+  }, [specializationType, specializationData]);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -205,26 +204,16 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
       );
     }
 
-    if (filters.mode.length > 0) {
-      result = result.filter((d) =>
-        filters.mode.some(
-          (m) =>
-            (m === "online" && d.onlineConsultation) ||
-            (m === "offline" && d.offlineConsultation)
-        )
-      );
-    }
-
+    // Experience filter - single selection, show dietitians with experience >= selected value
     if (filters.experience.length > 0) {
-      result = result.filter((d) =>
-        filters.experience.some((exp) => d.yearsOfExperience >= exp)
-      );
+      const selectedExp = Math.max(...filters.experience); // Get the highest selected experience
+      result = result.filter((d) => (d.experience || d.yearsOfExperience || 0) >= selectedExp);
     }
 
+    // Fees filter - single selection, show dietitians with fees <= selected value
     if (filters.fees.length > 0) {
-      result = result.filter((d) =>
-        filters.fees.some((fee) => d.fees <= fee)
-      );
+      const selectedFee = Math.max(...filters.fees); // Get the highest selected fee limit
+      result = result.filter((d) => d.fees <= selectedFee);
     }
 
     if (filters.language.length > 0) {
@@ -233,8 +222,10 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
       );
     }
 
+    // Rating filter - single selection, show dietitians with rating >= selected value
     if (filters.rating.length > 0) {
-      result = result.filter((d) => filters.rating.some((r) => d.rating >= r));
+      const selectedRating = Math.max(...filters.rating); // Get the highest selected rating
+      result = result.filter((d) => d.rating >= selectedRating);
     }
 
     if (filters.location) {
@@ -269,7 +260,6 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
   const handleClearFilters = useCallback(() => {
     setFilters({
       specialization: [],
-      mode: [],
       experience: [],
       fees: [],
       language: [],
@@ -378,6 +368,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
                 onFilterChange={handleFilterChange}
                 onClearFilters={handleClearFilters}
                 filters={filters}
+                showModeFilter={false}
               />
             </div>
           </div>
@@ -419,7 +410,7 @@ const DietitianProfilesPage = ({ specializationType = "all" }) => {
               </div>
 
               {/* Results Grid */}
-              <div className="h-[1200px] overflow-y-auto">
+              <div className="h-[1350px] overflow-y-auto">
                 <div className="space-y-6">
                   {filteredDietitians.length > 0 ? (
                     filteredDietitians.map((dietitian) => (
