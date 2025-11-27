@@ -276,6 +276,8 @@ export default function DietitianProfile() {
   const [dietitian, setDietitian] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [testimonials, setTestimonials] = useState([]);
+  const [consultationCount, setConsultationCount] = useState(0);
+  const [canReview, setCanReview] = useState({ allowed: false, reason: '' });
   const [isBookingSidebarOpen, setIsBookingSidebarOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [bookingData, setBookingData] = useState(null);
@@ -297,6 +299,41 @@ export default function DietitianProfile() {
     setNotification({ show: false, message: "", type: "" });
   };
 
+  // Check if user can add a review
+  const checkCanReview = async (dietitianId) => {
+    try {
+      const token = localStorage.getItem('authToken_user');
+      if (!token) {
+        setCanReview({ allowed: false, reason: 'Please log in to add a review' });
+        return;
+      }
+      const response = await axios.get(`/api/dietitians/${dietitianId}/can-review`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setCanReview({ 
+          allowed: response.data.canReview, 
+          reason: response.data.reason || '' 
+        });
+      }
+    } catch (error) {
+      console.error("Error checking review eligibility:", error);
+      setCanReview({ allowed: false, reason: 'Unable to verify review eligibility' });
+    }
+  };
+
+  // Fetch dietitian stats (consultation count)
+  const fetchDietitianStats = async (dietitianId) => {
+    try {
+      const response = await axios.get(`/api/dietitians/${dietitianId}/stats`);
+      if (response.data.success) {
+        setConsultationCount(response.data.data.completedConsultations || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching dietitian stats:", error);
+    }
+  };
+
   // Load dietitian from navigation state or API
   useEffect(() => {
     const loadDietitian = async () => {
@@ -308,6 +345,8 @@ export default function DietitianProfile() {
         if (dietitianFromState) {
           setDietitian(dietitianFromState);
           setTestimonials(dietitianFromState.testimonials || []);
+          fetchDietitianStats(dietitianFromState._id);
+          checkCanReview(dietitianFromState._id);
           setLoading(false);
           
           // Auto-open booking sidebar if requested
@@ -337,6 +376,8 @@ export default function DietitianProfile() {
           const dietitianData = response.data.data;
           setDietitian(dietitianData);
           setTestimonials(dietitianData.testimonials || []);
+          fetchDietitianStats(dietitianData._id);
+          checkCanReview(dietitianData._id);
         } else {
           throw new Error(response.data.message || "Failed to load dietitian");
         }
@@ -378,27 +419,83 @@ export default function DietitianProfile() {
   const currentUserId = localStorage.getItem("userId") || "user_temp";
 
   const handleSubmitTestimonial = async ({ text, rating }) => {
-    const newTestimonial = {
-      id: `t_${Date.now()}`,
-      authorId: currentUserId,
-      author: "You",
-      rating,
-      text,
-    };
-    setTestimonials((prev) => [newTestimonial, ...prev]);
-    alert("Testimonial submitted successfully!");
+    try {
+      const token = localStorage.getItem('authToken_user');
+      if (!token) {
+        showNotification("Please log in to add a review", "error");
+        return;
+      }
+
+      const response = await axios.post(
+        `/api/dietitians/${dietitian._id}/testimonials`,
+        { text, rating },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        const newTestimonial = {
+          ...response.data.testimonial,
+          id: response.data.testimonial._id || `t_${Date.now()}`,
+        };
+        setTestimonials((prev) => [newTestimonial, ...prev]);
+        
+        // Update dietitian rating
+        if (response.data.newRating) {
+          setDietitian(prev => ({ ...prev, rating: response.data.newRating }));
+        }
+        
+        // Update canReview status (user already submitted, so can't review again)
+        setCanReview({ allowed: false, reason: 'You have already submitted a review for this dietitian' });
+        
+        showNotification("Review submitted successfully!", "success");
+      }
+    } catch (error) {
+      console.error("Error submitting testimonial:", error);
+      showNotification(error.response?.data?.message || "Failed to submit review", "error");
+    }
   };
 
-  const handleDeleteTestimonial = (testimonyId) => {
-    const t = testimonials.find((x) => x.id === testimonyId);
+  const handleDeleteTestimonial = async (testimonyIndex) => {
+    const t = testimonials[testimonyIndex];
     if (!t) return;
-    if (t.authorId !== currentUserId) {
-      alert("You can only delete testimonials you have posted.");
+    
+    if (t.authorId && t.authorId !== currentUserId) {
+      showNotification("You can only delete reviews you have posted.", "error");
       return;
     }
-    const confirmed = window.confirm("Delete this testimonial?");
+    
+    const confirmed = window.confirm("Delete this review?");
     if (!confirmed) return;
-    setTestimonials((prev) => prev.filter((x) => x.id !== testimonyId));
+
+    try {
+      const token = localStorage.getItem('authToken_user');
+      if (!token) {
+        showNotification("Please log in to delete your review", "error");
+        return;
+      }
+
+      const response = await axios.delete(
+        `/api/dietitians/${dietitian._id}/testimonials/${testimonyIndex}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        setTestimonials((prev) => prev.filter((_, idx) => idx !== testimonyIndex));
+        
+        // Update dietitian rating
+        if (response.data.newRating !== undefined) {
+          setDietitian(prev => ({ ...prev, rating: response.data.newRating }));
+        }
+        
+        // Re-enable review after deletion (user can add another review)
+        setCanReview({ allowed: true, reason: '' });
+        
+        showNotification("Review deleted successfully!", "success");
+      }
+    } catch (error) {
+      console.error("Error deleting testimonial:", error);
+      showNotification(error.response?.data?.message || "Failed to delete review", "error");
+    }
   };
 
   const handleProceedToPayment = (details) => {
@@ -591,19 +688,33 @@ export default function DietitianProfile() {
                 <h3 className="text-lg font-bold text-white">
                   Client Testimonials ({testimonials.length})
                 </h3>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
-                >
-                  <FaPlus size={14} /> Add Review
-                </button>
+                {canReview.allowed ? (
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+                  >
+                    <FaPlus size={14} /> Add Review
+                  </button>
+                ) : (
+                  <div className="relative group">
+                    <button
+                      disabled
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-400 text-white cursor-not-allowed"
+                    >
+                      <FaPlus size={14} /> Add Review
+                    </button>
+                    <div className="absolute right-0 top-full mt-2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      {canReview.reason || 'You need to consult this dietitian first'}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 space-y-4">
                 {testimonials.length > 0 ? (
-                  testimonials.map((testimonial) => (
+                  testimonials.map((testimonial, index) => (
                     <div
-                      key={testimonial.id}
+                      key={testimonial._id || testimonial.id || `testimonial-${index}`}
                       className="p-4 rounded-lg bg-gray-50 border border-gray-200"
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -618,10 +729,10 @@ export default function DietitianProfile() {
                             {testimonial.rating.toFixed(1)}/5 stars
                           </p>
                         </div>
-                        {testimonial.authorId === currentUserId && (
+                        {(testimonial.authorId === currentUserId || !testimonial.authorId) && (
                           <button
                             onClick={() =>
-                              handleDeleteTestimonial(testimonial.id)
+                              handleDeleteTestimonial(index)
                             }
                             className="text-sm font-semibold text-gray-600 hover:opacity-70 transition-opacity"
                           >
@@ -696,10 +807,10 @@ export default function DietitianProfile() {
                       RATING
                     </p>
                     <div className="flex justify-center mb-1">
-                      {renderStarRating(dietitian.rating || 4.5)}
+                      {renderStarRating(dietitian.rating || 0)}
                     </div>
                     <p className="text-xs text-gray-600">
-                      {(dietitian.rating || 4.5).toFixed(1)} out of 5
+                      {(dietitian.rating || 0).toFixed(1)} out of 5 ({testimonials.length} reviews)
                     </p>
                   </div>
 
@@ -708,7 +819,7 @@ export default function DietitianProfile() {
                       CONSULTATIONS
                     </p>
                     <p className="text-2xl font-bold text-emerald-600">
-                      {testimonials.length}+
+                      {consultationCount}+
                     </p>
                   </div>
                 </div>

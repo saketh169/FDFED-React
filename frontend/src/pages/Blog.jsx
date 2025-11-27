@@ -1,29 +1,52 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { FaHeart, FaComment, FaEye, FaSearch, FaPlus } from 'react-icons/fa';
+
+// Redux imports
+import {
+    fetchBlogs,
+    fetchCategories,
+    fetchMyBlogs,
+    setCategory,
+    setSearchQuery,
+    setSortBy,
+    setPage,
+    selectBlogs,
+    selectPagination,
+    selectCategories,
+    selectFilters,
+    selectMyBlogs,
+    selectMyBlogsStats,
+    selectIsLoading,
+    selectIsLoadingMyBlogs
+} from '../redux/slices/blogSlice';
 
 const BlogPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [blogs, setBlogs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [categories, setCategories] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState('createdAt');
-    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+    const dispatch = useDispatch();
+    
+    // Redux state selectors
+    const blogs = useSelector(selectBlogs);
+    const pagination = useSelector(selectPagination);
+    const categories = useSelector(selectCategories);
+    const filters = useSelector(selectFilters);
+    const myBlogs = useSelector(selectMyBlogs);
+    const myBlogsStats = useSelector(selectMyBlogsStats);
+    const isLoading = useSelector(selectIsLoading);
+    const isLoadingMyBlogs = useSelector(selectIsLoadingMyBlogs);
+    
+    // Local state
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [userRole, setUserRole] = useState(null);
-    const [myBlogs, setMyBlogs] = useState([]);
-    const [myBlogsStats, setMyBlogsStats] = useState({ totalLikes: 0, totalViews: 0, totalBlogs: 0 });
-    const [loadingMyBlogs, setLoadingMyBlogs] = useState(false);
     const [showMyBlogsSection, setShowMyBlogsSection] = useState(false);
+    const [localSearchQuery, setLocalSearchQuery] = useState('');
     
     // Refs for smooth scrolling
-    const blogsGridRef = React.useRef(null);
-    const myBlogsRef = React.useRef(null);
+    const blogsGridRef = useRef(null);
+    const myBlogsRef = useRef(null);
 
     // Get role from URL path
     const getRoleFromPath = useCallback(() => {
@@ -36,139 +59,64 @@ const BlogPage = () => {
         return null;
     }, [location.pathname]);
 
-    const fetchCategories = useCallback(async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/blogs/categories');
-            if (response.data.success) {
-                setCategories(response.data.categories);
-            }
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        }
-    }, []);
-
-    const fetchBlogs = useCallback(async () => {
-        try {
-            setLoading(true);
-            // Get the current role from URL and use ONLY that token
-            const currentRole = getRoleFromPath();
-            const token = currentRole ? localStorage.getItem(`authToken_${currentRole}`) : null;
-            
-            const config = token ? {
-                headers: { Authorization: `Bearer ${token}` }
-            } : {};
-
-            const params = {
-                page: pagination.page,
-                limit: 9,
-                sortBy,
-                order: 'desc'
-            };
-
-            if (selectedCategory !== 'all') {
-                params.category = selectedCategory;
-            }
-
-            if (searchQuery) {
-                params.search = searchQuery;
-            }
-
-            const response = await axios.get('http://localhost:5000/api/blogs', { ...config, params });
-            
-            if (response.data.success) {
-                setBlogs(response.data.blogs);
-                setPagination(response.data.pagination);
-            }
-        } catch (error) {
-            console.error('Error fetching blogs:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [selectedCategory, searchQuery, sortBy, pagination.page, getRoleFromPath]);
-
-    const fetchMyBlogs = useCallback(async () => {
-        try {
-            setLoadingMyBlogs(true);
-            const currentRole = getRoleFromPath();
-            const token = currentRole ? localStorage.getItem(`authToken_${currentRole}`) : null;
-            
-            if (!token) return;
-
-            const config = {
-                headers: { Authorization: `Bearer ${token}` }
-            };
-
-            const response = await axios.get('http://localhost:5000/api/blogs/my/blogs', { 
-                ...config, 
-                params: { limit: 100 } // Get all user's blogs
-            });
-            
-            if (response.data.success) {
-                const blogs = response.data.blogs;
-                setMyBlogs(blogs);
-                
-                // Calculate stats
-                const totalLikes = blogs.reduce((sum, blog) => sum + (blog.likesCount || 0), 0);
-                const totalViews = blogs.reduce((sum, blog) => sum + (blog.views || 0), 0);
-                
-                setMyBlogsStats({
-                    totalLikes,
-                    totalViews,
-                    totalBlogs: blogs.length
-                });
-            }
-        } catch (error) {
-            console.error('Error fetching my blogs:', error);
-        } finally {
-            setLoadingMyBlogs(false);
-        }
-    }, [getRoleFromPath]);
-
+    // Initial load effect
     useEffect(() => {
-        // Scroll to top when component mounts
         window.scrollTo(0, 0);
         
-        // Get role from URL
         const roleFromUrl = getRoleFromPath();
-        
-        // Check if user is authenticated for THIS specific role only
         const token = roleFromUrl ? localStorage.getItem(`authToken_${roleFromUrl}`) : null;
         
-        if (token) {
-            setIsAuthenticated(true);
-            // Fetch user's blogs if authenticated
-            fetchMyBlogs();
-        } else {
-            setIsAuthenticated(false);
-        }
-        
-        // Set role from URL path
         setUserRole(roleFromUrl);
+        setIsAuthenticated(!!token);
         
-        fetchCategories();
-        fetchBlogs();
-    }, [selectedCategory, searchQuery, sortBy, pagination.page, location.pathname, fetchBlogs, fetchMyBlogs, getRoleFromPath, fetchCategories]);
+        // Fetch categories
+        dispatch(fetchCategories());
+        
+        // Fetch user's blogs if authenticated
+        if (token) {
+            dispatch(fetchMyBlogs({ role: roleFromUrl }));
+        }
+    }, [location.pathname, getRoleFromPath, dispatch]);
+
+    // Fetch blogs when filters or pagination changes
+    useEffect(() => {
+        const roleFromUrl = getRoleFromPath();
+        dispatch(fetchBlogs({
+            page: pagination.page,
+            limit: 9,
+            category: filters.category,
+            search: filters.search,
+            sortBy: filters.sortBy,
+            role: roleFromUrl
+        }));
+    }, [dispatch, pagination.page, filters.category, filters.search, filters.sortBy, getRoleFromPath]);
 
     const handleSearch = (e) => {
         e.preventDefault();
-        setPagination({ ...pagination, page: 1 });
-        fetchBlogs();
+        dispatch(setSearchQuery(localSearchQuery));
     };
 
     const handleCategoryClick = (category) => {
-        setSelectedCategory(category);
-        // Scroll to blogs grid after a brief delay to allow state update
+        dispatch(setCategory(category));
         setTimeout(() => {
             const element = blogsGridRef.current;
             if (element) {
                 const rect = element.getBoundingClientRect();
-                const offsetPixels = 100; // Adjust this pixel value as needed
+                const offsetPixels = 100;
                 window.scrollTo({
                     top: window.scrollY + rect.top - offsetPixels,
                     behavior: 'smooth'
                 });
             }
         }, 100);
+    };
+
+    const handleSortChange = (newSortBy) => {
+        dispatch(setSortBy(newSortBy));
+    };
+
+    const handlePageChange = (newPage) => {
+        dispatch(setPage(newPage));
     };
 
     const getCategoryColor = (category) => {
@@ -221,7 +169,6 @@ const BlogPage = () => {
                         <div className="flex justify-center gap-4">
                             <button
                                 onClick={() => {
-                                    // Navigate to create blog within the same role context
                                     navigate(`/${userRole}/create-blog`);
                                 }}
                                 className="bg-[#28B463] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#1E6F5C] transition-colors duration-300 inline-flex items-center gap-2 shadow-md"
@@ -236,7 +183,7 @@ const BlogPage = () => {
                                             const element = myBlogsRef.current;
                                             if (element) {
                                                 const rect = element.getBoundingClientRect();
-                                                const offsetPixels = 100; // Adjust this pixel value as needed
+                                                const offsetPixels = 100;
                                                 window.scrollTo({
                                                     top: window.scrollY + rect.top - offsetPixels,
                                                     behavior: 'smooth'
@@ -268,8 +215,8 @@ const BlogPage = () => {
                                 <input
                                     type="text"
                                     placeholder="Search blogs..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    value={localSearchQuery}
+                                    onChange={(e) => setLocalSearchQuery(e.target.value)}
                                     className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]"
                                 />
                                 <button
@@ -283,8 +230,8 @@ const BlogPage = () => {
 
                         {/* Sort By */}
                         <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
+                            value={filters.sortBy}
+                            onChange={(e) => handleSortChange(e.target.value)}
                             className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]"
                         >
                             <option value="createdAt">Latest</option>
@@ -299,7 +246,7 @@ const BlogPage = () => {
                         <button
                             onClick={() => handleCategoryClick('all')}
                             className={`px-4 py-2 rounded-full font-medium transition-colors ${
-                                selectedCategory === 'all'
+                                filters.category === 'all'
                                     ? 'bg-[#28B463] text-white shadow-md'
                                     : 'bg-white text-gray-700 border border-gray-300 hover:border-[#28B463] hover:text-[#28B463]'
                             }`}
@@ -311,7 +258,7 @@ const BlogPage = () => {
                                 key={category}
                                 onClick={() => handleCategoryClick(category)}
                                 className={`px-4 py-2 rounded-full font-medium transition-colors ${
-                                    selectedCategory === category
+                                    filters.category === category
                                         ? 'bg-[#28B463] text-white shadow-md'
                                         : 'bg-white text-gray-700 border border-gray-300 hover:border-[#28B463] hover:text-[#28B463]'
                                 }`}
@@ -371,7 +318,7 @@ const BlogPage = () => {
                                     </div>
 
                                     {/* My Blogs Grid */}
-                                    {loadingMyBlogs ? (
+                                    {isLoadingMyBlogs ? (
                                         <div className="text-center py-8">
                                             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#28B463]"></div>
                                         </div>
@@ -459,13 +406,13 @@ const BlogPage = () => {
                     </div>
                 )}
 
-                {/* All Blogs Section - Add ref here for smooth scroll */}
+                {/* All Blogs Section */}
                 <div>
                     <h2 ref={blogsGridRef} className="text-2xl font-bold text-[#1E6F5C] mb-6">All Blogs</h2>
                 </div>
 
                 {/* Blog Grid */}
-                {loading ? (
+                {isLoading ? (
                     <div className="text-center py-20">
                         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#28B463]"></div>
                         <p className="mt-4 text-gray-600">Loading blogs...</p>
@@ -483,11 +430,9 @@ const BlogPage = () => {
                                     key={blog._id}
                                     className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer"
                                     onClick={() => {
-                                        // Navigate to blog post within the same role context
                                         if (userRole) {
                                             navigate(`/${userRole}/blog/${blog._id}`);
                                         } else {
-                                            // Fallback to /blog for public access
                                             navigate(`/blog/${blog._id}`);
                                         }
                                     }}
@@ -555,7 +500,7 @@ const BlogPage = () => {
                         {pagination.pages > 1 && (
                             <div className="flex justify-center items-center gap-2 mt-8">
                                 <button
-                                    onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                                    onClick={() => handlePageChange(pagination.page - 1)}
                                     disabled={pagination.page === 1}
                                     className="px-4 py-2 bg-[#1E6F5C] text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
                                 >
@@ -565,7 +510,7 @@ const BlogPage = () => {
                                     Page {pagination.page} of {pagination.pages}
                                 </span>
                                 <button
-                                    onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                                    onClick={() => handlePageChange(pagination.page + 1)}
                                     disabled={pagination.page === pagination.pages}
                                     className="px-4 py-2 bg-[#1E6F5C] text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
                                 >

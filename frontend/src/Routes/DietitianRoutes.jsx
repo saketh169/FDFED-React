@@ -18,6 +18,7 @@ import Contact from '../pages/Contactus';
 import CreateBlog from '../pages/Blog/CreateBlog';
 import BlogPost from '../pages/Blog/BlogPost';
 import DietitianLabReportViewer from '../pages/LabReports/DietitianLabReportViewer';
+import DietitianActivities from '../pages/Dashboards/DietitianActivities';
 
 
 
@@ -31,6 +32,7 @@ export default function DietitianRoutes() {
         {/* All routes are automatically protected by ProtectedProvider in Layout.jsx */}
         <Route path="home" element={<DietitianHome />} />
         <Route path="profile" element={<DietitianDashboard />} />
+        <Route path="activities" element={<DietitianActivities />} />
         <Route path="profile-setup" element={<DietitianSetup/>} />
         <Route path="doc-status" element={<DietitianDocStatus/>} />
         <Route path="change-pass" element={<ChangePassword/>} />

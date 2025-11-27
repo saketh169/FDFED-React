@@ -11,26 +11,44 @@ const UserProgress = () => {
   const [deleteId, setDeleteId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null);
   const role = 'user';
 
-  // Predefined plans with descriptions, suggested durations, and tracked metrics
+  // Predefined plans with descriptions, suggested durations, tracked metrics, and required tier
   const planOptions = useMemo(() => [
-    { id: 'weight-loss', name: 'Weight Loss', description: 'Daily calorie deficit tracking', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'] },
-    { id: 'muscle-gain', name: 'Muscle Gain', description: 'Protein intake & strength training', suggestedDays: 60, metrics: ['weight', 'calories', 'steps'] },
-    { id: 'cardio', name: 'Cardio Fitness', description: 'Running, cycling & heart health', suggestedDays: 45, metrics: ['steps', 'weight', 'waterIntake'] },
-    { id: 'hydration', name: 'Hydration Goal', description: 'Daily water intake tracking', suggestedDays: 21, metrics: ['waterIntake', 'weight'] },
-    { id: 'balanced-diet', name: 'Balanced Diet', description: 'Nutritious meal planning', suggestedDays: 90, metrics: ['weight', 'calories', 'waterIntake'] },
-    { id: 'energy', name: 'Energy Boost', description: 'Sleep & nutrition optimization', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'] },
-    { id: 'detox', name: 'Detox Program', description: 'Clean eating & toxin removal', suggestedDays: 14, metrics: ['waterIntake', 'weight'] },
-    { id: 'stamina', name: 'Stamina Building', description: 'Endurance & performance training', suggestedDays: 60, metrics: ['steps', 'weight'] },
-    { id: 'maintenance', name: 'Weight Maintenance', description: 'Stable weight & health metrics', suggestedDays: 180, metrics: ['weight', 'calories', 'waterIntake', 'steps'] },
-    { id: 'flexibility', name: 'Flexibility & Mobility', description: 'Yoga & stretching routine', suggestedDays: 30, metrics: ['weight'] },
-    { id: 'recovery', name: 'Post-Injury Recovery', description: 'Rehabilitative exercises', suggestedDays: 45, metrics: ['weight', 'steps'] },
-    { id: 'diabetes', name: 'Diabetes Management', description: 'Blood sugar & nutrition control', suggestedDays: 90, metrics: ['weight', 'calories'] },
-    { id: 'stress', name: 'Stress Relief', description: 'Meditation & mental wellness', suggestedDays: 21, metrics: ['waterIntake', 'weight'] },
-    { id: 'athletic', name: 'Athletic Performance', description: 'Sport-specific training', suggestedDays: 60, metrics: ['steps', 'weight', 'calories'] },
-    { id: 'general', name: 'General Wellness', description: 'Overall health improvement', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'] }
+    { id: 'weight-loss', name: 'Weight Loss', description: 'Daily calorie deficit tracking', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'], tier: 'free' },
+    { id: 'muscle-gain', name: 'Muscle Gain', description: 'Protein intake & strength training', suggestedDays: 60, metrics: ['weight', 'calories', 'steps'], tier: 'premium' },
+    { id: 'cardio', name: 'Cardio Fitness', description: 'Running, cycling & heart health', suggestedDays: 45, metrics: ['steps', 'weight', 'waterIntake'], tier: 'basic' },
+    { id: 'hydration', name: 'Hydration Goal', description: 'Daily water intake tracking', suggestedDays: 21, metrics: ['waterIntake', 'weight'], tier: 'free' },
+    { id: 'balanced-diet', name: 'Balanced Diet', description: 'Nutritious meal planning', suggestedDays: 90, metrics: ['weight', 'calories', 'waterIntake'], tier: 'basic' },
+    { id: 'energy', name: 'Energy Boost', description: 'Sleep & nutrition optimization', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'], tier: 'basic' },
+    { id: 'detox', name: 'Detox Program', description: 'Clean eating & toxin removal', suggestedDays: 14, metrics: ['waterIntake', 'weight'], tier: 'premium' },
+    { id: 'stamina', name: 'Stamina Building', description: 'Endurance & performance training', suggestedDays: 60, metrics: ['steps', 'weight'], tier: 'premium' },
+    { id: 'maintenance', name: 'Weight Maintenance', description: 'Stable weight & health metrics', suggestedDays: 180, metrics: ['weight', 'calories', 'waterIntake', 'steps'], tier: 'premium' },
+    { id: 'flexibility', name: 'Flexibility & Mobility', description: 'Yoga & stretching routine', suggestedDays: 30, metrics: ['weight'], tier: 'basic' },
+    { id: 'recovery', name: 'Post-Injury Recovery', description: 'Rehabilitative exercises', suggestedDays: 45, metrics: ['weight', 'steps'], tier: 'ultimate' },
+    { id: 'diabetes', name: 'Diabetes Management', description: 'Blood sugar & nutrition control', suggestedDays: 90, metrics: ['weight', 'calories'], tier: 'ultimate' },
+    { id: 'stress', name: 'Stress Relief', description: 'Meditation & mental wellness', suggestedDays: 21, metrics: ['waterIntake', 'weight'], tier: 'premium' },
+    { id: 'athletic', name: 'Athletic Performance', description: 'Sport-specific training', suggestedDays: 60, metrics: ['steps', 'weight', 'calories'], tier: 'ultimate' },
+    { id: 'general', name: 'General Wellness', description: 'Overall health improvement', suggestedDays: 30, metrics: ['weight', 'calories', 'waterIntake', 'steps'], tier: 'free' }
   ], []);
+
+  // Check if a plan is accessible based on subscription
+  const isPlanAccessible = (planId) => {
+    if (!subscriptionInfo || !subscriptionInfo.accessiblePlans) return true;
+    return subscriptionInfo.accessiblePlans.includes(planId);
+  };
+
+  // Get tier badge color
+  const getTierBadgeColor = (tier) => {
+    switch(tier) {
+      case 'free': return 'bg-gray-400';
+      case 'basic': return 'bg-blue-500';
+      case 'premium': return 'bg-amber-500';
+      case 'ultimate': return 'bg-purple-600';
+      default: return 'bg-gray-400';
+    }
+  };
 
   // Get metrics for selected plan
   const getMetricsForPlan = () => {
@@ -43,6 +61,11 @@ const UserProgress = () => {
     const plan = planOptions.find(p => p.id === planId);
     
     if (plan) {
+      // Check if plan is accessible
+      if (!isPlanAccessible(plan.id)) {
+        showAlert(`This plan requires a ${plan.tier.charAt(0).toUpperCase() + plan.tier.slice(1)} subscription. Please upgrade to access.`, 'error');
+        return;
+      }
       setSelectedPlan(plan.id);
       // Reset form with new plan's suggested days
       setFormData({
@@ -72,6 +95,7 @@ const UserProgress = () => {
 
     const fetchData = async () => {
       try {
+        // Fetch progress data
         const response = await fetch('/api/user-progress', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -93,6 +117,17 @@ const UserProgress = () => {
           if (plan) {
             setSelectedPlan(planId);
             setFormData(prev => ({ ...prev, days: plan.suggestedDays.toString() }));
+          }
+        }
+
+        // Fetch subscription info
+        const subResponse = await fetch('/api/user-progress/subscription-info', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (subResponse.ok) {
+          const subData = await subResponse.json();
+          if (subData.success) {
+            setSubscriptionInfo(subData.data);
           }
         }
       } catch (error) {
@@ -203,6 +238,17 @@ const UserProgress = () => {
         return;
       }
 
+      if (response.status === 403) {
+        const errorData = await response.json();
+        // Plan access restricted
+        if (errorData.planRestricted) {
+          showAlert(errorData.message || 'This plan requires a higher subscription tier.', 'error');
+        } else {
+          showAlert(errorData.message || 'Access denied. Please check your subscription.', 'error');
+        }
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         showAlert(errorData.message || 'Error saving progress', 'error');
@@ -214,6 +260,7 @@ const UserProgress = () => {
         showAlert('Progress saved successfully!', 'success');
         // Add new entry to the list and keep the plan selected
         setProgressData([data.entry, ...progressData]);
+        
         // Keep the selected plan and form data - don't clear it
         // Just reset the form fields for next entry
         setFormData({ weight: '', waterIntake: '', goal: '', calories: '', steps: '', days: formData.days });
@@ -280,6 +327,46 @@ const UserProgress = () => {
       )}
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Subscription Info Banner */}
+        {subscriptionInfo && (
+          <div className={`mb-6 p-4 rounded-lg shadow-sm ${
+            subscriptionInfo.planType === 'ultimate' ? 'bg-purple-50 border border-purple-200' :
+            subscriptionInfo.planType === 'premium' ? 'bg-amber-50 border border-amber-200' :
+            subscriptionInfo.planType === 'basic' ? 'bg-blue-50 border border-blue-200' :
+            'bg-gray-50 border border-gray-200'
+          }`}>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className={`px-3 py-1 rounded-full text-sm font-bold uppercase ${
+                  subscriptionInfo.planType === 'ultimate' ? 'bg-purple-600 text-white' :
+                  subscriptionInfo.planType === 'premium' ? 'bg-amber-500 text-white' :
+                  subscriptionInfo.planType === 'basic' ? 'bg-blue-500 text-white' :
+                  'bg-gray-400 text-white'
+                }`}>
+                  {subscriptionInfo.planType || 'Free'} Plan
+                </span>
+                <span className="text-gray-700">
+                  <span className="font-semibold">{subscriptionInfo.accessiblePlans?.length || 3}</span> of{' '}
+                  <span className="font-semibold">{planOptions.length}</span> wellness plans available
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                {subscriptionInfo.planType !== 'ultimate' && (
+                  <button
+                    onClick={() => navigate('/user/payments')}
+                    className="px-4 py-2 bg-[#1E6F5C] text-white rounded-lg text-sm font-semibold hover:bg-[#28B463] transition"
+                  >
+                    Upgrade for More Plans
+                  </button>
+                )}
+                {subscriptionInfo.planType === 'ultimate' && (
+                  <span className="text-emerald-600 font-semibold">✓ All plans unlocked</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="relative mb-8">
           <button
@@ -367,52 +454,74 @@ const UserProgress = () => {
           {/* LEFT SIDEBAR: FILTER */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg p-6 sticky top-4 border-t-4 border-[#28B463]">
-              <h2 className="text-2xl font-bold text-[#1E6F5C] mb-4">Filter</h2>
+              <h2 className="text-2xl font-bold text-[#1E6F5C] mb-4">Select Plan</h2>
               
-              {/* Plan Selection Filter */}
-              <div className="bg-[#F0F9F7] p-4 rounded-lg border-2 border-[#28B463]">
-                <label className="block text-sm font-semibold text-[#1E6F5C] mb-2">Select Your Plan</label>
-                <select
-                  value={selectedPlan}
-                  onChange={handlePlanChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28B463]"
-                >
-                  <option value="">-- Choose a Plan --</option>
-                  {planOptions.map(plan => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name}
-                    </option>
-                  ))}
-                </select>
-                {selectedPlan && (
-                  <>
-                    <div className="mt-4 text-sm space-y-2">
-                      <p className="text-gray-700 font-semibold">{planOptions.find(p => p.id === selectedPlan)?.description}</p>
-                      <p className="text-gray-600">
-                        Duration: {planOptions.find(p => p.id === selectedPlan)?.suggestedDays} days
-                      </p>
-                      <p className="text-gray-600 font-semibold mt-3">Tracked Metrics:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {metricsForPlan.map(metric => (
-                          <span key={metric} className="bg-[#28B463] text-white text-xs px-2 py-1 rounded">
-                            {metric === 'weight' && 'Weight'}
-                            {metric === 'waterIntake' && 'Water'}
-                            {metric === 'calories' && 'Calories'}
-                            {metric === 'steps' && 'Steps'}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handlePlanChange({ target: { value: '' } })}
-                      className="mt-4 w-full px-3 py-2 bg-gray-300 text-gray-800 text-sm rounded-lg hover:bg-gray-400 transition font-semibold"
+              {/* Plan Selection - Grid of Cards */}
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                {planOptions.map(plan => {
+                  const isAccessible = isPlanAccessible(plan.id);
+                  const isSelected = selectedPlan === plan.id;
+                  return (
+                    <div
+                      key={plan.id}
+                      onClick={() => isAccessible && handlePlanChange({ target: { value: plan.id } })}
+                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        isSelected 
+                          ? 'border-[#28B463] bg-[#F0F9F7] shadow-md' 
+                          : isAccessible 
+                            ? 'border-gray-200 hover:border-[#28B463] hover:bg-gray-50' 
+                            : 'border-gray-200 bg-gray-100 opacity-60 cursor-not-allowed'
+                      }`}
                     >
-                      Change Plan
-                    </button>
-                  </>
-                )}
+                      <div className="flex items-center justify-between">
+                        <span className={`font-semibold text-sm ${isSelected ? 'text-[#1E6F5C]' : 'text-gray-700'}`}>
+                          {plan.name}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${getTierBadgeColor(plan.tier)} text-white`}>
+                          {plan.tier}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">{plan.description}</p>
+                      {!isAccessible && (
+                        <div className="mt-2 flex items-center gap-1 text-xs text-amber-600">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                          Requires {plan.tier} plan
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+
+              {selectedPlan && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-sm space-y-2">
+                    <p className="text-gray-600">
+                      <span className="font-semibold">Duration:</span> {planOptions.find(p => p.id === selectedPlan)?.suggestedDays} days
+                    </p>
+                    <p className="text-gray-600 font-semibold">Tracked Metrics:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {metricsForPlan.map(metric => (
+                        <span key={metric} className="bg-[#28B463] text-white text-xs px-2 py-1 rounded">
+                          {metric === 'weight' && 'Weight'}
+                          {metric === 'waterIntake' && 'Water'}
+                          {metric === 'calories' && 'Calories'}
+                          {metric === 'steps' && 'Steps'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlan('')}
+                    className="mt-4 w-full px-3 py-2 bg-gray-300 text-gray-800 text-sm rounded-lg hover:bg-gray-400 transition font-semibold"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -528,12 +637,29 @@ const UserProgress = () => {
                     </div>
                   )}
 
+                  {/* Limit Warning */}
+                  {subscriptionInfo && subscriptionInfo.progressRemaining === 0 && subscriptionInfo.progressLimit !== -1 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                      <p className="text-red-600 font-semibold mb-2">Monthly Progress Limit Reached</p>
+                      <p className="text-gray-600 text-sm mb-3">
+                        Your {subscriptionInfo.planType || 'free'} plan allows {subscriptionInfo.progressLimit} entries per month.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/user/payments')}
+                        className="px-6 py-2 bg-[#1E6F5C] text-white rounded-lg font-semibold hover:bg-[#28B463] transition"
+                      >
+                        Upgrade Plan
+                      </button>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full bg-[#28B463] text-white py-3 rounded-lg font-semibold hover:bg-[#1E6F5C] transition disabled:bg-gray-400"
+                    disabled={loading || (subscriptionInfo && subscriptionInfo.progressRemaining === 0 && subscriptionInfo.progressLimit !== -1)}
+                    className="w-full bg-[#28B463] text-white py-3 rounded-lg font-semibold hover:bg-[#1E6F5C] transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Saving...' : 'Save Progress'}
+                    {loading ? 'Saving...' : (subscriptionInfo && subscriptionInfo.progressRemaining === 0 && subscriptionInfo.progressLimit !== -1) ? 'Limit Reached - Upgrade to Continue' : 'Save Progress'}
                   </button>
                 </form>
               ) : (

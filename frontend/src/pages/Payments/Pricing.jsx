@@ -34,11 +34,11 @@ const Pricing = () => {
               name: "Basic", 
               price: 299, 
               desc1: "Perfect starter plan for your wellness journey", 
-              desc2: "2 consultations/month • 3 days advance booking • 4 user daily progress plans • 20 daily chatbot queries • 2 blog posts/month",
+              desc2: "2 consultations/month • 3 days advance booking • 7 wellness plans • 20 daily chatbot queries • 2 blog posts/month",
               features: [
                 "2 Consultations per month",
                 "Book up to 3 days in advance",
-                "4 Personalized User Daily Progress Plans/month",
+                "7 Wellness Progress Plans (Cardio, Balanced Diet, Energy, Flexibility + Free plans)",
                 "20 AI Chatbot queries per day",
                 "Create 2 Blog posts per month",
                 "Unlimited Chat & Video Calls",
@@ -50,11 +50,11 @@ const Pricing = () => {
               name: "Premium", 
               price: 599, 
               desc1: "Most popular for serious health goals", 
-              desc2: "8 consultations/month • 7 days advance booking • 15 user daily progress plans • 50 daily chatbot queries • 8 blog posts/month",
+              desc2: "8 consultations/month • 7 days advance booking • 12 wellness plans • 50 daily chatbot queries • 8 blog posts/month",
               features: [
                 "8 Consultations per month",
                 "Book up to 7 days in advance",
-                "15 Personalized User Daily Progress Plans/month",
+                "12 Wellness Progress Plans (Muscle Gain, Stamina, Detox, Stress Relief + Basic plans)",
                 "50 AI Chatbot queries per day",
                 "Create 8 Blog posts per month",
                 "Unlimited Chat & Video Calls",
@@ -67,12 +67,12 @@ const Pricing = () => {
             { 
               name: "Ultimate", 
               price: 899, 
-              desc1: "Complete wellness package with unlimited features", 
-              desc2: "20 consultations/month • 21 days advance booking • Unlimited user daily progress plans • Unlimited chatbot • Unlimited blogs",
+              desc1: "Complete wellness package with all features", 
+              desc2: "20 consultations/month • 21 days advance booking • All 15 wellness plans • Unlimited chatbot • Unlimited blogs",
               features: [
                 "20 Consultations per month",
                 "Book up to 21 days in advance",
-                "Unlimited User Daily Progress Plans",
+                "All 15 Wellness Progress Plans (Diabetes, Recovery, Athletic + All plans)",
                 "Unlimited AI Chatbot queries",
                 "Unlimited Blog posts",
                 "Unlimited Chat & Video Calls",
@@ -89,11 +89,11 @@ const Pricing = () => {
               name: "Basic", 
               price: 999, 
               desc1: "Save 72% with yearly subscription!", 
-              desc2: "2 consultations/month • 3 days advance booking • 4 user daily progress plans • 20 daily chatbot queries • 2 blog posts/month",
+              desc2: "2 consultations/month • 3 days advance booking • 7 wellness plans • 20 daily chatbot queries • 2 blog posts/month",
               features: [
                 "2 Consultations per month",
                 "Book up to 3 days in advance",
-                "4 Personalized User Daily Progress Plans/month",
+                "7 Wellness Progress Plans (Cardio, Balanced Diet, Energy, Flexibility + Free plans)",
                 "20 AI Chatbot queries per day",
                 "Create 2 Blog posts per month",
                 "Unlimited Chat & Video Calls",
@@ -105,11 +105,11 @@ const Pricing = () => {
               name: "Premium", 
               price: 1999, 
               desc1: "Save 72% compared to monthly billing!", 
-              desc2: "8 consultations/month • 7 days advance booking • 15 user daily progress plans • 50 daily chatbot queries • 8 blog posts/month",
+              desc2: "8 consultations/month • 7 days advance booking • 12 wellness plans • 50 daily chatbot queries • 8 blog posts/month",
               features: [
                 "8 Consultations per month",
                 "Book up to 7 days in advance",
-                "15 Personalized User Daily Progress Plans/month",
+                "12 Wellness Progress Plans (Muscle Gain, Stamina, Detox, Stress Relief + Basic plans)",
                 "50 AI Chatbot queries per day",
                 "Create 8 Blog posts per month",
                 "Unlimited Chat & Video Calls",
@@ -123,11 +123,11 @@ const Pricing = () => {
               name: "Ultimate", 
               price: 2999, 
               desc1: "Best Value! Save 72% on yearly plan", 
-              desc2: "20 consultations/month • 21 days advance booking • Unlimited user daily progress plans • Unlimited chatbot • Unlimited blogs",
+              desc2: "20 consultations/month • 21 days advance booking • All 15 wellness plans • Unlimited chatbot • Unlimited blogs",
               features: [
                 "20 Consultations per month",
                 "Book up to 21 days in advance",
-                "Unlimited User Daily Progress Plans",
+                "All 15 Wellness Progress Plans (Diabetes, Recovery, Athletic + All plans)",
                 "Unlimited AI Chatbot queries",
                 "Unlimited Blog posts",
                 "Unlimited Chat & Video Calls",
@@ -149,11 +149,11 @@ const Pricing = () => {
             name: "Basic", 
             price: 299, 
             desc1: "Perfect starter plan for your wellness journey", 
-            desc2: "2 consultations/month • 3 days advance booking • 4 user daily progress plans • 20 daily chatbot queries • 2 blog posts/month",
+            desc2: "2 consultations/month • 3 days advance booking • 7 wellness plans • 20 daily chatbot queries • 2 blog posts/month",
             features: [
               "2 Consultations per month",
               "Book up to 3 days in advance",
-              "4 Personalized User Daily Progress Plans/month",
+              "7 Wellness Progress Plans (Cardio, Balanced Diet, Energy, Flexibility + Free plans)",
               "20 AI Chatbot queries per day",
               "Create 2 Blog posts per month",
               "Unlimited Chat & Video Calls",
@@ -165,11 +165,11 @@ const Pricing = () => {
             name: "Premium", 
             price: 599, 
             desc1: "Most popular for serious health goals", 
-            desc2: "8 consultations/month • 7 days advance booking • 15 user daily progress plans • 50 daily chatbot queries • 8 blog posts/month",
+            desc2: "8 consultations/month • 7 days advance booking • 12 wellness plans • 50 daily chatbot queries • 8 blog posts/month",
             features: [
               "8 Consultations per month",
               "Book up to 7 days in advance",
-              "15 Personalized User Daily Progress Plans/month",
+              "12 Wellness Progress Plans (Muscle Gain, Stamina, Detox, Stress Relief + Basic plans)",
               "50 AI Chatbot queries per day",
               "Create 8 Blog posts per month",
               "Unlimited Chat & Video Calls",
@@ -182,12 +182,12 @@ const Pricing = () => {
           { 
             name: "Ultimate", 
             price: 899, 
-            desc1: "Complete wellness package with unlimited features", 
-            desc2: "20 consultations/month • 21 days advance booking • Unlimited user daily progress plans • Unlimited chatbot • Unlimited blogs",
+            desc1: "Complete wellness package with all features", 
+            desc2: "20 consultations/month • 21 days advance booking • All 15 wellness plans • Unlimited chatbot • Unlimited blogs",
             features: [
               "20 Consultations per month",
               "Book up to 21 days in advance",
-              "Unlimited User Daily Progress Plans",
+              "All 15 Wellness Progress Plans (Diabetes, Recovery, Athletic + All plans)",
               "Unlimited AI Chatbot queries",
               "Unlimited Blog posts",
               "Unlimited Chat & Video Calls",
@@ -204,11 +204,11 @@ const Pricing = () => {
             name: "Basic", 
             price: 999, 
             desc1: "Save 72% with yearly subscription!", 
-            desc2: "2 consultations/month • 3 days advance booking • 4 user daily progress plans • 20 daily chatbot queries • 2 blog posts/month",
+            desc2: "2 consultations/month • 3 days advance booking • 7 wellness plans • 20 daily chatbot queries • 2 blog posts/month",
             features: [
               "2 Consultations per month",
               "Book up to 3 days in advance",
-              "4 Personalized User Daily Progress Plans/month",
+              "7 Wellness Progress Plans (Cardio, Balanced Diet, Energy, Flexibility + Free plans)",
               "20 AI Chatbot queries per day",
               "Create 2 Blog posts per month",
               "Unlimited Chat & Video Calls",
@@ -220,11 +220,11 @@ const Pricing = () => {
             name: "Premium", 
             price: 1999, 
             desc1: "Save 72% compared to monthly billing!", 
-            desc2: "8 consultations/month • 7 days advance booking • 15 user daily progress plans • 50 daily chatbot queries • 8 blog posts/month",
+            desc2: "8 consultations/month • 7 days advance booking • 12 wellness plans • 50 daily chatbot queries • 8 blog posts/month",
             features: [
               "8 Consultations per month",
               "Book up to 7 days in advance",
-              "15 Personalized User Daily Progress Plans/month",
+              "12 Wellness Progress Plans (Muscle Gain, Stamina, Detox, Stress Relief + Basic plans)",
               "50 AI Chatbot queries per day",
               "Create 8 Blog posts per month",
               "Unlimited Chat & Video Calls",
@@ -238,11 +238,11 @@ const Pricing = () => {
             name: "Ultimate", 
             price: 2999, 
             desc1: "Best Value! Save 72% on yearly plan", 
-            desc2: "20 consultations/month • 21 days advance booking • Unlimited user daily progress plans • Unlimited chatbot • Unlimited blogs",
+            desc2: "20 consultations/month • 21 days advance booking • All 15 wellness plans • Unlimited chatbot • Unlimited blogs",
             features: [
               "20 Consultations per month",
               "Book up to 21 days in advance",
-              "Unlimited User Daily Progress Plans",
+              "All 15 Wellness Progress Plans (Diabetes, Recovery, Athletic + All plans)",
               "Unlimited AI Chatbot queries",
               "Unlimited Blog posts",
               "Unlimited Chat & Video Calls",
@@ -288,6 +288,20 @@ const Pricing = () => {
   return (
     <div className="min-h-screen pb-16 px-4 sm:px-6 lg:px-8 " style={{ background: 'linear-gradient(to bottom, #f0fdf4, #ffffff)' }}>
       <div className="max-w-7xl mx-auto">
+        {/* My Subscription Button - Top Right */}
+        <div className="flex justify-end pt-4 mb-4">
+          <button
+            onClick={() => navigate('/user/subscription')}
+            className="px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+            style={{ backgroundColor: '#1A4A40' }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#27AE60'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#1A4A40'}
+          >
+            <i className="fas fa-crown"></i>
+            My Subscription
+          </button>
+        </div>
+
         {/* Header Section */}
         <section className="text-center">
           <h1 className="text-5xl font-extrabold mb-4" style={{ color: '#1A4A40' }}>
