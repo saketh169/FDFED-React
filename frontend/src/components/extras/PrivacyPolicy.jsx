@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const TermsOfUse = () => {
+const PrivacyPolicy = () => {
   const navigate = useNavigate();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -13,24 +13,21 @@ const TermsOfUse = () => {
   };
 
   useEffect(() => {
-    const fetchTermsOfUse = async () => {
+    const fetchPrivacyPolicy = async () => {
       try {
         setLoading(true);
         const response = await axios.get('http://localhost:5000/api/settings');
-        setContent(response.data.termsOfService || 'Terms of service content not available.');
+        setContent(response.data.privacyPolicy || 'Privacy policy content not available.');
       } catch (err) {
-        console.error('Error fetching terms of use:', err);
-        setError('Failed to load terms of use. Please try again later.');
+        console.error('Error fetching privacy policy:', err);
+        setError('Failed to load privacy policy. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTermsOfUse();
-  }, []);
-
-  // Ensure the page is at the top when this component mounts
-  useEffect(() => {
+    fetchPrivacyPolicy();
+    // Ensure the page is at the top when this component mounts
     window.scrollTo({ top: 0, left: 0 });
   }, []);
 
@@ -56,7 +53,7 @@ const TermsOfUse = () => {
           <div className="flex justify-center items-center py-20">
             <div className="text-center">
               <i className="fas fa-spinner fa-spin text-4xl text-[#28B463] mb-4"></i>
-              <p className="text-gray-600">Loading Terms of Use...</p>
+              <p className="text-gray-600">Loading Privacy Policy...</p>
             </div>
           </div>
         </div>
@@ -101,20 +98,14 @@ const TermsOfUse = () => {
 
         {/* Title */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-[#1E6F5C]">Terms and Conditions</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#1E6F5C]">Privacy Policy</h1>
           <p className="text-gray-600 mt-3 max-w-2xl mx-auto">
-            Welcome to Nutri-Connect! By accessing this website, we assume you accept these terms and conditions. Do not continue to use Nutri-Connect if you do not agree to all the terms and conditions stated on this page.
+            At Nutri-Connect, we are committed to protecting your privacy. This Privacy Policy explains how we collect, manage , use, and safeguard your personal information when you use our website and services.
           </p>
           <p className="text-sm text-gray-500 mt-2">Last Updated: November 26, 2025</p>
         </div>
 
         {/* Dynamic Content */}
-        <div className="prose prose-lg max-w-none text-gray-700">
-          <div
-            dangerouslySetInnerHTML={{ __html: `<p class="mb-4">${renderMarkdown(content)}</p>` }}
-          />
-        </div>
-
         {/* Floating Scroll-to-top button */}
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -123,9 +114,15 @@ const TermsOfUse = () => {
         >
           <i className="fas fa-chevron-up"></i>
         </button>
+
+        <div className="prose prose-lg max-w-none text-gray-700">
+          <div
+            dangerouslySetInnerHTML={{ __html: `<p class="mb-4">${renderMarkdown(content)}</p>` }}
+          />
+        </div>
       </div>
     </main>
   );
 };
 
-export default TermsOfUse;
+export default PrivacyPolicy;
