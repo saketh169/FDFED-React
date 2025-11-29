@@ -122,5 +122,30 @@ BookingSchema.pre('save', function(next) {
   next();
 });
 
-// Export Model
+// Blocked Slot Schema
+const BlockedSlotSchema = new Schema({
+  dietitianId: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'Dietitian',
+    required: true 
+  },
+  date: { 
+    type: String, 
+    required: true 
+  },
+  time: { 
+    type: String, 
+    required: true 
+  },
+  reason: { 
+    type: String,
+    default: 'Manually blocked'
+  }
+}, { timestamps: true });
+
+// Indexes
+BlockedSlotSchema.index({ dietitianId: 1, date: 1, time: 1 }, { unique: true });
+
+// Export Models
 module.exports = mongoose.model('Booking', BookingSchema);
+module.exports.BlockedSlot = mongoose.model('BlockedSlot', BlockedSlotSchema);

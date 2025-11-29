@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Booking = require("../models/bookingModel");
+const { BlockedSlot } = require("../models/bookingModel");
 const {
   sendBookingConfirmationToUser,
   sendBookingNotificationToDietitian,
@@ -462,7 +463,13 @@ exports.getBookedSlots = async (req, res) => {
       dietitianId,
       date: { $gte: queryDate, $lt: nextDay },
       status: { $in: ["confirmed", "completed"] },
-    }).select("time userId");
+    }).select("time userId _id");
+
+    // Find all blocked slots for this dietitian on this date
+    const blockedSlots = await BlockedSlot.find({
+      dietitianId,
+      date: queryDate.toISOString().split('T')[0]
+    }).select("time");
 
     // Find all confirmed/completed bookings for this user on this date (with any dietitian)
     const userBookings = await Booking.find({
@@ -474,8 +481,15 @@ exports.getBookedSlots = async (req, res) => {
     // Separate user's bookings from others' bookings for this dietitian
     const bookedSlots = [];
     const userBookingsWithThisDietitian = [];
+    const bookingDetails = [];
+    const blockedSlotsList = blockedSlots.map(slot => slot.time);
 
     dietitianBookings.forEach((booking) => {
+      bookingDetails.push({
+        time: booking.time,
+        userId: booking.userId,
+        bookingId: booking._id
+      });
       if (userId && booking.userId.toString() === userId) {
         userBookingsWithThisDietitian.push(booking.time);
       } else {
@@ -496,6 +510,8 @@ exports.getBookedSlots = async (req, res) => {
       bookedSlots: allBookedSlots, // All slots booked with this dietitian
       userBookings: userBookingsWithThisDietitian, // Slots booked by current user with this dietitian
       userConflictingTimes, // All times when user has bookings with any dietitian
+      bookingDetails, // Details of all bookings with IDs
+      blockedSlots: blockedSlotsList, // Blocked slots
       date: queryDate,
     });
   } catch (error) {
@@ -555,6 +571,84 @@ exports.getUserBookedSlots = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch booked slots",
+    });
+  }
+};
+
+/**
+ * Reschedule a booking
+ * PATCH /api/bookings/:bookingId/reschedule
+ */
+exports.rescheduleBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { date, time } = req.body;
+
+    if (!date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: "Date and time are required",
+      });
+    }
+
+    // Find the booking
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    // Check if the new slot is available
+    const existingBooking = await Booking.findOne({
+      dietitianId: booking.dietitianId,
+      date: new Date(date),
+      time: time,
+      status: { $in: ["confirmed", "pending"] },
+      _id: { $ne: bookingId }, // Exclude current booking
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({
+        success: false,
+        message: "The selected time slot is already booked",
+      });
+    }
+
+    // Check for blocked slots
+    const blockedSlot = await BlockedSlot.findOne({
+      dietitianId: booking.dietitianId,
+      date: new Date(date),
+      time: time,
+    });
+
+    if (blockedSlot) {
+      return res.status(400).json({
+        success: false,
+        message: "The selected time slot is blocked",
+      });
+    }
+
+    // Update the booking
+    booking.date = new Date(date);
+    booking.time = time;
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Booking rescheduled successfully",
+      booking: {
+        _id: booking._id,
+        date: booking.date,
+        time: booking.time,
+      },
+    });
+  } catch (error) {
+    console.error("Error rescheduling booking:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to reschedule booking",
     });
   }
 };

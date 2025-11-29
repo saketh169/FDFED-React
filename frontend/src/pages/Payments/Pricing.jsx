@@ -288,11 +288,14 @@ const Pricing = () => {
   return (
     <div className="min-h-screen pb-16 px-4 sm:px-6 lg:px-8 " style={{ background: 'linear-gradient(to bottom, #f0fdf4, #ffffff)' }}>
       <div className="max-w-7xl mx-auto">
-        {/* My Subscription Button - Top Right */}
-        <div className="flex justify-end pt-4 mb-4">
+         {/* Header Section with Button */}
+        <div className="relative flex items-center justify-center mb-4 pt-12">
+          <h1 className="text-5xl font-extrabold text-center" style={{ color: '#1A4A40' }}>
+            Choose Your Perfect Plan
+          </h1>
           <button
             onClick={() => navigate('/user/subscription')}
-            className="px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+            className="absolute right-0 px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
             style={{ backgroundColor: '#1A4A40' }}
             onMouseEnter={(e) => e.target.style.backgroundColor = '#27AE60'}
             onMouseLeave={(e) => e.target.style.backgroundColor = '#1A4A40'}
@@ -302,19 +305,15 @@ const Pricing = () => {
           </button>
         </div>
 
-        {/* Header Section */}
-        <section className="text-center">
-          <h1 className="text-5xl font-extrabold mb-4" style={{ color: '#1A4A40' }}>
-            Choose Your Perfect Plan
-          </h1>
-          <div className="relative mb-12">
-            <p className="text-lg text-center" style={{ color: '#2F4F4F' }}>
-              Flexible pricing options designed for your wellness journey
-            </p>
-          </div>
+        {/* Description */}
+        <div className="relative mb-12">
+          <p className="text-lg text-center" style={{ color: '#2F4F4F' }}>
+            Flexible pricing options designed for your wellness journey
+          </p>
+        </div>
 
           {/* Billing Toggle */}
-          <div className="mb-12">
+          <div className="mb-12 flex justify-center">
             <div className="inline-flex rounded-xl p-1" style={{ background: 'linear-gradient(to right, #27AE60, #1A4A40)' }}>
               <button
                 className={`px-8 py-3 rounded-lg text-sm font-semibold transition-all ${billing === "monthly"
@@ -338,7 +337,6 @@ const Pricing = () => {
               </button>
             </div>
           </div>
-        </section>
 
         {/* Pricing Cards */}
         <section className="grid gap-8 lg:grid-cols-3 lg:gap-12 mb-20">
