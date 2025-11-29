@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Dietitian, UserAuth } = require('../models/userModel');
 const Booking = require('../models/bookingModel');
+const { BlockedSlot } = require('../models/bookingModel');
 const { authenticateJWT } = require('../middlewares/authMiddleware');
 
 // Get all verified dietitians
@@ -642,6 +643,133 @@ router.get('/dietitians/:id/can-review', authenticateJWT, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error checking review eligibility'
+    });
+  }
+});
+
+// Block a slot for a dietitian
+router.post('/dietitians/:id/block-slot', authenticateJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, time } = req.body;
+
+    if (!date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date and time are required'
+      });
+    }
+
+    // Check if the dietitian exists
+    const dietitian = await Dietitian.findById(id);
+    if (!dietitian) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dietitian not found'
+      });
+    }
+
+    // Check if slot is already booked
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    const existingBooking = await Booking.findOne({
+      dietitianId: id,
+      date: { $gte: dayStart, $lt: dayEnd },
+      time,
+      status: { $in: ['confirmed', 'completed'] }
+    });
+
+    if (existingBooking) {
+      return res.status(409).json({
+        success: false,
+        message: 'Cannot block a slot that is already booked'
+      });
+    }
+
+    // Check if already blocked
+    const existingBlock = await BlockedSlot.findOne({
+      dietitianId: id,
+      date,
+      time
+    });
+
+    if (existingBlock) {
+      return res.status(409).json({
+        success: false,
+        message: 'Slot is already blocked'
+      });
+    }
+
+    // Create blocked slot
+    const blockedSlot = new BlockedSlot({
+      dietitianId: id,
+      date,
+      time
+    });
+
+    await blockedSlot.save();
+
+    res.json({
+      success: true,
+      message: 'Slot blocked successfully'
+    });
+  } catch (error) {
+    console.error('Error blocking slot:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error blocking slot'
+    });
+  }
+});
+
+// Unblock a slot for a dietitian
+router.post('/dietitians/:id/unblock-slot', authenticateJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, time } = req.body;
+
+    if (!date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date and time are required'
+      });
+    }
+
+    // Check if the dietitian exists
+    const dietitian = await Dietitian.findById(id);
+    if (!dietitian) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dietitian not found'
+      });
+    }
+
+    // Find and remove the blocked slot
+    const blockedSlot = await BlockedSlot.findOneAndDelete({
+      dietitianId: id,
+      date,
+      time
+    });
+
+    if (!blockedSlot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Slot was not blocked'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Slot unblocked successfully'
+    });
+  } catch (error) {
+    console.error('Error unblocking slot:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error unblocking slot'
     });
   }
 });

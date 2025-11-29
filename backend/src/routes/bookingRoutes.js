@@ -128,4 +128,8 @@ router.patch("/:bookingId/status", bookingController.updateBookingStatus);
 // DELETE /api/bookings/:bookingId
 router.delete("/:bookingId", bookingController.cancelBooking);
 
+// --- RESCHEDULE BOOKING ---
+// PATCH /api/bookings/:bookingId/reschedule
+router.patch("/:bookingId/reschedule", bookingController.rescheduleBooking);
+
 module.exports = router;
