@@ -20,10 +20,10 @@ const Sidebar = () => {
   ];
 
   const userNavLinks = [
-    { name: 'Home', href: '/user', icon: 'fas fa-home' },
+    { name: 'Home', href: '/user/home', icon: 'fas fa-home' },
     { name: 'Dietitians', href: '/user/dietitian-profiles', icon: 'fas fa-user-tie' },
     { name: 'Appointments', href: '/user/my-dietitians', icon: 'fas fa-calendar' },
-    { name: 'Schedule', href: '/user/user-schedule', icon: 'fas fa-calendar-check' },
+    { name: 'Schedule', href: '/user/schedule', icon: 'fas fa-calendar-check' },
     { name: 'Pricing', href: '/user/pricing', icon: 'fas fa-tag' },
     { name: 'MealPlans', href: '/user/get-plans', icon: 'fas fa-utensils' },
     { name: 'Blog', href: '/user/blog', icon: 'fas fa-blog' },
@@ -31,16 +31,16 @@ const Sidebar = () => {
   ];
 
   const dietitianNavLinks = [
-    { name: 'Home', href: '/dietitian', icon: 'fas fa-home' },
+    { name: 'Home', href: '/dietitian/home', icon: 'fas fa-home' },
     { name: 'My Verification', href: '/dietitian/doc-status', icon: 'fas fa-handshake' },
     { name: 'My Clients', href: '/dietitian/clients-profiles', icon: 'fas fa-users' },
-    { name: 'Schedule', href: '/dietitian/dietitian-schedule', icon: 'fas fa-calendar-check' },
+    { name: 'Schedule', href: '/dietitian/schedule', icon: 'fas fa-calendar-check' },
     { name: 'MealPlans', href: '/dietitian/add-plans', icon: 'fas fa-utensils' },
     { name: 'Blog', href: '/dietitian/blog', icon: 'fas fa-blog' },
   ];
 
   const corporatePartnerNavLinks = [
-    { name: 'Home', href: '/corporatepartner', icon: 'fas fa-home' },
+    { name: 'Home', href: '/corporatepartner/home', icon: 'fas fa-home' },
     { name: 'My Verification', href: '/corporatepartner/doc-status', icon: 'fas fa-handshake' },
     { name: 'Plans/Offers', href: '/corporatepartner/plans-offers', icon: 'fas fa-briefcase' },
     { name: 'Employee Management', href: '/corporatepartner/employee-management', icon: 'fas fa-users' },
@@ -51,7 +51,7 @@ const Sidebar = () => {
   ];
 
   const adminNavLinks = [
-    { name: 'Home', href: '/admin', icon: 'fas fa-home' },
+    { name: 'Home', href: '/admin/home', icon: 'fas fa-home' },
     { name: 'Analytics', href: '/admin/analytics', icon: 'fas fa-chart-bar' },
     { name: 'Users', href: '/admin/users', icon: 'fas fa-users' },
     { name: 'Verify Organizations', href: '/admin/verify-organizations', icon: 'fas fa-user-shield' },
@@ -60,7 +60,7 @@ const Sidebar = () => {
   ];
 
   const organizationNavLinks = [
-    { name: 'Home', href: '/organization', icon: 'fas fa-home' },
+    { name: 'Home', href: '/organization/home', icon: 'fas fa-home' },
     { name: 'My Verification', href: '/organization/doc-status', icon: 'fas fa-handshake' },
     { name: 'Verify Dietitians', href: '/organization/verify-dietitian', icon: 'fas fa-user-md' },
     { name: 'Verify Corps', href: '/organization/verify-corporate', icon: 'fas fa-building' },

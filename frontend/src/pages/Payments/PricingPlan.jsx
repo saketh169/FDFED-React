@@ -1,11 +1,9 @@
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useAuth } from "../../hooks/useAuth";
 import {
-  checkActiveSubscription,
-  selectHasActiveSubscription,
-  selectActiveSubscription
+  checkActiveSubscription
 } from "../../redux/slices/paymentSlice";
 
 const PricingPlan = () => {
@@ -18,8 +16,10 @@ const PricingPlan = () => {
   const { isAuthenticated } = useAuth('user');
   
   // Redux state
-  const hasActiveSubscription = useSelector(selectHasActiveSubscription);
-  const activeSubscription = useSelector(selectActiveSubscription);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -67,20 +67,24 @@ const PricingPlan = () => {
   const plan = plans[planType] || { heading: "Plan Not Found", features: [] };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div
-        className="cursor-pointer hover:opacity-80 mb-8 flex items-center"
-        style={{ color: '#27AE60' }}
-        onClick={() => navigate(-1)}
-      >
-        <i className="fa-solid fa-arrow-left mr-2"></i>
-        Back
+    <div className="min-h-screen bg-gray-50 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="relative mb-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute left-0 top-0 px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+          style={{ backgroundColor: '#27AE60' }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
+        >
+          <i className="fas fa-chevron-left"></i>
+          Back
+        </button>
       </div>
 
       <div className="max-w-2xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-8" style={{ color: '#1A4A40' }}>{plan.heading}</h2>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8" style={{ borderTop: '4px solid #27AE60' }}>
+        <div className="bg-white rounded-2xl shadow-lg p-8" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
           <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium mb-6" style={{ backgroundColor: '#27AE60', color: 'white' }}>
             {billingType === "yearly" ? "Annual Billing" : "Monthly Billing"}
           </div>

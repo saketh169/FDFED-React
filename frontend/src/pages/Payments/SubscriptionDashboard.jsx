@@ -26,6 +26,10 @@ const SubscriptionDashboard = () => {
   const cancelling = useSelector(selectIsCancelling);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated) {
       navigate('/role');
       return;
@@ -60,25 +64,25 @@ const SubscriptionDashboard = () => {
       <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f0fdf4, #ffffff)' }}>
         <div className="pt-18 pb-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-4xl font-bold" style={{ color: '#1A4A40' }}>
-                My Subscription
-              </h1>
+            <div className="relative mb-8">
               <button
                 onClick={() => navigate('/user/pricing')}
-                className="px-6 py-3 rounded-lg font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                className="absolute left-0 top-0 px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
                 style={{ backgroundColor: '#27AE60' }}
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
               >
                 <i className="fas fa-chevron-left"></i>
-                Back to Pricing
+                Back
               </button>
+              <h1 className="text-center text-4xl font-bold" style={{ color: '#1A4A40' }}>
+                My Subscription
+              </h1>
             </div>
 
             {/* Active Subscription */}
             {subscription ? (
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-t-4" style={{ borderColor: '#27AE60' }}>
+              <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-t-4 border-b-4" style={{ borderColor: '#27AE60' }}>
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h2 className="text-2xl font-bold mb-2" style={{ color: '#1A4A40' }}>
@@ -192,7 +196,7 @@ const SubscriptionDashboard = () => {
                 )}
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 text-center">
+              <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 text-center" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
                 <div className="mb-4">
                   <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -218,7 +222,7 @@ const SubscriptionDashboard = () => {
 
             {/* Payment History */}
             {paymentHistory.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="bg-white rounded-2xl shadow-xl p-8" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
                 <h2 className="text-2xl font-bold mb-6" style={{ color: '#1A4A40' }}>
                   Payment History
                 </h2>
@@ -268,7 +272,7 @@ const SubscriptionDashboard = () => {
                 ></div>
 
                 {/* Modal Card */}
-                <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-auto">
+                <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-auto" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
                   <h3 className="text-2xl font-bold mb-4" style={{ color: '#1A4A40' }}>
                     Cancel Subscription?
                   </h3>
