@@ -1,45 +1,81 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import { useAuth } from "../../hooks/useAuth";
-import axios from "axios";
+import {
+  checkActiveSubscription,
+  initializePayment,
+  processPayment,
+  selectHasActiveSubscription,
+  selectActiveSubscription,
+  selectCurrentPayment,
+  selectPaymentStatus,
+  selectIsProcessingPayment,
+  selectError,
+  resetPaymentStatus,
+  clearError,
+  setPaymentStatus
+} from "../../redux/slices/paymentSlice";
 
 const Payment = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
   const plan = searchParams.get("plan");
   const billing = searchParams.get("billing");
   const amount = searchParams.get("amount");
   const { token, isAuthenticated } = useAuth('user');
+  
+  // Redux state
+  const hasActiveSubscription = useSelector(selectHasActiveSubscription);
+  const activeSubscription = useSelector(selectActiveSubscription);
+  const currentPayment = useSelector(selectCurrentPayment);
+  const reduxPaymentStatus = useSelector(selectPaymentStatus);
+  const isProcessingPayment = useSelector(selectIsProcessingPayment);
+  const reduxError = useSelector(selectError);
+  
+  // Local UI state
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState(null);
-  const [paymentId, setPaymentId] = useState(null);
+  const [localPaymentStatus, setLocalPaymentStatus] = useState(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [activeSubscription, setActiveSubscription] = useState(null);
-  // const [transactionId, setTransactionId] = useState(null); // Removed unused variable
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Check authentication
+  // Check authentication and subscription status
   useEffect(() => {
     if (!isAuthenticated) {
       alert('Please login to continue with payment');
       navigate('/role');
     } else {
-      // Debug: Log token status
-      console.log('Payment page - Auth status:', {
-        isAuthenticated,
-        hasToken: !!token,
-        tokenLength: token?.length,
-        tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token'
-      });
+      dispatch(checkActiveSubscription());
     }
-  }, [isAuthenticated, token, navigate]);
+  }, [isAuthenticated, token, navigate, dispatch]);
+  
+  // Handle Redux payment status changes
+  useEffect(() => {
+    if (reduxPaymentStatus === 'success' && currentPayment?.transactionId) {
+      setLocalPaymentStatus('success');
+      setTimeout(() => {
+        setShowModal(false);
+        dispatch(resetPaymentStatus());
+        navigate(`/user/payment-success?transactionId=${currentPayment.transactionId}`);
+      }, 2000);
+    } else if (reduxPaymentStatus === 'failed') {
+      setLocalPaymentStatus('failed');
+      if (reduxError) {
+        alert(reduxError);
+        dispatch(clearError());
+      }
+    } else if (reduxPaymentStatus === 'processing') {
+      setLocalPaymentStatus('processing');
+    }
+  }, [reduxPaymentStatus, currentPayment, navigate, dispatch, reduxError]);
 
   // Payment form states
   const [cardDetails, setCardDetails] = useState({
@@ -60,7 +96,7 @@ const Payment = () => {
   const [upiVerified, setUpiVerified] = useState(false);
   const [emiBank, setEmiBank] = useState("");
   const [emiTenure, setEmiTenure] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isVerifyingUpi, setIsVerifyingUpi] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
   // Card number formatting
@@ -134,8 +170,19 @@ const Payment = () => {
     return upiRegex.test(id);
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     const errors = {};
+
+    // First check subscription status using Redux
+    try {
+      const result = await dispatch(checkActiveSubscription()).unwrap();
+      if (result.hasActiveSubscription) {
+        setShowSubscriptionModal(true);
+        return;
+      }
+    } catch (err) {
+      console.error('Error checking subscription:', err);
+    }
 
     // Validate based on selected payment method
     if (selectedMethod === 'card') {
@@ -221,11 +268,11 @@ const Payment = () => {
       return;
     }
 
-    setIsProcessing(true);
+    setIsVerifyingUpi(true);
     // Simulate verification
     setTimeout(() => {
       setUpiVerified(true);
-      setIsProcessing(false);
+      setIsVerifyingUpi(false);
       alert(`UPI ID ${upiId} verified successfully!`);
     }, 1500);
   };
@@ -261,8 +308,7 @@ const Payment = () => {
   };
 
   const handleConfirmPayment = async () => {
-    setIsProcessing(true);
-    setPaymentStatus("processing");
+    dispatch(setPaymentStatus('processing'));
 
     try {
       // Validate token before making API call
@@ -272,138 +318,46 @@ const Payment = () => {
         return;
       }
 
-      // First, check if user has an active subscription
-      console.log('Checking for active subscription...');
-      const subResponse = await axios.get('/api/payments/subscription/active', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (subResponse.data.success && subResponse.data.hasActiveSubscription) {
-        const subscription = subResponse.data.subscription;
-        setActiveSubscription(subscription);
+      // First, check if user has an active subscription using Redux
+      const subResult = await dispatch(checkActiveSubscription()).unwrap();
+      if (subResult.hasActiveSubscription) {
         setShowSubscriptionModal(true);
-        setIsProcessing(false);
-        setPaymentStatus(null);
+        dispatch(setPaymentStatus(null));
         return;
       }
 
-      // Check if token is expired (basic check by decoding payload)
-      try {
-        const tokenParts = token.split('.');
-        if (tokenParts.length === 3) {
-          const payload = JSON.parse(atob(tokenParts[1]));
-          console.log('Token payload:', { userId: payload.userId, role: payload.role, exp: payload.exp });
-          
-          // Check expiration
-          if (payload.exp && Date.now() >= payload.exp * 1000) {
-            alert('Your session has expired. Please login again.');
-            navigate('/role');
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Error decoding token:', e);
-      }
+      // Initialize payment using Redux thunk
+      const paymentDetails = {
+        cardLast4: selectedMethod === 'card' ? cardDetails.cardNumber.replace(/\s/g, '').slice(-4) : undefined,
+        cardType: selectedMethod === 'card' ? 'Credit/Debit' : undefined,
+        bankName: selectedMethod === 'netbanking' ? selectedBank : undefined,
+        upiId: selectedMethod === 'upi' ? upiId : undefined,
+        upiApp: selectedMethod === 'upi' ? selectedUpiApp : undefined,
+        emiBank: selectedMethod === 'emi' ? emiBank : undefined,
+        emiTenure: selectedMethod === 'emi' ? emiTenure : undefined
+      };
 
-      console.log('Making payment with token:', token ? 'Token exists' : 'No token');
-      console.log('Token preview:', token?.substring(0, 30) + '...');
-      console.log('API call to:', '/api/payments/initialize');
-      console.log('Request payload:', {
+      const initResult = await dispatch(initializePayment({
         planType: plan,
         billingCycle: billing,
         amount: parseFloat(amount),
-        paymentMethod: selectedMethod
-      });
+        paymentMethod: selectedMethod,
+        paymentDetails
+      })).unwrap();
 
-      // First, initialize payment
-      if (!paymentId) {
-        console.log('Sending initialize payment request...');
-        const initResponse = await axios.post(
-          '/api/payments/initialize',
-          {
-            planType: plan,
-            billingCycle: billing,
-            amount: parseFloat(amount),
-            paymentMethod: selectedMethod,
-            paymentDetails: {
-              cardLast4: selectedMethod === 'card' ? cardDetails.cardNumber.replace(/\s/g, '').slice(-4) : undefined,
-              cardType: selectedMethod === 'card' ? 'Credit/Debit' : undefined,
-              bankName: selectedMethod === 'netbanking' ? selectedBank : undefined,
-              upiId: selectedMethod === 'upi' ? upiId : undefined,
-              upiApp: selectedMethod === 'upi' ? selectedUpiApp : undefined,
-              emiBank: selectedMethod === 'emi' ? emiBank : undefined,
-              emiTenure: selectedMethod === 'emi' ? emiTenure : undefined
-            }
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        
-        console.log('Initialize payment response:', initResponse.data);
-
-        if (initResponse.data.success) {
-          setPaymentId(initResponse.data.payment.id);
-          // setTransactionId(initResponse.data.payment.transactionId); // Removed unused setter
-
-          // Now process the payment
-          const processResponse = await axios.post(
-            `/api/payments/process/${initResponse.data.payment.id}`,
-            {},
-            {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-
-          if (processResponse.data.success) {
-            setPaymentStatus("success");
-            setTimeout(() => {
-              setShowModal(false);
-              setIsProcessing(false);
-              navigate(`/user/payment-success?transactionId=${processResponse.data.payment.transactionId}`);
-            }, 2000);
-          } else {
-            setPaymentStatus("failed");
-            setIsProcessing(false);
-            alert('Payment failed. Please try again.');
-          }
-        }
+      if (initResult?.id) {
+        // Process the payment using Redux thunk
+        await dispatch(processPayment({ paymentId: initResult.id })).unwrap();
       }
     } catch (error) {
       console.error('Payment error:', error);
-      console.error('Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        message: error.response?.data?.message,
-        data: error.response?.data,
-        requestURL: error.config?.url,
-        method: error.config?.method,
-        hasToken: !!error.config?.headers?.Authorization,
-        errorMessage: error.message
-      });
-      
-      setPaymentStatus("failed");
-      setIsProcessing(false);
       
       // Handle specific error cases
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        alert(`Authentication failed: ${error.response?.data?.message || 'Invalid or expired token'}. Please login again.`);
+      if (error === 'Not authenticated' || error?.includes?.('token')) {
+        alert('Authentication failed. Please login again.');
         navigate('/role');
-      } else if (error.code === 'ERR_NETWORK') {
-        alert('Network error: Cannot connect to server. Please ensure the backend is running on http://localhost:5000');
-      } else if (!error.response) {
-        alert('Network error: No response from server. Please check if the backend is running.');
       } else {
-        alert(error.response?.data?.message || 'Payment failed. Please try again.');
+        alert(error || 'Payment failed. Please try again.');
       }
     }
   };
@@ -829,18 +783,18 @@ const Payment = () => {
                           setValidationErrors({ ...validationErrors, upi: null });
                         }
                       }}
-                      disabled={isProcessing}
+                      disabled={isVerifyingUpi}
                     />
                     <button
-                      className={`px-6 text-white rounded-lg transition-all font-medium ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+                      className={`px-6 text-white rounded-lg transition-all font-medium ${isVerifyingUpi ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       style={{ backgroundColor: upiVerified ? '#27AE60' : '#27AE60' }}
-                      onMouseEnter={(e) => !isProcessing && !upiVerified && (e.target.style.backgroundColor = '#1A4A40')}
-                      onMouseLeave={(e) => !isProcessing && !upiVerified && (e.target.style.backgroundColor = '#27AE60')}
+                      onMouseEnter={(e) => !isVerifyingUpi && !upiVerified && (e.target.style.backgroundColor = '#1A4A40')}
+                      onMouseLeave={(e) => !isVerifyingUpi && !upiVerified && (e.target.style.backgroundColor = '#27AE60')}
                       onClick={handleVerifyUpi}
-                      disabled={isProcessing || upiVerified}
+                      disabled={isVerifyingUpi || upiVerified}
                     >
-                      {isProcessing ? 'Verifying...' : upiVerified ? '✓ Verified' : 'Verify'}
+                      {isVerifyingUpi ? 'Verifying...' : upiVerified ? '✓ Verified' : 'Verify'}
                     </button>
                   </div>
                   {validationErrors.upi && (
@@ -1017,7 +971,7 @@ const Payment = () => {
           <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="w-[70%] mx-auto">
               <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-                {paymentStatus === "processing" ? (
+                {(localPaymentStatus === "processing" || isProcessingPayment) ? (
                   <div>
                     <div className="mb-4">
                       <div className="animate-spin rounded-full h-16 w-16 border-b-4 mx-auto" style={{ borderColor: '#27AE60' }}></div>
@@ -1026,7 +980,7 @@ const Payment = () => {
                     <p style={{ color: '#2F4F4F' }}>Please wait while we process your payment</p>
                     <p className="text-sm text-gray-500 mt-2">Do not close this window</p>
                   </div>
-                ) : paymentStatus === "success" ? (
+                ) : localPaymentStatus === "success" ? (
                   <div>
                     <div className="mb-4">
                       <svg className="mx-auto h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: '#27AE60' }}>
@@ -1035,7 +989,7 @@ const Payment = () => {
                     </div>
                     <h2 className="text-3xl font-bold mb-3" style={{ color: '#27AE60' }}>Payment Successful!</h2>
                     <p className="text-lg mb-2" style={{ color: '#2F4F4F' }}>Your payment of ₹{amount} has been processed successfully.</p>
-                    <p className="text-sm text-gray-600">Transaction ID: TXN{Date.now()}</p>
+                    <p className="text-sm text-gray-600">Transaction ID: {currentPayment?.transactionId || `TXN${Date.now()}`}</p>
                     <p className="text-sm text-gray-500 mt-2">Redirecting to confirmation page...</p>
                   </div>
                 ) : (
@@ -1068,8 +1022,6 @@ const Payment = () => {
                       {selectedMethod === 'netbanking' && selectedBank && (
                         <div className="mt-4 pt-4 border-t text-left">
                           <p className="text-xs text-gray-600">Bank: {selectedBank}</p>
-                          <p className="text-xs text-gray-600 mt-1">Username: {netbankingCredentials.username}</p>
-                          <p className="text-xs text-gray-600 mt-1">Password: {'•'.repeat(netbankingCredentials.password.length)}</p>
                         </div>
                       )}
                       {selectedMethod === 'upi' && (upiId || selectedUpiApp) && (
@@ -1088,19 +1040,19 @@ const Payment = () => {
                     <div className="flex justify-center gap-4">
                       <button
                         onClick={handleConfirmPayment}
-                        disabled={isProcessing}
-                        className={`text-white py-3 px-10 rounded-lg transition-all font-semibold text-lg ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+                        disabled={isProcessingPayment}
+                        className={`text-white py-3 px-10 rounded-lg transition-all font-semibold text-lg ${isProcessingPayment ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         style={{ backgroundColor: '#27AE60' }}
-                        onMouseEnter={(e) => !isProcessing && (e.target.style.backgroundColor = '#1A4A40')}
-                        onMouseLeave={(e) => !isProcessing && (e.target.style.backgroundColor = '#27AE60')}
+                        onMouseEnter={(e) => !isProcessingPayment && (e.target.style.backgroundColor = '#1A4A40')}
+                        onMouseLeave={(e) => !isProcessingPayment && (e.target.style.backgroundColor = '#27AE60')}
                       >
-                        {isProcessing ? 'Processing...' : 'Confirm & Pay'}
+                        {isProcessingPayment ? 'Processing...' : 'Confirm & Pay'}
                       </button>
                       <button
                         onClick={() => setShowModal(false)}
-                        disabled={isProcessing}
-                        className={`bg-gray-200 hover:bg-gray-300 py-3 px-10 rounded-lg font-semibold text-lg ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+                        disabled={isProcessingPayment}
+                        className={`bg-gray-200 hover:bg-gray-300 py-3 px-10 rounded-lg font-semibold text-lg ${isProcessingPayment ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         style={{ color: '#2F4F4F' }}
                       >

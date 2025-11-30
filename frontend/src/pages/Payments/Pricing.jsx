@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "../../hooks/useAuth";
-import axios from "axios";
+import {
+  fetchPricingPlans,
+  checkActiveSubscription,
+  selectPlans,
+  selectHasActiveSubscription,
+  selectActiveSubscription,
+  selectIsLoadingPlans,
+  setBilling,
+  selectBilling
+} from "../../redux/slices/paymentSlice";
 
 const Pricing = () => {
   const navigate = useNavigate();
-  const [billing, setBilling] = useState("monthly");
-  const { isAuthenticated, token } = useAuth('user');
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useAuth('user');
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [activeSubscription, setActiveSubscription] = useState(null);
 
-  const [plans, setPlans] = useState([]);
+  // Redux state
+  const plans = useSelector(selectPlans);
+  const hasActiveSubscription = useSelector(selectHasActiveSubscription);
+  const activeSubscription = useSelector(selectActiveSubscription);
+  const isLoadingPlans = useSelector(selectIsLoadingPlans);
+  const billing = useSelector(selectBilling);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -20,256 +34,20 @@ const Pricing = () => {
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/api/settings');
-        const settings = response.data;
-        const tiers = billing === 'monthly' ? settings.monthlyTiers : settings.yearlyTiers;
-        if (tiers && tiers.length > 0) {
-          setPlans(tiers);
-        } else {
-          // Fallback to hardcoded plans if API fails
-          setPlans(billing === 'monthly' ? [
-            { 
-              name: "Basic", 
-              price: 299, 
-              desc1: "Perfect starter plan for your wellness journey", 
-              desc2: "2 consultations/month • 3 days advance booking • 7 wellness plans • 20 daily chatbot queries • 2 blog posts/month",
-              features: [
-                "2 Consultations per month",
-                "Book up to 3 days in advance",
-                "7 Wellness Progress Plans (Cardio, Balanced Diet, Energy, Flexibility + Free plans)",
-                "20 AI Chatbot queries per day",
-                "Create 2 Blog posts per month",
-                "Unlimited Chat & Video Calls",
-                "Blog Reading Access",
-                "Email Support"
-              ]
-            },
-            { 
-              name: "Premium", 
-              price: 599, 
-              desc1: "Most popular for serious health goals", 
-              desc2: "8 consultations/month • 7 days advance booking • 12 wellness plans • 50 daily chatbot queries • 8 blog posts/month",
-              features: [
-                "8 Consultations per month",
-                "Book up to 7 days in advance",
-                "12 Wellness Progress Plans (Muscle Gain, Stamina, Detox, Stress Relief + Basic plans)",
-                "50 AI Chatbot queries per day",
-                "Create 8 Blog posts per month",
-                "Unlimited Chat & Video Calls",
-                "Full Blog Access",
-                "Priority Email Support",
-                "Advanced Progress Analytics",
-                "Lab Report Analysis"
-              ]
-            },
-            { 
-              name: "Ultimate", 
-              price: 899, 
-              desc1: "Complete wellness package with all features", 
-              desc2: "20 consultations/month • 21 days advance booking • All 15 wellness plans • Unlimited chatbot • Unlimited blogs",
-              features: [
-                "20 Consultations per month",
-                "Book up to 21 days in advance",
-                "All 15 Wellness Progress Plans (Diabetes, Recovery, Athletic + All plans)",
-                "Unlimited AI Chatbot queries",
-                "Unlimited Blog posts",
-                "Unlimited Chat & Video Calls",
-                "Full Blog Access & Priority",
-                "24/7 Priority Support",
-                "Premium Analytics Dashboard",
-                "AI-Powered Health Insights",
-                "Exclusive Health Resources",
-                "Priority Dietitian Matching"
-              ]
-            }
-          ] : [
-            { 
-              name: "Basic", 
-              price: 999, 
-              desc1: "Save 72% with yearly subscription!", 
-              desc2: "2 consultations/month • 3 days advance booking • 7 wellness plans • 20 daily chatbot queries • 2 blog posts/month",
-              features: [
-                "2 Consultations per month",
-                "Book up to 3 days in advance",
-                "7 Wellness Progress Plans (Cardio, Balanced Diet, Energy, Flexibility + Free plans)",
-                "20 AI Chatbot queries per day",
-                "Create 2 Blog posts per month",
-                "Unlimited Chat & Video Calls",
-                "Blog Reading Access",
-                "Email Support"
-              ]
-            },
-            { 
-              name: "Premium", 
-              price: 1999, 
-              desc1: "Save 72% compared to monthly billing!", 
-              desc2: "8 consultations/month • 7 days advance booking • 12 wellness plans • 50 daily chatbot queries • 8 blog posts/month",
-              features: [
-                "8 Consultations per month",
-                "Book up to 7 days in advance",
-                "12 Wellness Progress Plans (Muscle Gain, Stamina, Detox, Stress Relief + Basic plans)",
-                "50 AI Chatbot queries per day",
-                "Create 8 Blog posts per month",
-                "Unlimited Chat & Video Calls",
-                "Full Blog Access",
-                "Priority Email Support",
-                "Advanced Progress Analytics",
-                "Lab Report Analysis"
-              ]
-            },
-            { 
-              name: "Ultimate", 
-              price: 2999, 
-              desc1: "Best Value! Save 72% on yearly plan", 
-              desc2: "20 consultations/month • 21 days advance booking • All 15 wellness plans • Unlimited chatbot • Unlimited blogs",
-              features: [
-                "20 Consultations per month",
-                "Book up to 21 days in advance",
-                "All 15 Wellness Progress Plans (Diabetes, Recovery, Athletic + All plans)",
-                "Unlimited AI Chatbot queries",
-                "Unlimited Blog posts",
-                "Unlimited Chat & Video Calls",
-                "Full Blog Access & Priority",
-                "24/7 Priority Support",
-                "Premium Analytics Dashboard",
-                "AI-Powered Health Insights",
-                "Exclusive Health Resources",
-                "Priority Dietitian Matching"
-              ]
-            }
-          ]);
-        }
-      } catch (error) {
-        console.error('Error fetching plans:', error);
-        // Fallback to hardcoded plans
-        setPlans(billing === 'monthly' ? [
-          { 
-            name: "Basic", 
-            price: 299, 
-            desc1: "Perfect starter plan for your wellness journey", 
-            desc2: "2 consultations/month • 3 days advance booking • 7 wellness plans • 20 daily chatbot queries • 2 blog posts/month",
-            features: [
-              "2 Consultations per month",
-              "Book up to 3 days in advance",
-              "7 Wellness Progress Plans (Cardio, Balanced Diet, Energy, Flexibility + Free plans)",
-              "20 AI Chatbot queries per day",
-              "Create 2 Blog posts per month",
-              "Unlimited Chat & Video Calls",
-              "Blog Reading Access",
-              "Email Support"
-            ]
-          },
-          { 
-            name: "Premium", 
-            price: 599, 
-            desc1: "Most popular for serious health goals", 
-            desc2: "8 consultations/month • 7 days advance booking • 12 wellness plans • 50 daily chatbot queries • 8 blog posts/month",
-            features: [
-              "8 Consultations per month",
-              "Book up to 7 days in advance",
-              "12 Wellness Progress Plans (Muscle Gain, Stamina, Detox, Stress Relief + Basic plans)",
-              "50 AI Chatbot queries per day",
-              "Create 8 Blog posts per month",
-              "Unlimited Chat & Video Calls",
-              "Full Blog Access",
-              "Priority Email Support",
-              "Advanced Progress Analytics",
-              "Lab Report Analysis"
-            ]
-          },
-          { 
-            name: "Ultimate", 
-            price: 899, 
-            desc1: "Complete wellness package with all features", 
-            desc2: "20 consultations/month • 21 days advance booking • All 15 wellness plans • Unlimited chatbot • Unlimited blogs",
-            features: [
-              "20 Consultations per month",
-              "Book up to 21 days in advance",
-              "All 15 Wellness Progress Plans (Diabetes, Recovery, Athletic + All plans)",
-              "Unlimited AI Chatbot queries",
-              "Unlimited Blog posts",
-              "Unlimited Chat & Video Calls",
-              "Full Blog Access & Priority",
-              "24/7 Priority Support",
-              "Premium Analytics Dashboard",
-              "AI-Powered Health Insights",
-              "Exclusive Health Resources",
-              "Priority Dietitian Matching"
-            ]
-          }
-        ] : [
-          { 
-            name: "Basic", 
-            price: 999, 
-            desc1: "Save 72% with yearly subscription!", 
-            desc2: "2 consultations/month • 3 days advance booking • 7 wellness plans • 20 daily chatbot queries • 2 blog posts/month",
-            features: [
-              "2 Consultations per month",
-              "Book up to 3 days in advance",
-              "7 Wellness Progress Plans (Cardio, Balanced Diet, Energy, Flexibility + Free plans)",
-              "20 AI Chatbot queries per day",
-              "Create 2 Blog posts per month",
-              "Unlimited Chat & Video Calls",
-              "Blog Reading Access",
-              "Email Support"
-            ]
-          },
-          { 
-            name: "Premium", 
-            price: 1999, 
-            desc1: "Save 72% compared to monthly billing!", 
-            desc2: "8 consultations/month • 7 days advance booking • 12 wellness plans • 50 daily chatbot queries • 8 blog posts/month",
-            features: [
-              "8 Consultations per month",
-              "Book up to 7 days in advance",
-              "12 Wellness Progress Plans (Muscle Gain, Stamina, Detox, Stress Relief + Basic plans)",
-              "50 AI Chatbot queries per day",
-              "Create 8 Blog posts per month",
-              "Unlimited Chat & Video Calls",
-              "Full Blog Access",
-              "Priority Email Support",
-              "Advanced Progress Analytics",
-              "Lab Report Analysis"
-            ]
-          },
-          { 
-            name: "Ultimate", 
-            price: 2999, 
-            desc1: "Best Value! Save 72% on yearly plan", 
-            desc2: "20 consultations/month • 21 days advance booking • All 15 wellness plans • Unlimited chatbot • Unlimited blogs",
-            features: [
-              "20 Consultations per month",
-              "Book up to 21 days in advance",
-              "All 15 Wellness Progress Plans (Diabetes, Recovery, Athletic + All plans)",
-              "Unlimited AI Chatbot queries",
-              "Unlimited Blog posts",
-              "Unlimited Chat & Video Calls",
-              "Full Blog Access & Priority",
-              "24/7 Priority Support",
-              "Premium Analytics Dashboard",
-              "AI-Powered Health Insights",
-              "Exclusive Health Resources",
-              "Priority Dietitian Matching"
-            ]
-          }
-        ]);
-      }
-    };
-    fetchPlans();
-  }, [billing]);
+    // Fetch pricing plans based on billing cycle
+    dispatch(fetchPricingPlans(billing));
+  }, [billing, dispatch]);
+
+  const handleBillingChange = (newBilling) => {
+    dispatch(setBilling(newBilling));
+  };
 
   const choosePlan = async (plan, amount) => {
     try {
       // Check if user has active subscription before allowing plan selection
-      const response = await axios.get('/api/payments/subscription/active', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const result = await dispatch(checkActiveSubscription()).unwrap();
       
-      if (response.data.success && response.data.hasActiveSubscription) {
-        const subscription = response.data.subscription;
-        setActiveSubscription(subscription);
+      if (result.hasActiveSubscription) {
         setShowSubscriptionModal(true);
         return;
       }
@@ -321,7 +99,7 @@ const Pricing = () => {
                     : "text-white hover:bg-white/20"
                   }`}
                 style={billing === "monthly" ? { color: '#1A4A40' } : {}}
-                onClick={() => setBilling("monthly")}
+                onClick={() => handleBillingChange("monthly")}
               >
                 Monthly Billing
               </button>
@@ -331,7 +109,7 @@ const Pricing = () => {
                     : "text-white hover:bg-white/20"
                   }`}
                 style={billing === "yearly" ? { color: '#1A4A40' } : {}}
-                onClick={() => setBilling("yearly")}
+                onClick={() => handleBillingChange("yearly")}
               >
                 Yearly Billing <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-yellow-400 text-gray-800">Save 20%</span>
               </button>

@@ -1,18 +1,30 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAuthContext } from '../../hooks/useAuthContext';
 import axios from 'axios';
+import {
+  fetchUserBookings,
+  fetchDietitianProfile,
+  selectUserBookings,
+  selectDietitianProfiles,
+  selectIsLoading as selectBookingLoading
+} from '../../redux/slices/bookingSlice';
 
 const DietitiansList = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user, token } = useAuthContext();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('All');
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedDietitian, setSelectedDietitian] = useState(null);
-    const [showProfileModal, setShowProfileModal] = useState(false);
-    const [dietitianProfiles, setDietitianProfiles] = useState({});
+  
+  // Redux state
+  const bookings = useSelector(selectUserBookings);
+  const dietitianProfiles = useSelector(selectDietitianProfiles);
+  const loading = useSelector(selectBookingLoading);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [selectedDietitian, setSelectedDietitian] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
     // Console log the current user name and ID once on mount
     useEffect(() => {
@@ -78,56 +90,34 @@ const DietitiansList = () => {
     }
   };
 
-  // Fetch user's bookings from API
+  // Fetch user's bookings from API using Redux
   useEffect(() => {
-    const fetchBookings = async () => {
+    const fetchData = async () => {
       const userId = localStorage.getItem('userId') || user?.id;
       
       if (!userId) {
-        setLoading(false);
         return;
       }
 
-      try {
-        setLoading(true);
-        const config = token ? {
-          headers: { 'Authorization': `Bearer ${token}` }
-        } : {};
-
-        const response = await axios.get(`/api/bookings/user/${userId}`, config);
+      // Dispatch fetchUserBookings thunk
+      const result = await dispatch(fetchUserBookings({ userId })).unwrap();
+      
+      if (result && Array.isArray(result)) {
+        // Extract unique dietitian IDs and fetch their profiles
+        const uniqueDietitianIds = [...new Set(result.map(b => b.dietitianId))];
         
-        if (response.data.success) {
-          setBookings(response.data.data);
-          
-          // Extract unique dietitian IDs and fetch their profiles
-          const uniqueDietitianIds = [...new Set(response.data.data.map(b => b.dietitianId))];
-          
-          // Fetch each dietitian's profile
-          const profiles = {};
-          await Promise.all(
-            uniqueDietitianIds.map(async (dietitianId) => {
-              try {
-                const profileResponse = await axios.get(`/api/dietitians/${dietitianId}`, config);
-                if (profileResponse.data.success) {
-                  profiles[dietitianId] = profileResponse.data.data;
-                }
-              } catch (err) {
-                console.error(`Error fetching dietitian ${dietitianId}:`, err);
-              }
-            })
-          );
-          
-          setDietitianProfiles(profiles);
-        }
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-      } finally {
-        setLoading(false);
+        // Fetch each dietitian's profile using Redux thunk
+        uniqueDietitianIds.forEach(dietitianId => {
+          // Only fetch if not already in cache
+          if (!dietitianProfiles[dietitianId]) {
+            dispatch(fetchDietitianProfile({ dietitianId }));
+          }
+        });
       }
     };
 
-    fetchBookings();
-  }, [user, token]);
+    fetchData();
+  }, [dispatch, user?.id, dietitianProfiles]);
 
   // Convert bookings to dietitian appointments list
   const dietitiansFromBookings = useMemo(() => {
