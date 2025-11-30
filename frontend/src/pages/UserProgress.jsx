@@ -353,7 +353,7 @@ const UserProgress = () => {
               <div className="flex items-center gap-3">
                 {subscriptionInfo.planType !== 'ultimate' && (
                   <button
-                    onClick={() => navigate('/user/payments')}
+                    onClick={() => navigate('/user/pricing')}
                     className="px-4 py-2 bg-[#1E6F5C] text-white rounded-lg text-sm font-semibold hover:bg-[#28B463] transition"
                   >
                     Upgrade for More Plans

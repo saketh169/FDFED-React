@@ -29,6 +29,11 @@ const TermsOfUse = () => {
     fetchTermsOfUse();
   }, []);
 
+  // Ensure the page is at the top when this component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+  }, []);
+
   // Simple markdown renderer for basic formatting
   const renderMarkdown = (text) => {
     if (!text) return '<p class="text-gray-500 italic">Content not available.</p>';
@@ -109,6 +114,15 @@ const TermsOfUse = () => {
             dangerouslySetInnerHTML={{ __html: `<p class="mb-4">${renderMarkdown(content)}</p>` }}
           />
         </div>
+
+        {/* Floating Scroll-to-top button */}
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Scroll to top"
+          className="fixed right-6 bottom-6 bg-emerald-600 text-white w-11 h-11 rounded-full shadow-lg flex items-center justify-center hover:bg-emerald-700 transition-colors"
+        >
+          <i className="fas fa-chevron-up"></i>
+        </button>
       </div>
     </main>
   );
