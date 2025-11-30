@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useAuthContext } from "../../hooks/useAuthContext";
-import axios from 'axios';
 import SubscriptionAlert from '../../middleware/SubscriptionAlert';
+import {
+  createBooking,
+  selectIsCreatingBooking,
+  selectSubscriptionAlertData,
+  selectShowSubscriptionAlert,
+  clearSubscriptionAlert
+} from "../../redux/slices/bookingSlice";
 
 const PaymentNotificationModal = ({
   isOpen,
@@ -9,8 +16,14 @@ const PaymentNotificationModal = ({
   onSubmit,
   paymentDetails
 }) => {
+  const dispatch = useDispatch();
   const [isProcessing, setIsProcessing] = useState(false);
   const { user, token } = useAuthContext();
+  
+  // Redux state
+  const isCreatingBooking = useSelector(selectIsCreatingBooking);
+  const reduxSubscriptionAlertData = useSelector(selectSubscriptionAlertData);
+  const reduxShowSubscriptionAlert = useSelector(selectShowSubscriptionAlert);
   
   // Payment form states
   const [email, setEmail] = useState("");
@@ -32,8 +45,6 @@ const PaymentNotificationModal = ({
   const [selectedUpiApp, setSelectedUpiApp] = useState("");
   const [upiVerified, setUpiVerified] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
-  const [subscriptionAlertData, setSubscriptionAlertData] = useState({});
 
   // Auto-fill email when user is available or modal opens
   useEffect(() => {
@@ -215,13 +226,6 @@ const PaymentNotificationModal = ({
     try {
       // Get userId from localStorage (primary source)
       const userIdFromStorage = localStorage.getItem('userId');
-      
-      // Debug logging
-      console.log('====== PaymentModal - handleFormSubmit ======');
-      console.log('User object from context:', user);
-      console.log('UserId from localStorage:', userIdFromStorage);
-      console.log('Payment details prop received:', paymentDetails);
-      console.log('============================================');
 
       // Generate payment ID
       const paymentId = "PAY_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
@@ -246,10 +250,6 @@ const PaymentNotificationModal = ({
         paymentId: paymentId,
       };
 
-      console.log('====== Booking Data Prepared ======');
-      console.log('Booking data:', bookingData);
-      console.log('===================================');
-
       // Validate all required fields before sending
       const requiredFields = [
         'userId', 'username', 'email', 'dietitianId', 'dietitianName', 
@@ -259,36 +259,16 @@ const PaymentNotificationModal = ({
       
       const missingFields = requiredFields.filter(field => !bookingData[field]);
       if (missingFields.length > 0) {
-        console.error('====== VALIDATION ERROR ======');
         console.error('Missing required fields:', missingFields);
-        console.error('Booking data:', bookingData);
-        console.error('Payment details received:', paymentDetails);
-        console.error('User data:', user);
-        console.error('==============================');
         alert(`Missing required information: ${missingFields.join(', ')}. Please close and try booking again.`);
         setIsProcessing(false);
         return;
       }
 
-      console.log('✅ All validations passed. Submitting booking...');
+      // Create booking using Redux thunk
+      const result = await dispatch(createBooking(bookingData)).unwrap();
 
-      // Call booking API
-      const config = token ? {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      } : {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
-
-      const response = await axios.post('/api/bookings/create', bookingData, config);
-
-      if (response.data.success) {
-        console.log('✅ Booking created successfully!', response.data);
-        
+      if (result) {
         // Call parent onSubmit for UI updates
         if (onSubmit) {
           onSubmit({ 
@@ -296,7 +276,7 @@ const PaymentNotificationModal = ({
             paymentMethod: selectedMethod, 
             amount: paymentDetails?.amount, 
             transactionId: paymentId,
-            bookingId: response.data.data._id
+            bookingId: result._id
           });
         }
 
@@ -314,26 +294,14 @@ const PaymentNotificationModal = ({
         setSelectedUpiApp("");
         setUpiVerified(false);
         setValidationErrors({});
-      } else {
-        throw new Error(response.data.message || 'Booking failed');
       }
 
     } catch (error) {
-      console.error("❌ Payment/Booking error:", error);
+      console.error("Payment/Booking error:", error);
       
-      // Check if it's a subscription limit error
-      if (error.response?.data?.limitReached) {
-        const errorData = error.response.data;
-        setSubscriptionAlertData({
-          message: errorData.message,
-          planType: errorData.planType || 'free',
-          limitType: errorData.maxAdvanceDays ? 'advance' : 'booking',
-          currentCount: errorData.currentCount || 0,
-          limit: errorData.limit || errorData.maxAdvanceDays || 0
-        });
-        setShowSubscriptionAlert(true);
-      } else {
-        const errorMessage = error.response?.data?.message || error.message || "Booking failed. Please try again.";
+      // Check if it's a subscription limit error (handled via Redux state)
+      if (!reduxShowSubscriptionAlert) {
+        const errorMessage = typeof error === 'string' ? error : (error?.message || "Booking failed. Please try again.");
         alert(errorMessage);
       }
     } finally {
@@ -923,15 +891,15 @@ const PaymentNotificationModal = ({
       </div>
 
       {/* Subscription Alert Modal */}
-      {showSubscriptionAlert && (
+      {reduxShowSubscriptionAlert && reduxSubscriptionAlertData && (
         <SubscriptionAlert
-          message={subscriptionAlertData.message}
-          planType={subscriptionAlertData.planType}
-          limitType={subscriptionAlertData.limitType}
-          currentCount={subscriptionAlertData.currentCount}
-          limit={subscriptionAlertData.limit}
+          message={reduxSubscriptionAlertData.message}
+          planType={reduxSubscriptionAlertData.planType}
+          limitType={reduxSubscriptionAlertData.limitType}
+          currentCount={reduxSubscriptionAlertData.currentCount}
+          limit={reduxSubscriptionAlertData.limit}
           onClose={() => {
-            setShowSubscriptionAlert(false);
+            dispatch(clearSubscriptionAlert());
             onClose(); // Also close the payment modal
           }}
         />

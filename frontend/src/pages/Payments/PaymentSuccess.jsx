@@ -1,17 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../hooks/useAuth';
-import axios from 'axios';
+import {
+  verifyPayment,
+  selectVerifiedPayment,
+  selectIsLoading
+} from '../../redux/slices/paymentSlice';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
   const transactionId = searchParams.get('transactionId');
-  const { token, isAuthenticated } = useAuth('user');
-  const [paymentDetails, setPaymentDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuth('user');
+  
+  // Redux state
+  const paymentDetails = useSelector(selectVerifiedPayment);
+  const loading = useSelector(selectIsLoading);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -24,29 +32,9 @@ const PaymentSuccess = () => {
       return;
     }
 
-    const fetchPaymentDetails = async () => {
-      try {
-        const response = await axios.get(
-          `/api/payments/verify/${transactionId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-
-        if (response.data.success) {
-          setPaymentDetails(response.data.payment);
-        }
-      } catch (error) {
-        console.error('Error fetching payment details:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPaymentDetails();
-  }, [transactionId, token, isAuthenticated, navigate]);
+    // Verify payment using Redux thunk
+    dispatch(verifyPayment(transactionId));
+  }, [transactionId, isAuthenticated, navigate, dispatch]);
 
   if (loading) {
     return (

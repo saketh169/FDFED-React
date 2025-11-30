@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../hooks/useAuth';
-import axios from 'axios';
+import {
+  checkActiveSubscription,
+  fetchPaymentHistory,
+  cancelSubscription,
+  selectActiveSubscription,
+  selectPaymentHistory,
+  selectIsLoadingSubscription,
+  selectIsCancelling
+} from '../../redux/slices/paymentSlice';
 
 
 const SubscriptionDashboard = () => {
   const navigate = useNavigate();
-  const { token, isAuthenticated } = useAuth('user');
-  const [subscription, setSubscription] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [paymentHistory, setPaymentHistory] = useState([]);
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useAuth('user');
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+
+  // Redux state
+  const subscription = useSelector(selectActiveSubscription);
+  const paymentHistory = useSelector(selectPaymentHistory);
+  const loading = useSelector(selectIsLoadingSubscription);
+  const cancelling = useSelector(selectIsCancelling);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -19,56 +31,19 @@ const SubscriptionDashboard = () => {
       return;
     }
 
-    const fetchSubscriptionData = async () => {
-      try {
-        // Fetch active subscription
-        const subResponse = await axios.get('/api/payments/subscription/active', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (subResponse.data.success && subResponse.data.hasActiveSubscription) {
-          setSubscription(subResponse.data.subscription);
-        }
-
-        // Fetch payment history
-        const historyResponse = await axios.get('/api/payments/history?limit=5', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (historyResponse.data.success) {
-          setPaymentHistory(historyResponse.data.payments || []);
-        }
-      } catch (error) {
-        console.error('Error fetching subscription data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSubscriptionData();
-  }, [token, isAuthenticated, navigate]);
+    // Fetch subscription data using Redux thunks
+    dispatch(checkActiveSubscription());
+    dispatch(fetchPaymentHistory(5));
+  }, [isAuthenticated, navigate, dispatch]);
 
   const handleCancelSubscription = async () => {
-    setCancelling(true);
     try {
-      const response = await axios.post(
-        '/api/payments/subscription/cancel',
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      if (response.data.success) {
-        alert('Subscription cancelled successfully');
-        setSubscription(null);
-        setShowCancelModal(false);
-      }
+      await dispatch(cancelSubscription()).unwrap();
+      alert('Subscription cancelled successfully');
+      setShowCancelModal(false);
     } catch (error) {
       console.error('Error cancelling subscription:', error);
-      alert(error.response?.data?.message || 'Failed to cancel subscription');
-    } finally {
-      setCancelling(false);
+      alert(error || 'Failed to cancel subscription');
     }
   };
 

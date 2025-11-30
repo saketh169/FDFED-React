@@ -1,11 +1,22 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import AuthContext from '../../contexts/AuthContext';
 import axios from 'axios';
+import {
+  fetchDietitianClients,
+  selectDietitianClients,
+  selectIsLoading as selectBookingLoading
+} from '../../redux/slices/bookingSlice';
 
 const ClientsList = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user, token } = useContext(AuthContext);
+
+  // Redux state
+  const clients = useSelector(selectDietitianClients);
+  const loading = useSelector(selectBookingLoading);
 
   // Log dietitian name and ID for debugging
   useEffect(() => {
@@ -17,8 +28,6 @@ const ClientsList = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState(null);
   const [showClientModal, setShowClientModal] = useState(false);
 
@@ -59,40 +68,20 @@ const ClientsList = () => {
     }
   };
 
-  // Fetch dietitian's clients from API
+  // Fetch dietitian's clients from API using Redux
   useEffect(() => {
-    const fetchClients = async () => {
-      if (!user?.id || !token) {
-        setLoading(false);
-        return;
-      }
+    if (!user?.id) {
+      return;
+    }
 
-      try {
-        setLoading(true);
+    // Dispatch fetchDietitianClients thunk
+    dispatch(fetchDietitianClients({ dietitianId: user.id }));
+  }, [dispatch, user?.id]);
 
-        const response = await axios.get(`/api/dietitians/${user.id}/clients`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.data.success) {
-          setBookings(response.data.data); // Using bookings state to store clients for compatibility
-        }
-      } catch (error) {
-        console.error('Error fetching clients:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchClients();
-  }, [user?.id, token]);
-
-  // Use clients data directly from API and update status based on appointment time
+  // Use clients data directly from Redux and update status based on appointment time
   const clientsFromBookings = useMemo(() => {
     const now = new Date();
-    return bookings.map(client => {
+    return clients.map(client => {
       let status = client.status || 'Active';
       
       // Check if appointment is past
@@ -124,7 +113,7 @@ const ClientsList = () => {
         goals: client.goals || ['General Health']
       };
     });
-  }, [bookings]);
+  }, [clients]);
 
   // Combine mock data with real bookings
   const allClients = useMemo(() => {

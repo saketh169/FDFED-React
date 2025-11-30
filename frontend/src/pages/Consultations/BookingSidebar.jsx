@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import SubscriptionAlert from '../../middleware/SubscriptionAlert';
+import {
+  fetchBookedSlots,
+  fetchUserBookedSlots,
+  checkBookingLimits,
+  selectBookedSlots,
+  selectUserBookedSlots,
+  selectCurrentUserBookedTimesWithDietitian,
+  selectSubscriptionAlertData,
+  selectShowSubscriptionAlert,
+  selectIsLoadingSlots,
+  clearSubscriptionAlert,
+  clearBookedSlots
+} from "../../redux/slices/bookingSlice";
 
 const BookingSidebar = ({
   isOpen,
@@ -9,6 +23,7 @@ const BookingSidebar = ({
   dietitianId,
   dietitian,
 }) => {
+  const dispatch = useDispatch();
   const { user } = useAuthContext();
 
   const [selectedDate, setSelectedDate] = useState(
@@ -28,137 +43,47 @@ const BookingSidebar = ({
     evening: [],
   });
 
-  // Log current user ID and dietitian ID when sidebar opens
+  // Redux state - these are flat arrays from Redux store
+  const bookedSlots = useSelector(selectBookedSlots);
+  const userBookedSlots = useSelector(selectUserBookedSlots);
+  const currentUserBookedTimesWithDietitian = useSelector(selectCurrentUserBookedTimesWithDietitian);
+  const subscriptionAlertData = useSelector(selectSubscriptionAlertData);
+  const showSubscriptionAlert = useSelector(selectShowSubscriptionAlert);
+  const isLoading = useSelector(selectIsLoadingSlots);
+
+  // Local state for message
+  const [message, setMessage] = useState("");
+
+  // Clear slots and log info when sidebar opens or dietitian changes
   useEffect(() => {
     if (isOpen && dietitianId) {
+      // Clear previous data when opening for a new dietitian
+      dispatch(clearBookedSlots());
       console.log("Current User ID from auth context:", user?.id || user?._id);
       console.log("Selected Dietitian ID:", dietitianId);
     }
-  }, [isOpen, dietitianId, user]);
+  }, [isOpen, dietitianId, dispatch, user]);
 
-  // Dummy call to fetch and log all booking slots for the user
-  // We also store the filtered result in `userBookedSlots` so the UI uses
-  // the same data you see in the console for the "You are booked" status.
+  // Fetch all user bookings using Redux
   useEffect(() => {
-    const fetchAllUserBookings = async () => {
-      const userId = user?.id || user?._id || localStorage.getItem("userId");
-      if (!userId || !dietitianId || !selectedDate) return;
+    const userId = user?.id || user?._id || localStorage.getItem("userId");
+    if (!userId || !selectedDate || !isOpen) return;
 
-      try {
-        const response = await fetch(`http://localhost:5000/api/bookings/user/${userId}`);
-        const data = await response.json();
+    dispatch(fetchUserBookedSlots({ userId, date: selectedDate }));
+  }, [user, isOpen, selectedDate, dispatch]);
 
-        if (data.success) {
-          const bookingSlots = data.data
-            .filter(booking => booking.dietitianId !== dietitianId && new Date(booking.date).toISOString().split('T')[0] === selectedDate)
-            .map(booking => ({
-              date: new Date(booking.date).toISOString().split('T')[0],
-              time: booking.time,
-              dietitianName: booking.dietitianName,
-              dietitianId: booking.dietitianId,
-              status: booking.status
-            }));
-          console.log("Booking slots for user", userId, "on selected date", selectedDate, "(excluding current dietitian):", bookingSlots);
-
-          // Use this data directly for "You are booked" detection
-          setUserBookedSlots(bookingSlots);
-        } else {
-          console.error("Failed to fetch user bookings:", data.message);
-          setUserBookedSlots([]);
-        }
-      } catch (error) {
-        console.error("Error fetching user bookings:", error);
-        setUserBookedSlots([]);
-      }
-    };
-
-    if (isOpen) {
-      fetchAllUserBookings();
-    }
-  }, [user, dietitianId, isOpen, selectedDate]);
-
-  const [bookedSlots, setBookedSlots] = useState([]);
-  const [userBookedSlots, setUserBookedSlots] = useState([]); // Track user's bookings
-  const [currentUserBookedTimesWithDietitian, setCurrentUserBookedTimesWithDietitian] = useState([]);
-  const [showSubscriptionAlert, setShowSubscriptionAlert] = useState(false);
-  const [subscriptionAlertData, setSubscriptionAlertData] = useState({});
-  const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Fetch dietitian's booked slots
-  const fetchBookedSlots = useCallback(
-    async (date) => {
+  // Fetch dietitian's booked slots using Redux
+  const fetchDietitianBookedSlots = useCallback(
+    (date) => {
       if (!dietitianId || !date) return;
 
-      setIsLoading(true);
-      try {
-        const userId = user?.id || user?._id || localStorage.getItem("userId");
-        const response = await fetch(
-          `http://localhost:5000/api/bookings/dietitian/${dietitianId}/booked-slots?date=${date}&userId=${userId}`
-        );
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Filter bookings by date on frontend (since API may not filter)
-          const bookingsOnDate = data.bookedSlots || [];
-
-          // Filter out bookings by current user
-          const bookedSlotsExcludingCurrentUser = bookingsOnDate
-            .filter(slot => !data.userBookings.includes(slot))
-            .concat(data.blockedSlots || []); // Add blocked slots as busy
-
-          // Filter bookings by current user only
-          const currentUserBookingsWithDietitian = data.userBookings || [];
-
-          console.log("Current user booked times with this dietitian:", currentUserBookingsWithDietitian);
-          console.log("Booked slots excluding current user for dietitian", dietitianId, "on date", date, ":", bookedSlotsExcludingCurrentUser);
-
-          setCurrentUserBookedTimesWithDietitian(currentUserBookingsWithDietitian);
-          setBookedSlots(bookedSlotsExcludingCurrentUser);
-        } else {
-          console.error("Failed to fetch booked slots:", data.message);
-          setBookedSlots([]);
-        }
-      } catch (error) {
-        console.error("Error fetching booked slots:", error);
-        setBookedSlots([]);
-      } finally {
-        setIsLoading(false);
-      }
+      const userId = user?.id || user?._id || localStorage.getItem("userId");
+      dispatch(fetchBookedSlots({ dietitianId, date, userId }));
     },
-    [dietitianId, user]
+    [dietitianId, user, dispatch]
   );
 
-  // NEW: Fetch user's booked slots for the selected date
-  const fetchUserBookedSlots = useCallback(async (date) => {
-    const userId = localStorage.getItem("userId");
-    if (!userId || !date) return;
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/bookings/user/${userId}/booked-slots?date=${date}`
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        console.log("Fetched user booked slots (full entries):", data.bookedSlots);
-        // Filter slots booked by current user with this specific dietitian
-        const userSlotsWithThisDietitian = data.bookedSlots
-          .filter(slot => slot.dietitianId === dietitianId)
-          .map(slot => slot.time);
-        console.log("User booked slots with this dietitian", dietitianId, "on date", date, ":", userSlotsWithThisDietitian);
-        setUserBookedSlots(data.bookedSlots || []);
-      } else {
-        console.error("Failed to fetch user booked slots:", data.message);
-        setUserBookedSlots([]);
-      }
-    } catch (error) {
-      console.error("Error fetching user booked slots:", error);
-      setUserBookedSlots([]);
-    }
-  }, [dietitianId]);
+  // Removed old fetchUserBookedSlots callback - now using Redux
 
   // Load available slots and booked slots
   useEffect(() => {
@@ -237,10 +162,8 @@ const BookingSidebar = ({
           setSelectedTime(""); // No slots available
         }
 
-        // Fetch dietitian booked slots. For user's own booked slots we
-        // use the data saved from the earlier fetch (see useEffect above),
-        // so skip the separate fetch to avoid overwriting.
-        fetchBookedSlots(selectedDate);
+        // Fetch dietitian booked slots using Redux
+        fetchDietitianBookedSlots(selectedDate);
       } catch (error) {
         console.error("Error loading slots:", error);
         setMessage("Error loading slots");
@@ -248,13 +171,40 @@ const BookingSidebar = ({
     };
 
     loadSlots();
-  }, [selectedDate, dietitianId, fetchBookedSlots, fetchUserBookedSlots]);
+  }, [selectedDate, dietitianId, fetchDietitianBookedSlots]);
 
-  // NEW: Helper function to check if user has conflict at this time
+  // NEW: Helper function to check if user has conflict at this time with ANOTHER dietitian
   const getUserConflictAt = (time) => {
-    const conflict = userBookedSlots.find((slot) => slot.time === time);
+    // userBookedSlots contains all user's bookings on the selected date
+    // We need to filter out bookings with the current dietitian and find conflicts with others
+    const conflict = userBookedSlots.find((slot) => 
+      slot.time === time && slot.dietitianId !== dietitianId
+    );
     return conflict;
   };
+
+  // Helper function to check if a slot is unavailable
+  const isSlotUnavailable = (time) => {
+    return (
+      currentUserBookedTimesWithDietitian.includes(time) ||
+      bookedSlots.includes(time) ||
+      getUserConflictAt(time)
+    );
+  };
+
+  // Update selected time when booked slots are loaded - ensure we don't select an unavailable slot
+  useEffect(() => {
+    if (selectedTime && isSlotUnavailable(selectedTime)) {
+      // Current selection is unavailable, find first available slot
+      const allSlots = [
+        ...availableSlots.morning,
+        ...availableSlots.afternoon,
+        ...availableSlots.evening
+      ];
+      const firstAvailable = allSlots.find(slot => !isSlotUnavailable(slot));
+      setSelectedTime(firstAvailable || "");
+    }
+  }, [bookedSlots, currentUserBookedTimesWithDietitian, userBookedSlots]);
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedTime) {
@@ -271,37 +221,19 @@ const BookingSidebar = ({
       return;
     }
 
-    // Check subscription limits before proceeding
+    // Check subscription limits using Redux
     try {
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("token"); // Assuming token is stored in localStorage
+      const userId = localStorage.getItem("userId") || user?.id;
+      
+      const result = await dispatch(checkBookingLimits({
+        userId,
+        date: selectedDate,
+        time: selectedTime,
+        dietitianId
+      })).unwrap();
 
-      const response = await fetch(`http://localhost:5000/api/bookings/check-limits`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          userId: userId || user?.id,
-          date: selectedDate,
-          time: selectedTime,
-          dietitianId: dietitianId
-        })
-      });
-
-      const data = await response.json();
-
-      if (!data.success && data.limitReached) {
-        // Show subscription alert
-        setSubscriptionAlertData({
-          message: data.message,
-          planType: data.planType || 'free',
-          limitType: data.maxAdvanceDays ? 'advance' : 'booking',
-          currentCount: data.currentCount || 0,
-          limit: data.limit || data.maxAdvanceDays || 0
-        });
-        setShowSubscriptionAlert(true);
+      if (!result.success && result.limitReached) {
+        // Subscription alert will be shown via Redux state
         return;
       }
     } catch (error) {
@@ -613,14 +545,14 @@ const BookingSidebar = ({
       </div>
 
       {/* Subscription Alert Modal */}
-      {showSubscriptionAlert && (
+      {showSubscriptionAlert && subscriptionAlertData && (
         <SubscriptionAlert
           message={subscriptionAlertData.message}
           planType={subscriptionAlertData.planType}
           limitType={subscriptionAlertData.limitType}
           currentCount={subscriptionAlertData.currentCount}
           limit={subscriptionAlertData.limit}
-          onClose={() => setShowSubscriptionAlert(false)}
+          onClose={() => dispatch(clearSubscriptionAlert())}
         />
       )}
     </div>

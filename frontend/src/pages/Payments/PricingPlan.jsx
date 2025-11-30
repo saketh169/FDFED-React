@@ -1,15 +1,25 @@
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "../../hooks/useAuth";
-import axios from "axios";
+import {
+  checkActiveSubscription,
+  selectHasActiveSubscription,
+  selectActiveSubscription
+} from "../../redux/slices/paymentSlice";
 
 const PricingPlan = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [params] = useSearchParams();
   const planType = params.get("plan");
   const billingType = params.get("billing");
   const amount = params.get("amount");
-  const { isAuthenticated, token } = useAuth('user');
+  const { isAuthenticated } = useAuth('user');
+  
+  // Redux state
+  const hasActiveSubscription = useSelector(selectHasActiveSubscription);
+  const activeSubscription = useSelector(selectActiveSubscription);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -102,12 +112,10 @@ const PricingPlan = () => {
               onClick={async () => {
                 try {
                   // Check if user has active subscription before proceeding to payment
-                  const response = await axios.get('/api/payments/subscription/active', {
-                    headers: { Authorization: `Bearer ${token}` }
-                  });
+                  const result = await dispatch(checkActiveSubscription()).unwrap();
                   
-                  if (response.data.success && response.data.hasActiveSubscription) {
-                    const subscription = response.data.subscription;
+                  if (result.hasActiveSubscription) {
+                    const subscription = result.subscription;
                     const endDate = new Date(subscription.subscriptionEndDate).toLocaleDateString();
                     alert(`You already have an active ${subscription.planType} Plan subscription that expires on ${endDate}. You cannot purchase a new subscription until your current one expires.`);
                     return;
