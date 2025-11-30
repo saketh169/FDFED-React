@@ -288,10 +288,6 @@ const Analytics = () => {
 
     return (
         <div className="min-h-screen p-2 sm:p-4 bg-green-50" style={{ paddingTop: '0.5rem' }}>
-            {/* Back Button */}
-            <div onClick={() => navigate(-1)} style={{ color: THEME.primary, cursor: 'pointer' }} className="fixed top-4 left-4 text-4xl hover:opacity-80 transition-opacity z-50" onMouseEnter={(e) => e.currentTarget.style.color = THEME.secondary} onMouseLeave={(e) => e.currentTarget.style.color = THEME.primary}>
-                <i className="fa-solid fa-xmark"></i>
-            </div>
 
             <div className="max-w-7xl mx-auto">
                 {/* Logo and Title */}

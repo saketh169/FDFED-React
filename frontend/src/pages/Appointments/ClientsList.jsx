@@ -156,13 +156,6 @@ const ClientsList = () => {
                 <p className="text-emerald-50 mt-1">Manage your client consultations and appointments</p>
               </div>
             </div>
-            <button
-              onClick={() => navigate('/dietitian/dashboard')}
-              className="px-6 py-3 bg-white text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
-            >
-              <i className="fas fa-arrow-left"></i>
-              <span>Back to Dashboard</span>
-            </button>
           </div>
         </div>
       </div>

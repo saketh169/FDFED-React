@@ -22,6 +22,10 @@ const PaymentSuccess = () => {
   const loading = useSelector(selectIsLoading);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated) {
       navigate('/role');
       return;
@@ -51,10 +55,10 @@ const PaymentSuccess = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       
-      <div className="py-12 px-4 sm:px-6 lg:px-8">
+      <div className="pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">
           {/* Success Header */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center mb-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center mb-8" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
             <div className="mb-6">
               <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100">
                 <svg
@@ -89,52 +93,52 @@ const PaymentSuccess = () => {
 
           {/* Payment Details */}
           {paymentDetails && (
-            <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div className="bg-white rounded-2xl shadow-xl p-8 mb-8" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: '#1A4A40' }}>
                 Payment Details
               </h2>
-              <div className="space-y-4">
-                <div className="flex justify-between py-3 border-b">
-                  <span className="text-gray-600">Transaction ID</span>
-                  <span className="font-semibold" style={{ color: '#1A4A40' }}>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Transaction ID</p>
+                  <p className="text-lg font-semibold" style={{ color: '#1A4A40' }}>
                     {paymentDetails.transactionId}
-                  </span>
+                  </p>
                 </div>
-                <div className="flex justify-between py-3 border-b">
-                  <span className="text-gray-600">Order ID</span>
-                  <span className="font-semibold" style={{ color: '#1A4A40' }}>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Order ID</p>
+                  <p className="text-lg font-semibold" style={{ color: '#1A4A40' }}>
                     {paymentDetails.orderId}
-                  </span>
+                  </p>
                 </div>
-                <div className="flex justify-between py-3 border-b">
-                  <span className="text-gray-600">Plan</span>
-                  <span className="font-semibold capitalize" style={{ color: '#1A4A40' }}>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Plan</p>
+                  <p className="text-lg font-semibold capitalize" style={{ color: '#1A4A40' }}>
                     {paymentDetails.planType} Plan
-                  </span>
+                  </p>
                 </div>
-                <div className="flex justify-between py-3 border-b">
-                  <span className="text-gray-600">Billing Cycle</span>
-                  <span className="font-semibold capitalize" style={{ color: '#1A4A40' }}>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Billing Cycle</p>
+                  <p className="text-lg font-semibold capitalize" style={{ color: '#1A4A40' }}>
                     {paymentDetails.billingCycle}
-                  </span>
+                  </p>
                 </div>
-                <div className="flex justify-between py-3 border-b">
-                  <span className="text-gray-600">Amount Paid</span>
-                  <span className="font-bold text-2xl" style={{ color: '#27AE60' }}>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Amount Paid</p>
+                  <p className="text-2xl font-bold" style={{ color: '#27AE60' }}>
                     ₹{paymentDetails.amount}
-                  </span>
+                  </p>
                 </div>
-                <div className="flex justify-between py-3 border-b">
-                  <span className="text-gray-600">Subscription Start Date</span>
-                  <span className="font-semibold" style={{ color: '#1A4A40' }}>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Subscription Start Date</p>
+                  <p className="text-lg font-semibold" style={{ color: '#1A4A40' }}>
                     {new Date(paymentDetails.subscriptionStartDate).toLocaleDateString()}
-                  </span>
+                  </p>
                 </div>
-                <div className="flex justify-between py-3 border-b">
-                  <span className="text-gray-600">Subscription End Date</span>
-                  <span className="font-semibold" style={{ color: '#1A4A40' }}>
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-600 mb-1">Subscription End Date</p>
+                  <p className="text-lg font-semibold" style={{ color: '#1A4A40' }}>
                     {new Date(paymentDetails.subscriptionEndDate).toLocaleDateString()}
-                  </span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -142,7 +146,7 @@ const PaymentSuccess = () => {
 
           {/* Plan Features */}
           {paymentDetails?.features && (
-            <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div className="bg-white rounded-2xl shadow-xl p-8 mb-8" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: '#1A4A40' }}>
                 Your Plan Features
               </h2>
@@ -217,17 +221,17 @@ const PaymentSuccess = () => {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
-              onClick={() => navigate('/user/home')}
-              className="px-8 py-4 rounded-xl font-semibold text-lg text-white transition-all shadow-lg hover:shadow-xl"
+              onClick={() => navigate('/user/subscription')}
+              className="px-6 py-3 rounded-xl font-semibold text-base text-white transition-all shadow-lg hover:shadow-xl"
               style={{ backgroundColor: '#27AE60' }}
               onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
             >
-              Go to Home Page
+              Go to Subscriptions Page
             </button>
             <button
               onClick={() => navigate('/user')}
-              className="px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-xl"
+              className="px-6 py-3 rounded-xl font-semibold text-base transition-all shadow-lg hover:shadow-xl"
               style={{ backgroundColor: '#f3f4f6', color: '#2F4F4F' }}
               onMouseEnter={(e) => {
                 e.target.style.backgroundColor = '#e5e7eb';

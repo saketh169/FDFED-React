@@ -646,7 +646,7 @@ const UserProgress = () => {
                       </p>
                       <button
                         type="button"
-                        onClick={() => navigate('/user/payments')}
+                        onClick={() => navigate('/user/pricing')}
                         className="px-6 py-2 bg-[#1E6F5C] text-white rounded-lg font-semibold hover:bg-[#28B463] transition"
                       >
                         Upgrade Plan

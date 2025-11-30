@@ -8,7 +8,6 @@ import {
   checkActiveSubscription,
   initializePayment,
   processPayment,
-  selectHasActiveSubscription,
   selectActiveSubscription,
   selectCurrentPayment,
   selectPaymentStatus,
@@ -29,7 +28,6 @@ const Payment = () => {
   const { token, isAuthenticated } = useAuth('user');
   
   // Redux state
-  const hasActiveSubscription = useSelector(selectHasActiveSubscription);
   const activeSubscription = useSelector(selectActiveSubscription);
   const currentPayment = useSelector(selectCurrentPayment);
   const reduxPaymentStatus = useSelector(selectPaymentStatus);
@@ -915,12 +913,21 @@ const Payment = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="cursor-pointer hover:text-[#1A4A40] mb-8 flex items-center" style={{ color: '#27AE60' }} onClick={() => navigate(-1)}>
-        <span className="mr-2">←</span> Back
+    <div className="min-h-screen bg-gray-50 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="relative mb-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute left-0 top-0 px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+          style={{ backgroundColor: '#27AE60' }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
+        >
+          <i className="fas fa-chevron-left"></i>
+          Back
+        </button>
       </div>
 
-      <div className="w-[70%] mx-auto bg-white rounded-lg shadow-lg p-8">
+      <div className="w-[70%] mx-auto bg-white rounded-lg shadow-lg p-8" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
         <h3 className="text-2xl font-bold mb-6" style={{ color: '#1A4A40' }}>Payment Method</h3>
         <div className="bg-gray-50 rounded-md p-4 mb-6 text-lg font-semibold" style={{ color: '#2F4F4F' }}>
           Amount to be Paid: ₹{amount || "---"}
@@ -968,9 +975,21 @@ const Payment = () => {
       {showModal && (
         <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
           <Header />
-          <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+          <div className="min-h-screen pt-4 pb-12 px-4 sm:px-6 lg:px-8">
+            <div className="relative mb-8">
+              <button
+                onClick={() => setShowModal(false)}
+                className="absolute left-4 top-8 px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                style={{ backgroundColor: '#27AE60' }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#1A4A40'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#27AE60'}
+              >
+                <i className="fas fa-chevron-left"></i>
+                Back
+              </button>
+            </div>
             <div className="w-[70%] mx-auto">
-              <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <div className="bg-white rounded-lg shadow-lg p-8 text-center" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
                 {(localPaymentStatus === "processing" || isProcessingPayment) ? (
                   <div>
                     <div className="mb-4">
@@ -1114,7 +1133,7 @@ const Payment = () => {
                 <button
                   onClick={() => {
                     setShowSubscriptionModal(false);
-                    navigate('/user/subscription-dashboard');
+                    navigate('/user/subscription');
                   }}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >

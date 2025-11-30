@@ -6,9 +6,7 @@ import {
   fetchPricingPlans,
   checkActiveSubscription,
   selectPlans,
-  selectHasActiveSubscription,
   selectActiveSubscription,
-  selectIsLoadingPlans,
   setBilling,
   selectBilling
 } from "../../redux/slices/paymentSlice";
@@ -21,10 +19,12 @@ const Pricing = () => {
 
   // Redux state
   const plans = useSelector(selectPlans);
-  const hasActiveSubscription = useSelector(selectHasActiveSubscription);
   const activeSubscription = useSelector(selectActiveSubscription);
-  const isLoadingPlans = useSelector(selectIsLoadingPlans);
   const billing = useSelector(selectBilling);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -35,7 +35,7 @@ const Pricing = () => {
 
   useEffect(() => {
     // Fetch pricing plans based on billing cycle
-    dispatch(fetchPricingPlans(billing));
+    dispatch(fetchPricingPlans({ billing }));
   }, [billing, dispatch]);
 
   const handleBillingChange = (newBilling) => {
@@ -122,7 +122,7 @@ const Pricing = () => {
             <div
               key={index}
               className="bg-white rounded-3xl shadow-2xl overflow-hidden transform hover:scale-105 hover:shadow-3xl transition-all duration-300 border-2 relative"
-              style={{ borderColor: index === 1 ? '#27AE60' : '#e5e7eb' }}
+              style={{ borderColor: index === 1 ? '#27AE60' : '#e5e7eb', borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}
             >
               {index === 1 && (
                 <div className="absolute top-0 right-0 text-white text-xs font-bold px-4 py-2 rounded-bl-2xl" style={{ backgroundColor: '#27AE60' }}>
@@ -256,7 +256,7 @@ const Pricing = () => {
       {/* Active Subscription Modal */}
       {showSubscriptionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-linear-to-br from-black/60 via-gray-900/50 to-black/60 backdrop-blur-md">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full" style={{ borderTop: '4px solid #27AE60', borderBottom: '4px solid #27AE60' }}>
             <div className="bg-yellow-50 px-6 py-4 rounded-t-3xl border-b border-yellow-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-yellow-800">Active Subscription Detected</h3>
@@ -294,7 +294,7 @@ const Pricing = () => {
                 <button
                   onClick={() => {
                     setShowSubscriptionModal(false);
-                    navigate('/user/subscription-dashboard');
+                    navigate('/user/subscription');
                   }}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >

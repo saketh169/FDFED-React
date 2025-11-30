@@ -24,8 +24,8 @@ const NavFooter = ({ handleScrollToTop }) => {
   const userFooterLinks = [
     { name: 'Home', href: '/user/home' },
     { name: 'Dietitians', href: '/user/dietitian-profiles' },
-    { name: 'Appointments', href: '/user/user-consultations' },
-    { name: 'Schedule', href: '/user/user-schedule' },
+    { name: 'Appointments', href: '/user/my-dietitians' },
+    { name: 'Schedule', href: '/user/schedule' },
     { name: 'Pricing', href: '/user/pricing' },
     { name: 'Blog', href: '/user/blog' },
     { name: 'Chatbot', href: '/user/chatbot' },
@@ -34,9 +34,9 @@ const NavFooter = ({ handleScrollToTop }) => {
   // 3. Links for the 'dietitian' role (matching dietitianNavLinks from NavHeader)
   const dietitianFooterLinks = [
     { name: 'Home', href: '/dietitian/home' },
-    { name: 'My Clients', href: '/dietitian/dietitian-consultations' },
-    { name: 'Schedule', href: '/dietitian/dietitian-schedule' },
-    { name: 'MealPlans', href: '/dietitian/assign-plans' },
+    { name: 'My Clients', href: '/dietitian/clients-profiles' },
+    { name: 'Schedule', href: '/dietitian/schedule' },
+    { name: 'MealPlans', href: '/dietitian/add-plans' },
     { name: 'Blog', href: '/dietitian/blog' },
   ];
   
