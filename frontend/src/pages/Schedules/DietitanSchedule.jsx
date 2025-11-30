@@ -182,17 +182,18 @@ const DietitianSchedule = () => {
     }, [user?.id, token]);
 
     // Fetch available slots for reschedule on a specific date
-    const fetchRescheduleSlots = useCallback(async (date) => {
+    const fetchRescheduleSlots = useCallback(async (date, bookingUserId = null) => {
         if (!user?.id || !date) return;
         try {
             const resp = await axios.get(`/api/bookings/dietitian/${user.id}/booked-slots`, {
-                params: { date, userId: user.id },
+                params: { date, userId: bookingUserId || user.id },
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             if (resp.data && resp.data.success) {
                 const bookedSlots = resp.data.bookedSlots || [];
                 const blockedSlots = resp.data.blockedSlots || [];
+                const userConflictingTimes = resp.data.userConflictingTimes || [];
 
                 // Build availableSlots list
                 const now = new Date();
@@ -208,7 +209,12 @@ const DietitianSchedule = () => {
                     return mins > current;
                 });
 
-                const available = allSlots.filter(slot => !bookedSlots.includes(slot) && !blockedSlots.includes(slot));
+                // Filter out slots that are booked by this dietitian, blocked, or already booked by the user with any dietitian
+                const available = allSlots.filter(slot =>
+                    !bookedSlots.includes(slot) &&
+                    !blockedSlots.includes(slot) &&
+                    !userConflictingTimes.includes(slot)
+                );
 
                 const categorized = {
                     morning: available.filter(s => Number(s.split(':')[0]) < 12),
@@ -404,10 +410,18 @@ const DietitianSchedule = () => {
                             setModalType('block');
                             setShowModal(true);
                         } else if (isBooked) {
+                            const bookingDetail = bookingDetails.find(detail => detail.time === time);
+                            if (bookingDetail) {
+                                console.log('User ID for booked slot:', bookingDetail.userId);
+                                console.log('User name for booked slot:', bookingDetail.userName || 'Name not available');
+                                console.log('Full booking details:', bookingDetail);
+                            }
                             setSelectedSlot(time);
                             setModalType('reschedule');
                             setRescheduleDate(drawerDate);
-                            fetchRescheduleSlots(drawerDate);
+                            // Pass the user ID of the person who booked this slot
+                            const bookingUserId = bookingDetails.find(detail => detail.time === time)?.userId;
+                            fetchRescheduleSlots(drawerDate, bookingUserId);
                             setShowModal(true);
                         } else if (isBlocked) {
                             setSelectedSlot(time);
@@ -772,7 +786,14 @@ const DietitianSchedule = () => {
                         onClick={(e) => e.stopPropagation()}
                     >
                             <h4 className="text-lg font-bold mb-4 text-gray-800">Slot Action</h4>
-                            <p className="text-sm text-gray-600 mb-4">Selected slot: <span className="font-semibold">{selectedSlot}</span></p>
+                            <p className="text-sm text-gray-600 mb-2">Selected slot: <span className="font-semibold">{selectedSlot}</span></p>
+                            {modalType === 'reschedule' && bookingDetails.find(detail => detail.time === selectedSlot) && (
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Booked by: <span className="font-semibold text-emerald-600">
+                                        {bookingDetails.find(detail => detail.time === selectedSlot).userName}
+                                    </span>
+                                </p>
+                            )}
                             {modalType === 'reschedule' && (
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">New Date</label>
@@ -781,7 +802,9 @@ const DietitianSchedule = () => {
                                         value={rescheduleDate}
                                         onChange={(e) => {
                                             setRescheduleDate(e.target.value);
-                                            fetchRescheduleSlots(e.target.value);
+                                            // Pass the user ID of the person who booked the selected slot
+                                            const bookingUserId = bookingDetails.find(detail => detail.time === selectedSlot)?.userId;
+                                            fetchRescheduleSlots(e.target.value, bookingUserId);
                                         }}
                                         min={new Date().toISOString().split('T')[0]}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-4"
