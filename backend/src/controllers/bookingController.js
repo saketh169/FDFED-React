@@ -463,7 +463,7 @@ exports.getBookedSlots = async (req, res) => {
       dietitianId,
       date: { $gte: queryDate, $lt: nextDay },
       status: { $in: ["confirmed", "completed"] },
-    }).select("time userId _id");
+    }).select("time userId username _id");
 
     // Find all blocked slots for this dietitian on this date
     const blockedSlots = await BlockedSlot.find({
@@ -488,6 +488,7 @@ exports.getBookedSlots = async (req, res) => {
       bookingDetails.push({
         time: booking.time,
         userId: booking.userId,
+        userName: booking.username,
         bookingId: booking._id
       });
       if (userId && booking.userId.toString() === userId) {

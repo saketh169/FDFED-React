@@ -462,7 +462,10 @@ const UserDashboard = () => {
 
           <div className="text-center mt-5">
             <button
-              onClick={() => navigate("/user/activities")}
+              onClick={() => {
+                window.scrollTo(0, 0);
+                navigate("/user/activities");
+              }}
               className="text-blue-600 hover:text-blue-800 font-medium text-sm"
             >
               View all activities →

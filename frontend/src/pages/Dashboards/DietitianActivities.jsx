@@ -80,13 +80,6 @@ const DietitianActivities = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <button 
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-2"
-            >
-              <i className="fas fa-arrow-left"></i>
-              Back to Dashboard
-            </button>
             <h1 className="text-3xl font-bold text-green-900">All Activities</h1>
             <p className="text-gray-600">View your complete activity history</p>
           </div>
