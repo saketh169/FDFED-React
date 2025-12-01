@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
-import Status from "../../middleware/StatusBadge"; // Import Status component
-import { useAuthContext } from "../../hooks/useAuthContext"; // Import useAuthContext hook
+import Sidebar from "../../components/Sidebar/Sidebar";
+import Status from "../../middleware/StatusBadge";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 // Helper function to format relative time for notifications
 const formatRelativeTime = (timestamp) => {
@@ -20,7 +20,6 @@ const formatRelativeTime = (timestamp) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Mock Data (Replace with actual API data)
 const mockDietitian = {
   name: "Dr. Alex Chen",
   age: 45,
@@ -28,7 +27,6 @@ const mockDietitian = {
   phone: "+91 99887 76655",
   profileImage:
     "https://img.freepik.com/free-photo/young-man-doctor-with-white-coat-stethoscope-smiles-portrait-hospital-clinic_1303-29477.jpg?w=1060&t=st=1701389000~exp=1701390000~hmac=a8c541c415324b91485c2c525f0a06c5b525d88665f8c6e2b8c569a9b1c7482f",
-  // In a real app, profileImageBase64 would be fetched or null
 };
 
 // --- Main Dashboard Component ---
@@ -40,13 +38,11 @@ const DietitianDashboard = () => {
   const fileInputRef = React.useRef(null);
   const [notifications, setNotifications] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [dashboardStats, setDashboardStats] = useState({});
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
 
-  // Fetch dashboard data (notifications and activities) from API
-  const fetchDashboardData = async (showLoading = true) => {
+  const fetchDashboardData = useCallback(async (showLoading = true) => {
     if (!user?.id || !token) return;
-    
+
     try {
       if (showLoading) setIsLoadingDashboard(true);
       const response = await fetch(`/api/analytics/dietitian/${user.id}`, {
@@ -60,19 +56,18 @@ const DietitianDashboard = () => {
       if (data.success) {
         setNotifications(data.data.notifications || []);
         setActivities(data.data.activities || []);
-        setDashboardStats(data.data.stats || {});
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       if (showLoading) setIsLoadingDashboard(false);
     }
-  };
+  }, [user?.id, token]);
 
   // Initial fetch
   useEffect(() => {
     fetchDashboardData();
-  }, [user?.id, token]);
+  }, [user?.id, token, fetchDashboardData]);
 
   // Real-time polling for notifications (every 30 seconds)
   useEffect(() => {
@@ -83,7 +78,7 @@ const DietitianDashboard = () => {
     }, 30000); // Poll every 30 seconds
 
     return () => clearInterval(pollInterval);
-  }, [user?.id, token]);
+  }, [user?.id, token, fetchDashboardData]);
 
   // Set profile image from user data when available
   useEffect(() => {
@@ -160,18 +155,14 @@ const DietitianDashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Re-using the structure from the User Dashboard */}
-      <Sidebar /> 
+      <Sidebar />
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 lg:p-2">
+      <div className="flex-1 pt-20 md:pt-6 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome, {user?.name || mockDietitian.name}! 
+          Welcome, {user?.name || mockDietitian.name}!
         </h1>
 
-        {/* Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* 1. Profile Card */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-green-600 flex flex-col items-center">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center w-full">
               Dietitian Profile
@@ -229,10 +220,8 @@ const DietitianDashboard = () => {
             </span>
           </div>
 
-          {/* 2. Document Verification Status Card (Dynamic content) */}
           <Status role="dietitian" />
 
-          {/* 3. Quick Actions */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
               Quick Actions
@@ -270,7 +259,6 @@ const DietitianDashboard = () => {
           </div>
         </div>
 
-        {/* 4. Notifications */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
             Notifications
@@ -311,7 +299,6 @@ const DietitianDashboard = () => {
           )}
         </div>
 
-        {/* 5. Recent Activities */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
             Recent Activities
@@ -370,7 +357,6 @@ const DietitianDashboard = () => {
           </div>
         </div>
 
-        {/* Image Modal */}
         {showImageModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
@@ -380,7 +366,6 @@ const DietitianDashboard = () => {
               className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
               <button
                 onClick={() => setShowImageModal(false)}
                 className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
@@ -389,8 +374,7 @@ const DietitianDashboard = () => {
                 <i className="fas fa-times text-lg"></i>
               </button>
 
-              {/* Image Container */}
-              <div className="flex items-center justify-center bg-gray-100 p-8 h-96" >
+              <div className="flex items-center justify-center bg-gray-100 p-4 md:p-8 h-64 md:h-80 lg:h-96" >
                 <img
                   src={profileImage}
                   alt="Profile Full Size"
@@ -399,7 +383,6 @@ const DietitianDashboard = () => {
                 />
               </div>
 
-              {/* Footer with user info */}
               <div className="bg-white p-6 border-t border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.name || mockDietitian.name}</h2>
                 <p className="text-gray-600 mb-4">{user?.email || mockDietitian.email}</p>

@@ -6,6 +6,7 @@ import UserSchedule from '../pages/Schedules/UserSchedule';
 
 import UserDashboard from '../pages/Dashboards/User';
 import UserProgress from '../pages/UserProgress'; 
+
 import ChangePassword from '../pages/ChangePassword';
 import EditProfile from '../pages/EditProfile';
 import UserGetPlanForm from '../pages/MealPlans/UserGetPlanForm'; 
@@ -32,7 +33,7 @@ import SubscriptionDashboard from '../pages/Payments/SubscriptionDashboard';
 
 import ClientLabReportViewer from '../pages/LabReports/ClientLabReportViewer';
 import LabReportUploader from '../pages/LabReports/LabReportUploader';
-import UserActivities from '../pages/Dashboards/UserActivities';
+import UserActivities from '../pages/Activities/UserActivities';
 
 
 

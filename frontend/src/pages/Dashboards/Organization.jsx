@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../../components/Sidebar/Sidebar"; // Assuming a Sidebar component exists
-import Status from "../../middleware/StatusBadge"; // Import Status component
+import Sidebar from "../../components/Sidebar/Sidebar";
+import Status from "../../middleware/StatusBadge";
 import { useAuthContext } from "../../hooks/useAuthContext";
 
-// --- Mock Data & API Call Simulation ---
 const mockOrganization = {
   org_name: "Wellness Pro Labs",
   email: "contact@wellnesspro.com",
@@ -20,14 +19,10 @@ const mockRecentDietitians = [
   { name: "Rajesh M.", verificationStatus: { finalReport: "Received" }, createdAt: '2025-10-23T10:00:00Z' },
 ];
 
-// Mock function to simulate fetching recent dietitians (sorted by createdAt)
 const mockFetchRecentDietitians = async () => {
   await new Promise((resolve) => setTimeout(resolve, 500));
-  // Simulate sorting and limiting
   return mockRecentDietitians.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
 };
-
-// --- Sub-Components ---
 
 const RecentDietitiansTable = () => {
   const [dietitians, setDietitians] = useState([]);
@@ -133,16 +128,13 @@ const OrganizationDashboard = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Set profile image from user data when available
   useEffect(() => {
     if (user?.profileImage) {
       setProfileImage(user.profileImage);
-      // Don't store profile images in localStorage to avoid quota issues
     } else {
-      // Profile images are now fetched from server, no localStorage fallback
       setProfileImage(null);
     }
-  }, [user, user?.profileImage]);
+  }, [user?.profileImage]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -166,18 +158,15 @@ const OrganizationDashboard = () => {
     };
     reader.readAsDataURL(file);
 
-    // 2. Upload to backend
     const formData = new FormData();
     formData.append("profileImage", file);
 
     try {
-      // Get token from context or localStorage
       let authToken = token;
       if (!authToken) {
-        // Fallback to localStorage if context doesn't have token
         authToken = localStorage.getItem('authToken_organization');
       }
-      
+
       if (!authToken) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=organization');
@@ -211,24 +200,20 @@ const OrganizationDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout(); // Use context logout method
+    logout();
     navigate("/");
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Placeholder for your Organization Sidebar component */}
-      <Sidebar /> 
+      <Sidebar />
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 lg:p-2">
+      <div className="flex-1 pt-20 md:pt-6 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome, {user?.org_name || user?.name || mockOrganization.org_name}! 
+          Welcome, {user?.org_name || user?.name || mockOrganization.org_name}!
         </h1>
 
-        {/* Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* 1. Profile Card */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-green-600 flex flex-col items-center">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center w-full">
               Organization Profile
@@ -285,10 +270,8 @@ const OrganizationDashboard = () => {
             </span>
           </div>
 
-          {/* 2. Document Verification Status Card (Dynamic content) */}
           <Status role="organization" />
 
-          {/* 3. Quick Actions */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600 h-full">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
               Quick Actions
@@ -326,7 +309,6 @@ const OrganizationDashboard = () => {
           </div>
         </div>
 
-        {/* 4. Recent Dietitian Verifications Table */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
             Recent Dietitian Verifications
@@ -334,7 +316,6 @@ const OrganizationDashboard = () => {
           <RecentDietitiansTable />
         </div>
 
-        {/* Image Modal */}
         {showImageModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
@@ -344,7 +325,6 @@ const OrganizationDashboard = () => {
               className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
               <button
                 onClick={() => setShowImageModal(false)}
                 className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
@@ -353,7 +333,6 @@ const OrganizationDashboard = () => {
                 <i className="fas fa-times text-lg"></i>
               </button>
 
-              {/* Image Container */}
               <div className="flex items-center justify-center bg-gray-100 p-8 h-96">
                 <img
                   src={profileImage}
@@ -363,7 +342,6 @@ const OrganizationDashboard = () => {
                 />
               </div>
 
-              {/* Footer with org info */}
               <div className="bg-white p-6 border-t border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.org_name || mockOrganization.org_name}</h2>
                 <p className="text-gray-600 mb-4">{user?.email || mockOrganization.email}</p>

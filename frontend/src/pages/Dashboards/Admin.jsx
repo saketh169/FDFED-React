@@ -34,8 +34,6 @@ const mockFetchOrganizations = async () => {
   await new Promise((resolve) => setTimeout(resolve, 500));
   return mockOrganizations;
 };
-
-// --- Chart Component ---
 const GrowthChart = ({ data }) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
@@ -184,13 +182,11 @@ const OrganizationTable = ({ organizations }) => {
 };
 
 
-// --- Main Admin Dashboard Component ---
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user, token } = useAuthContext();
 
-  // Get analytics data from Redux state
   const {
     userStats,
     userGrowth,
@@ -208,14 +204,22 @@ const AdminDashboard = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const fileInputRef = React.useRef(null);
 
-  // State for calculated data like in Analytics.jsx
+  // State for window width to force re-rendering on resize
+  // eslint-disable-next-line no-unused-vars
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // State for responsive breakpoint to force profile card re-rendering
+  const [currentBreakpoint, setCurrentBreakpoint] = useState(() => {
+    if (window.innerWidth >= 1024) return 'lg';
+    if (window.innerWidth >= 768) return 'md';
+    return 'sm';
+  });
+
   const [calculatedData, setCalculatedData] = useState({
     monthWiseWithZeros: {},
     monthTotal: 0,
   });
 
-  // Calculate revenue from Redux state
-  // Prefer values computed in the Analytics page (redux `revenueAnalytics.summary`) when available
   const yearlySubRevenue = revenueAnalytics?.summary?.totalSubscriptionRevenue ?? membershipRevenue.yearly ?? 0;
   const yearlyConRevenue = revenueAnalytics?.summary?.totalConsultationRevenue ?? (consultationRevenue.yearlyPeriods?.reduce((sum, period) => sum + period.revenue, 0) || 0);
   const totalRevenue = revenueAnalytics?.summary?.totalRevenue ?? (yearlySubRevenue + yearlyConRevenue);
@@ -223,7 +227,6 @@ const AdminDashboard = () => {
   // Fetch data on component mount
   useEffect(() => {
     const loadData = async () => {
-      // Dispatch analytics actions to fetch real data
       dispatch(fetchUserStats());
       dispatch(fetchUserGrowth());
       dispatch(fetchMembershipRevenue());
@@ -231,7 +234,6 @@ const AdminDashboard = () => {
       dispatch(fetchSubscriptions());
       dispatch(fetchRevenueAnalytics());
 
-      // Keep organization fetching as is (not part of analytics)
       const fetchedOrgs = await mockFetchOrganizations();
       setOrganizations(fetchedOrgs);
     };
@@ -239,16 +241,32 @@ const AdminDashboard = () => {
     loadData();
   }, [dispatch]);
 
-  // Set profile image from user data when available
   useEffect(() => {
     if (user?.profileImage) {
       setProfileImage(user.profileImage);
-      // Don't store profile images in localStorage to avoid quota issues
     } else {
-      // Profile images are now fetched from server, no localStorage fallback
       setProfileImage(null);
     }
-  }, [user, user?.profileImage]);
+  }, [user?.profileImage]);
+
+  // Handle window resize to force re-rendering for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const newWidth = window.innerWidth;
+      setWindowWidth(newWidth);
+      
+      // Update breakpoint for profile card re-rendering
+      let newBreakpoint;
+      if (newWidth >= 1024) newBreakpoint = 'lg';
+      else if (newWidth >= 768) newBreakpoint = 'md';
+      else newBreakpoint = 'sm';
+      
+      setCurrentBreakpoint(newBreakpoint);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Calculate membership revenue data like in Analytics.jsx
   useEffect(() => {
@@ -296,15 +314,12 @@ const AdminDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Preview image immediately
     const reader = new FileReader();
     reader.onload = () => {
       setProfileImage(reader.result);
-      // Don't store in localStorage to avoid quota issues
     };
     reader.readAsDataURL(file);
 
-    // Upload to backend
     const formData = new FormData();
     formData.append('profileImage', file);
 
@@ -335,7 +350,6 @@ const AdminDashboard = () => {
       const data = await response.json();
       if (data.success) {
         alert('Profile photo updated successfully!');
-        // Refresh user data from AuthContext to get the updated profileImage
         if (user?.id) {
           window.location.reload();
         }
@@ -352,26 +366,25 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Placeholder for your Admin Sidebar component */}
       <Sidebar />
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 lg:p-2">
+      <div className="flex-1 pt-20 md:pt-6 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-green-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome, {user?.name || mockAdmin.name}! 
+          Welcome, {user?.name || mockAdmin.name}!
         </h1>
 
-        {/* Error Message */}
         {analyticsError && (
           <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-6">
             Error loading analytics data: {analyticsError}
           </div>
         )}
 
-        {/* Admin Info & Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* 1. Profile Card (Consistent Styling) */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-green-700 flex flex-col items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            key={`profile-card-${currentBreakpoint}`}
+            className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-green-600 flex flex-col items-center"
+            style={{ minHeight: currentBreakpoint === 'sm' ? '320px' : currentBreakpoint === 'md' ? '340px' : '360px' }}
+          >
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center w-full">Admin Profile</h3>
 
             <div className="relative mb-4">
@@ -384,7 +397,7 @@ const AdminDashboard = () => {
               />
               <label
                 htmlFor="profileUpload"
-                className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full w-9 h-9 flex items-center justify-center cursor-pointer shadow hover:bg-green-700 transition"
+                className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer shadow hover:bg-green-700 transition"
                 aria-label="Upload profile photo"
               >
                 <i className="fas fa-camera text-sm"></i>
@@ -409,16 +422,16 @@ const AdminDashboard = () => {
             <p className="text-sm text-gray-600">Email: {user?.email || mockAdmin.email}</p>
             <p className="text-sm text-gray-600 mb-4">Phone: {user?.phone || mockAdmin.phone}</p>
 
-            <div className="flex gap-2 flex-wrap justify-center">
+            <div className="flex gap-2 flex-wrap justify-center mt-auto">
               <button
                 onClick={() => navigate("/admin/edit-profile")}
-                className="flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-600 hover:text-white transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-600 hover:text-white transition"
               >
                 <i className="fas fa-user-edit"></i> Edit Profile
               </button>
               <button
                 onClick={() => navigate("/admin/change-pass")}
-                className="flex items-center gap-1.5 px-4 py-2 border border-gray-400 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-400 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition"
               >
                 <i className="fas fa-lock"></i> Change Password
               </button>
@@ -429,7 +442,6 @@ const AdminDashboard = () => {
             </span>
           </div>
 
-          {/* 2. Quick Stats & Revenue (Merged into one large section) */}
           <div className="col-span-1 lg:col-span-2 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <StatCard title="Total Clients" value={userStats.totalUsers || 0} icon="fas fa-users" color="text-blue-600" desc="Registered clients on the platform." />
@@ -448,20 +460,19 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* 3. Platform Growth Chart */}
-        <div className="card mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600">
+        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600">
           <h3 className="text-xl font-bold text-teal-900 mb-5">
             Platform Growth Statistics
           </h3>
           {isLoading ? (
-            <div className="h-96 flex items-center justify-center">
+            <div className="h-64 md:h-80 lg:h-96 flex items-center justify-center">
               <div className="text-center">
                 <i className="fas fa-spinner fa-spin text-4xl text-green-600 mb-4"></i>
                 <p className="text-gray-600">Loading analytics data...</p>
               </div>
             </div>
           ) : (
-            <div className="h-96">
+            <div className="h-64 md:h-80 lg:h-96">
               <GrowthChart data={{
                 labels: Object.keys(calculatedData.monthWiseWithZeros).reverse(),
                 subscriptions: Object.values(calculatedData.monthWiseWithZeros).reverse(),
@@ -481,15 +492,13 @@ const AdminDashboard = () => {
         </div>
         
 
-        {/* 4. Organization Listing Section */}
-        <div className="card mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-600">
+        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-600">
           <h3 className="text-xl font-bold text-teal-900 mb-5">
             Organization Verification Status
           </h3>
           <OrganizationTable organizations={organizations} />
         </div>
 
-        {/* Image Modal */}
         {showImageModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
@@ -499,17 +508,15 @@ const AdminDashboard = () => {
               className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setShowImageModal(false)}
-                className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
-                aria-label="Close modal"
-              >
-                <i className="fas fa-times text-lg"></i>
-              </button>
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
+              aria-label="Close modal"
+            >
+              <i className="fas fa-times text-lg"></i>
+            </button>
 
-              {/* Image Container */}
-              <div className="flex items-center justify-center bg-gray-100 p-8 h-96">
+            <div className="flex items-center justify-center bg-gray-100 p-4 md:p-8 h-64 md:h-80 lg:h-96">
                 <img
                   src={profileImage}
                   alt="Admin Profile Full Size"
@@ -518,7 +525,6 @@ const AdminDashboard = () => {
                 />
               </div>
 
-              {/* Footer with user info */}
               <div className="bg-white p-6 border-t border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.name || mockAdmin.name}</h2>
                 <p className="text-gray-600 mb-4">{user?.email || mockAdmin.email}</p>
@@ -571,5 +577,4 @@ const RevenueBox = ({ title, value, isTotal = false }) => (
   </div>
 );
 
-// Wrap the component with AuthProvider for admin role
 export default AdminDashboard;

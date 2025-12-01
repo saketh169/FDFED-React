@@ -18,7 +18,7 @@ import Contact from '../pages/Contactus';
 import CreateBlog from '../pages/Blog/CreateBlog';
 import BlogPost from '../pages/Blog/BlogPost';
 import DietitianLabReportViewer from '../pages/LabReports/DietitianLabReportViewer';
-import DietitianActivities from '../pages/Dashboards/DietitianActivities';
+import DietitianActivities from '../pages/Activities/DietitianActivities';
 
 
 

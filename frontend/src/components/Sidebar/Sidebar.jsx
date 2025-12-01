@@ -81,68 +81,82 @@ const Sidebar = () => {
   const menuItems = getNavLinks();
 
   return (
-    // Sidebar Container
-    <div className="hidden md:block w-64 bg-white text-gray-800 p-5 shadow-lg border-r border-gray-200 sidebar">
-      <h4 className="text-xl font-extrabold mb-4 text-gray-800">Dashboard Menu</h4>
-      <nav className="space-y-1">
-        {menuItems.map((item) => (
-          <button
-            key={item.name}
-            onClick={() => navigate(item.href)}
-            // FIX: Removed the problematic hover:bg-[${primaryGreen}] class.
-            // Using a custom CSS class `menu-item-hover` combined with the CSS variable.
-            className={`w-full text-left menu-item-hover hover:text-white text-gray-700 font-medium flex items-center gap-3 rounded p-3 transition-all duration-200`}
-            // Pass the primaryGreen color to a CSS variable
-            style={{ '--primary-green': primaryGreen }}
-          >
-            <i className={item.icon}></i> {item.name}
-          </button>
-        ))}
-      </nav>
-      
-      {/* Contact Section */}
-      <div className="mt-8 p-4 border border-gray-300 rounded-xl bg-gray-50 shadow-inner">
-        {/* NOTE: Applying darkGreen directly in style to ensure it works */}
-        <h3 className="text-lg font-semibold mb-3" style={{ color: darkGreen }}>Support</h3>
-        <p className="text-sm text-gray-700">Email: <a href="mailto:support@nutriconnect.com" className="text-blue-600 hover:text-blue-800">support@nutriconnect.com</a></p>
-        <p className="text-sm text-gray-700">Phone: <a href="tel:+917075783143" className="text-blue-600 hover:text-blue-800">+91 70757 83143</a></p>
-        
-        {/* NOTE: Applying darkGreen directly in style to ensure it works */}
-        <h3 className="text-lg font-semibold mt-4 mb-3" style={{ color: darkGreen }}>Follow Us</h3>
-        {/* NOTE: Applying primaryGreen directly in style to ensure it works */}
-        <div className="flex justify-start gap-4" style={{ color: primaryGreen }}>
-          {['facebook', 'instagram', 'x-twitter', 'linkedin'].map((brand, index) => (
-            <a 
-              key={index} 
-              href={`#${brand}`} 
-              // Using inline style for the specific darkGreen hover on social icons
-              className="transition-colors" 
-              style={{ '--dark-green': darkGreen }}
-              onMouseOver={(e) => e.currentTarget.style.color = darkGreen}
-              onMouseOut={(e) => e.currentTarget.style.color = primaryGreen}
+    <>
+      {/* Mobile Navigation Bar - Horizontal at top */}
+      <div className="md:hidden fixed top-16 left-0 right-0 bg-white shadow-lg border-b border-gray-200 z-40">
+        <div className="flex justify-between items-center px-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => navigate(item.href)}
+              className={`flex flex-col items-center justify-center px-2 py-2 flex-1 text-xs font-medium transition-all duration-200 rounded-lg mx-1 ${
+                location.pathname === item.href
+                  ? 'text-white bg-[#28a745]'
+                  : 'text-gray-700 hover:text-[#28a745] hover:bg-gray-50'
+              }`}
             >
-              <i className={`fa-brands fa-${brand} fa-xl font-bold`}></i>
-            </a>
+              <i className={`${item.icon} text-lg mb-1`}></i>
+              <span className="truncate text-center">{item.name}</span>
+            </button>
           ))}
         </div>
       </div>
-      
-      {/* --- Custom Styling for Sidebar --- */}
-      <style>{`
-        .sidebar {
-          height: 100vh;
-          position: sticky;
-          top: 0;
-          overflow-y: auto;
-          box-sizing: border-box;
-        }
+
+      {/* Desktop Sidebar */}
+      <div className="hidden md:block w-64 bg-white text-gray-800 p-5 shadow-lg border-r border-gray-200 sidebar">
+        <h4 className="text-xl font-extrabold mb-4 text-gray-800">Dashboard Menu</h4>
+        <nav className="space-y-1">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => navigate(item.href)}
+              className={`w-full text-left menu-item-hover hover:text-white text-gray-700 font-medium flex items-center gap-3 rounded p-3 transition-all duration-200`}
+              style={{ '--primary-green': primaryGreen }}
+            >
+              <i className={item.icon}></i> {item.name}
+            </button>
+          ))}
+        </nav>
         
-        /* New CSS to handle the dynamic hover background color */
-        .menu-item-hover:hover {
-          background-color: var(--primary-green) !important;
-        }
-      `}</style>
-    </div>
+        {/* Contact Section */}
+        <div className="mt-8 p-4 border border-gray-300 rounded-xl bg-gray-50 shadow-inner">
+          <h3 className="text-lg font-semibold mb-3" style={{ color: darkGreen }}>Support</h3>
+          <p className="text-sm text-gray-700">Email: <a href="mailto:support@nutriconnect.com" className="text-blue-600 hover:text-blue-800">support@nutriconnect.com</a></p>
+          <p className="text-sm text-gray-700">Phone: <a href="tel:+917075783143" className="text-blue-600 hover:text-blue-800">+91 70757 83143</a></p>
+          
+          <h3 className="text-lg font-semibold mt-4 mb-3" style={{ color: darkGreen }}>Follow Us</h3>
+          <div className="flex justify-start gap-4" style={{ color: primaryGreen }}>
+            {['facebook', 'instagram', 'x-twitter', 'linkedin'].map((brand, index) => (
+              <a 
+                key={index} 
+                href={`#${brand}`} 
+                className="transition-colors" 
+                style={{ '--dark-green': darkGreen }}
+                onMouseOver={(e) => e.currentTarget.style.color = darkGreen}
+                onMouseOut={(e) => e.currentTarget.style.color = primaryGreen}
+              >
+                <i className={`fa-brands fa-${brand} fa-xl font-bold`}></i>
+              </a>
+            ))}
+          </div>
+        </div>
+        
+        {/* Custom Styling for Sidebar */}
+        <style>{`
+          .sidebar {
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            box-sizing: border-box;
+          }
+          
+          .menu-item-hover:hover {
+            background-color: var(--primary-green) !important;
+          }
+        `}</style>
+      </div>
+    </>
   );
 };
 
