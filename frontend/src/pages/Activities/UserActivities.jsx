@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { useAuthContext } from "../../hooks/useAuthContext";
 
@@ -19,8 +18,7 @@ const formatRelativeTime = (timestamp) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const DietitianActivities = () => {
-  const navigate = useNavigate();
+const UserActivities = () => {
   const { user, token } = useAuthContext();
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +32,7 @@ const DietitianActivities = () => {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/analytics/dietitian/${user.id}/activities?page=${page}&limit=20`, {
+        const response = await fetch(`/api/analytics/user/${user.id}/activities?page=${page}&limit=20`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -67,6 +65,7 @@ const DietitianActivities = () => {
   const getActivityTypeColor = (type) => {
     switch(type) {
       case 'booking': return 'bg-blue-100 text-blue-800';
+      case 'progress': return 'bg-emerald-100 text-emerald-800';
       case 'meal_plan': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -80,7 +79,7 @@ const DietitianActivities = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-green-900">All Activities</h1>
+            <h1 className="text-3xl font-bold text-teal-900">All Activities</h1>
             <p className="text-gray-600">View your complete activity history</p>
           </div>
         </div>
@@ -92,7 +91,7 @@ const DietitianActivities = () => {
               onClick={() => setFilter('all')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                 filter === 'all' 
-                  ? 'bg-green-600 text-white' 
+                  ? 'bg-teal-600 text-white' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -107,7 +106,18 @@ const DietitianActivities = () => {
               }`}
             >
               <i className="fas fa-calendar-check mr-2"></i>
-              Client Appointments
+              Appointments
+            </button>
+            <button
+              onClick={() => setFilter('progress')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                filter === 'progress' 
+                  ? 'bg-emerald-600 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <i className="fas fa-chart-line mr-2"></i>
+              Progress
             </button>
             <button
               onClick={() => setFilter('meal_plan')}
@@ -118,7 +128,7 @@ const DietitianActivities = () => {
               }`}
             >
               <i className="fas fa-utensils mr-2"></i>
-              Meal Plans Created
+              Meal Plans
             </button>
           </div>
         </div>
@@ -127,7 +137,7 @@ const DietitianActivities = () => {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {isLoading && page === 1 ? (
             <div className="flex justify-center py-12">
-              <i className="fas fa-spinner fa-spin text-green-600 text-3xl"></i>
+              <i className="fas fa-spinner fa-spin text-emerald-600 text-3xl"></i>
             </div>
           ) : filteredActivities.length > 0 ? (
             <div className="divide-y divide-gray-100">
@@ -138,7 +148,9 @@ const DietitianActivities = () => {
                 >
                   <div className="flex items-start gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      activity.type === 'booking' ? 'bg-blue-100' : 'bg-green-100'
+                      activity.type === 'booking' ? 'bg-blue-100' :
+                      activity.type === 'progress' ? 'bg-emerald-100' :
+                      'bg-green-100'
                     }`}>
                       <i className={`${activity.icon} ${activity.iconColor}`}></i>
                     </div>
@@ -149,7 +161,9 @@ const DietitianActivities = () => {
                           dangerouslySetInnerHTML={{ __html: activity.description }}
                         ></span>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${getActivityTypeColor(activity.type)}`}>
-                          {activity.type === 'booking' ? 'Appointment' : 'Meal Plan'}
+                          {activity.type === 'booking' ? 'Appointment' : 
+                           activity.type === 'progress' ? 'Progress' : 
+                           'Meal Plan'}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600">{activity.details}</p>
@@ -177,7 +191,7 @@ const DietitianActivities = () => {
               <p className="text-gray-500 text-lg">No activities found</p>
               <p className="text-sm text-gray-400 mt-1">
                 {filter === 'all' 
-                  ? 'Your activities will appear here once clients start booking' 
+                  ? 'Your activities will appear here once you start using the app' 
                   : `No ${filter.replace('_', ' ')} activities yet`}
               </p>
             </div>
@@ -197,7 +211,7 @@ const DietitianActivities = () => {
 
           {isLoading && page > 1 && (
             <div className="p-4 flex justify-center">
-              <i className="fas fa-spinner fa-spin text-green-600"></i>
+              <i className="fas fa-spinner fa-spin text-emerald-600"></i>
             </div>
           )}
         </div>
@@ -206,4 +220,4 @@ const DietitianActivities = () => {
   );
 };
 
-export default DietitianActivities;
+export default UserActivities;

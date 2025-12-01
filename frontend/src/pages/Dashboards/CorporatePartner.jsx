@@ -183,22 +183,18 @@ const CorporateDashboard = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 lg:p-2">
+      <div className="flex-1 pt-20 md:pt-6 p-6 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-teal-900 mb-6 border-b border-gray-200 pb-4">
            Welcome, {user?.company_name || user?.name || mockPartner.name}!
         </h1>
 
-      
 
-        {/* Grid Layout (Profile, Metrics, Quick Actions) */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          {/* 1. Profile Card (Partner Identity and Key Status) - LEFT COLUMN */}
+
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-emerald-600 flex flex-col items-center">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center w-full">Partner Profile</h3>
 
-            {/* Logo Upload Area */}
             <div className="relative mb-4">
               <img
                 src={partnerLogo}
@@ -254,7 +250,6 @@ const CorporateDashboard = () => {
             </span>
           </div>
 
-          {/* 2. Document Verification Status Card (Dynamic content) */}
           <Status role="corporatepartner" />
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-amber-500">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Quick Actions</h3>
@@ -291,12 +286,10 @@ const CorporateDashboard = () => {
           </div>
         </div>
 
-        {/* Financial & Partnership Status - Complete Row Above Graph */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Financial & Partnership Status</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Licensing Metrics */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
               <p className="text-sm text-gray-600 mb-2">Total Licenses</p>
               <p className="font-bold text-blue-700 text-xl">{user?.totalLicenses || mockPartner.totalLicenses.toLocaleString()}</p>
@@ -306,7 +299,6 @@ const CorporateDashboard = () => {
               <p className="font-bold text-green-700 text-xl">{user?.activeUsers || mockPartner.activeUsers.toLocaleString()}</p>
             </div>
 
-            {/* Partnership Status */}
             <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 text-center">
               <p className="text-sm text-gray-600 mb-2">Commission Tier</p>
               <p className="font-bold text-purple-700 text-lg">{user?.currentCommissionTier || mockPartner.currentCommissionTier}</p>
@@ -317,14 +309,12 @@ const CorporateDashboard = () => {
             </div>
           </div>
 
-          {/* Program Name and Renewal CTA */}
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-orange-50 rounded-lg border border-orange-200 text-center">
               <p className="text-sm text-gray-600 mb-2">Program Name</p>
               <p className="font-semibold text-orange-700 text-lg">{user?.programName || mockPartner.programName}</p>
             </div>
 
-            {/* Renewal Call to Action */}
             <div className="p-4 bg-red-50 border-l-4 border-red-400 rounded-lg text-center">
               <p className="font-semibold text-red-800 mb-1">Contract Renewal Due:</p>
               <p className="font-bold text-red-900 text-lg">{user?.nextContractDate || mockPartner.nextContractDate}</p>
@@ -338,7 +328,6 @@ const CorporateDashboard = () => {
           </div>
         </div>
 
-        {/* 4. Engagement Chart (Detailed Data View) - FULL WIDTH */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Engagement & Booking Trend</h3>
 
@@ -356,7 +345,6 @@ const CorporateDashboard = () => {
           </div>
         </div>
 
-        {/* 5. Notifications */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
             Notifications
@@ -378,7 +366,6 @@ const CorporateDashboard = () => {
           </ul>
         </div>
 
-        {/* 6. Recent Activities */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
             Recent Activities
@@ -400,7 +387,6 @@ const CorporateDashboard = () => {
           </ul>
         </div>
 
-        {/* Image Modal */}
         {showImageModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
@@ -410,7 +396,6 @@ const CorporateDashboard = () => {
               className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
               <button
                 onClick={() => setShowImageModal(false)}
                 className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
@@ -419,7 +404,6 @@ const CorporateDashboard = () => {
                 <i className="fas fa-times text-lg"></i>
               </button>
 
-              {/* Image Container */}
               <div className="flex items-center justify-center bg-gray-100 p-8 h-96">
                 <img
                   src={partnerLogo}
@@ -429,7 +413,6 @@ const CorporateDashboard = () => {
                 />
               </div>
 
-              {/* Footer with partner info */}
               <div className="bg-white p-6 border-t border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.company_name || user?.name || mockPartner.name}</h2>
                 <p className="text-gray-600 mb-4">{user?.email || mockPartner.contact}</p>

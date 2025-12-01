@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import Sidebar from "../../components/Sidebar/Sidebar";
@@ -20,7 +20,6 @@ const formatRelativeTime = (timestamp) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Mock Data
 const mockUser = {
   name: "Jane Doe",
   age: 32,
@@ -38,7 +37,6 @@ const mockProgressData = [
   { createdAt: "2025-10-01", weight: 75, goal: "Loss", waterIntake: 1.5 },
 ];
 
-// Progress Chart Component - Retained as it is excellent
 const ProgressChart = ({ data }) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
@@ -99,7 +97,6 @@ const ProgressChart = ({ data }) => {
   return <canvas ref={chartRef} className="h-48 w-full" />;
 };
 
-// Main Dashboard
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { user, token, logout } = useAuthContext();
@@ -108,13 +105,12 @@ const UserDashboard = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [dashboardStats, setDashboardStats] = useState({});
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   // Ensures 'latest' is safely accessed for metrics
   const latest = mockProgressData[0] || {};
 
   // Fetch dashboard data (notifications and activities) from API
-  const fetchDashboardData = async (showLoading = true) => {
+  const fetchDashboardData = useCallback(async (showLoading = true) => {
     if (!user?.id || !token) return;
     
     try {
@@ -130,30 +126,27 @@ const UserDashboard = () => {
       if (data.success) {
         setNotifications(data.data.notifications || []);
         setActivities(data.data.activities || []);
-        setDashboardStats(data.data.stats || {});
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       if (showLoading) setIsLoadingDashboard(false);
     }
-  };
+  }, [user?.id, token]);
 
-  // Initial fetch
   useEffect(() => {
     fetchDashboardData();
-  }, [user?.id, token]);
+  }, [user?.id, token, fetchDashboardData]);
 
-  // Real-time polling for notifications (every 30 seconds)
   useEffect(() => {
     if (!user?.id || !token) return;
-    
+
     const pollInterval = setInterval(() => {
-      fetchDashboardData(false); // Don't show loading spinner on poll
-    }, 30000); // Poll every 30 seconds
+      fetchDashboardData(false);
+    }, 30000);
 
     return () => clearInterval(pollInterval);
-  }, [user?.id, token]);
+  }, [user?.id, token, fetchDashboardData]);
 
   // Set profile image from user data when available
   useEffect(() => {
@@ -170,21 +163,16 @@ const UserDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Preview image immediately
     const reader = new FileReader();
     reader.onload = () => {
       setProfileImage(reader.result);
-      // Don't store in localStorage to avoid quota issues
     };
     reader.readAsDataURL(file);
 
-    // Upload to backend
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append('profileImage', file);
-
-      // Get token from context or localStorage
       let authToken = token;
       if (!authToken) {
         // Fallback to localStorage if context doesn't have token
@@ -209,9 +197,7 @@ const UserDashboard = () => {
       
       if (data.success) {
         alert('Profile photo uploaded successfully!');
-        // Refresh user data from AuthContext to get the updated profileImage
         if (user?.id) {
-          // Force a re-fetch of user details by triggering a page reload or context refresh
           window.location.reload();
         }
       } else {
@@ -226,25 +212,19 @@ const UserDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout(); // Use context logout method
+    logout();
     navigate("/");
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Placeholder */}
       <Sidebar />
 
-      {/* Main Content */}
-      <div className="flex-1 p-2 lg:p-2">
+      <div className="flex-1 pt-20 md:pt-2 p-2 lg:p-2">
         <h1 className="text-3xl lg:text-4xl font-bold text-teal-900 mb-6 border-b border-gray-200 pb-4">
-          Welcome , {user?.name || mockUser.name}! 
-        </h1>
+          Welcome , {user?.name || mockUser.name}!
+        </h1>        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-        {/* Grid Layout (3 columns for large screens) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          {/* 1. Profile Card (Consistent Styling) */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-emerald-600 flex flex-col items-center">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center w-full">Your Profile</h3>
 
@@ -302,12 +282,9 @@ const UserDashboard = () => {
               Active
             </span>
           </div>
-
-          {/* 2. Progress & Metrics Card (Chart Integration) */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-emerald-600">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Progress & Metrics</h3>
 
-            {/* Metric Boxes */}
             <div className="grid grid-cols-3 gap-3 mb-5 text-center">
               <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
                 <p className="text-xs text-gray-600">Weight</p>
@@ -323,7 +300,6 @@ const UserDashboard = () => {
               </div>
             </div>
 
-            {/* Chart */}
             <div className="h-48 mb-5 -mx-6 px-6">
               <ProgressChart data={mockProgressData} />
             </div>
@@ -336,7 +312,6 @@ const UserDashboard = () => {
             </button>
           </div>
 
-          {/* 3. Quick Actions Card (Consistent Button Styling) */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-blue-600">
             <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Quick Actions</h3>
 
@@ -372,7 +347,6 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        {/* 4. Notifications */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">
             Notifications
@@ -414,7 +388,6 @@ const UserDashboard = () => {
           )}
         </div>
 
-        {/* 5. Recent Activities (Consistent Card Styling) */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-400">
           <h3 className="text-xl font-bold text-teal-900 mb-5 text-center">Recent Activities</h3>
 
@@ -473,7 +446,6 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        {/* Image Modal */}
         {showImageModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
@@ -483,7 +455,6 @@ const UserDashboard = () => {
               className="bg-white rounded-2xl max-w-2xl w-full relative overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
               <button
                 onClick={() => setShowImageModal(false)}
                 className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-10 transition"
@@ -492,7 +463,6 @@ const UserDashboard = () => {
                 <i className="fas fa-times text-lg"></i>
               </button>
 
-              {/* Image Container */}
               <div className="flex items-center justify-center bg-gray-100 p-8 h-96">
                 <img
                   src={profileImage}
@@ -502,7 +472,6 @@ const UserDashboard = () => {
                 />
               </div>
 
-              {/* Footer with user info */}
               <div className="bg-white p-6 border-t border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">{user?.name || mockUser.name}</h2>
                 <p className="text-gray-600 mb-4">{user?.email || mockUser.email}</p>

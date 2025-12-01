@@ -9,7 +9,7 @@ const RoleModal = ({ isModal = false, onClose }) => {
   useEffect(() => {
     console.log('[RoleModal] Component mounted');
     // Check for any existing role tokens
-    const roles = ['user', 'dietitian', 'admin', 'organization', 'corporatepartner'];
+    const roles = ['user', 'dietitian', 'admin', 'organization' /* 'corporatepartner' */];
     const hasAnyToken = roles.some(role => localStorage.getItem(`authToken_${role}`));
     console.log('[RoleModal] Existing token found:', hasAnyToken);
     
@@ -22,7 +22,8 @@ const RoleModal = ({ isModal = false, onClose }) => {
     { name: 'User', icon: 'fas fa-user', description: 'Log in to manage your personalized nutrition plan.', slug: 'user', dashboardRoute: '/user/home' },
     { name: 'Dietitian', icon: 'fas fa-user-md', description: 'Access your professional dashboard and connect with clients.', slug: 'dietitian', dashboardRoute: '/dietitian/home' },
     { name: 'Certifying Organization', icon: 'fas fa-building', description: 'Manage dietitian certifications and access corporate insights.', slug: 'organization', dashboardRoute: '/organization/home' },
-    { name: 'Corporate Partner', icon: 'fas fa-handshake', description: 'Provide wellness solutions to your employees.', slug: 'corporatepartner', dashboardRoute: '/corporatepartner/home', hasSubRoles: true },
+    { name: 'Admin', icon: 'fas fa-crown', description: 'Access administrative features and system management.', slug: 'admin', dashboardRoute: '/admin/home' },
+    // { name: 'Corporate Partner', icon: 'fas fa-handshake', description: 'Provide wellness solutions to your employees.', slug: 'corporatepartner', dashboardRoute: '/corporatepartner/home', hasSubRoles: true },
   ];
 
   // Get roles based on developer mode
