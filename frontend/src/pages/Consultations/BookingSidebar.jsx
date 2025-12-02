@@ -61,8 +61,15 @@ const BookingSidebar = ({
       dispatch(clearBookedSlots());
       console.log("Current User ID from auth context:", user?.id || user?._id);
       console.log("Selected Dietitian ID:", dietitianId);
+      
+      // Refresh slots when sidebar opens
+      if (selectedDate) {
+        const userId = user?.id || user?._id || localStorage.getItem("userId") || '';
+        dispatch(fetchBookedSlots({ dietitianId, date: selectedDate, userId }));
+        dispatch(fetchUserBookedSlots({ userId, date: selectedDate }));
+      }
     }
-  }, [isOpen, dietitianId, dispatch, user]);
+  }, [isOpen, dietitianId, dispatch, user, selectedDate]);
 
   // Fetch all user bookings using Redux
   useEffect(() => {
@@ -77,7 +84,7 @@ const BookingSidebar = ({
     (date) => {
       if (!dietitianId || !date) return;
 
-      const userId = user?.id || user?._id || localStorage.getItem("userId");
+      const userId = user?.id || user?._id || localStorage.getItem("userId") || '';
       dispatch(fetchBookedSlots({ dietitianId, date, userId }));
     },
     [dietitianId, user, dispatch]

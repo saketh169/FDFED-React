@@ -4,7 +4,6 @@ import { useAuthContext } from "../../hooks/useAuthContext";
 import SubscriptionAlert from '../../middleware/SubscriptionAlert';
 import {
   createBooking,
-  selectIsCreatingBooking,
   selectSubscriptionAlertData,
   selectShowSubscriptionAlert,
   clearSubscriptionAlert
@@ -18,10 +17,9 @@ const PaymentNotificationModal = ({
 }) => {
   const dispatch = useDispatch();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { user, token } = useAuthContext();
+  const { user } = useAuthContext();
   
   // Redux state
-  const isCreatingBooking = useSelector(selectIsCreatingBooking);
   const reduxSubscriptionAlertData = useSelector(selectSubscriptionAlertData);
   const reduxShowSubscriptionAlert = useSelector(selectShowSubscriptionAlert);
   
@@ -55,54 +53,39 @@ const PaymentNotificationModal = ({
 
   if (!isOpen) return null;
 
-  // Card number formatting
+  // Card number formatting - accepts 16 digits in spaced format (1111 1111 1111 1111)
   const formatCardNumber = (value) => {
-    const cleaned = value.replace(/\s/g, '');
-    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-    return formatted.substr(0, 19);
+    const cleaned = value.replace(/\s/g, '').replace(/\D/g, ''); // Remove spaces and non-digits
+    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned; // Format every 4 digits
+    return formatted.substr(0, 19); // 16 digits + 3 spaces = 19 chars max
   };
 
-  // Expiry date formatting
-  const formatExpiry = (value) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return cleaned.substr(0, 2) + '/' + cleaned.substr(2, 2);
-    }
-    return cleaned;
-  };
-
-  // Validate card number using Luhn algorithm
+  // Validate card number - simple validation: all digits and exactly 16 digits
   const validateCardNumber = (number) => {
-    const cleaned = number.replace(/\s/g, '');
-    if (!/^\d+$/.test(cleaned)) return false;
-    if (cleaned.length < 13 || cleaned.length > 19) return false;
-
-    let sum = 0;
-    let isEven = false;
-    for (let i = cleaned.length - 1; i >= 0; i--) {
-      let digit = parseInt(cleaned[i], 10);
-      if (isEven) {
-        digit *= 2;
-        if (digit > 9) digit -= 9;
-      }
-      sum += digit;
-      isEven = !isEven;
-    }
-    return sum % 10 === 0;
+    const cleaned = number.replace(/\s/g, ''); // Remove spaces
+    // Check if all characters are digits and length is exactly 16
+    return /^\d{16}$/.test(cleaned);
   };
 
-  // Validate expiry date
+  // Validate expiry date - format: YYYY-MM (from month input)
   const validateExpiry = (value) => {
-    const [month, year] = value.split('/');
+    if (!value) return false;
+
+    const [year, month] = value.split('-');
     if (!month || !year) return false;
+
     const monthNum = parseInt(month);
-    const yearNum = parseInt('20' + year);
+    const yearNum = parseInt(year);
+
     if (monthNum < 1 || monthNum > 12) return false;
+
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
+
     if (yearNum < currentYear) return false;
     if (yearNum === currentYear && monthNum < currentMonth) return false;
+
     return true;
   };
 
@@ -163,20 +146,14 @@ const PaymentNotificationModal = ({
 
     // Validate based on selected payment method
     if (selectedMethod === 'card') {
-      const cardNumber = cardDetails.cardNumber.replace(/\s/g, '');
-      
       if (!cardDetails.cardNumber) {
         errors.cardNumber = "Card number is required";
-      } else if (cardNumber.length < 13) {
-        errors.cardNumber = "Card number must be at least 13 digits";
       } else if (!validateCardNumber(cardDetails.cardNumber)) {
-        errors.cardNumber = "Invalid card number (try: 4532015114161234)";
+        errors.cardNumber = "Card number must be 16 digits (e.g., 1111 1111 1111 1111)";
       }
 
       if (!cardDetails.validThrough) {
         errors.validThrough = "Expiry date is required";
-      } else if (cardDetails.validThrough.length < 5) {
-        errors.validThrough = "Enter expiry date in MM/YY format";
       } else if (!validateExpiry(cardDetails.validThrough)) {
         errors.validThrough = "Card has expired or invalid date";
       }
@@ -326,13 +303,16 @@ const PaymentNotificationModal = ({
                 style={{ borderColor: validationErrors.cardNumber ? '#ef4444' : '#27AE60' }}
                 value={cardDetails.cardNumber}
                 onChange={(e) => {
-                  const formatted = formatCardNumber(e.target.value);
+                  // Only allow digits and spaces
+                  const input = e.target.value.replace(/[^\d\s]/g, '');
+                  const formatted = formatCardNumber(input);
                   setCardDetails({ ...cardDetails, cardNumber: formatted });
                   if (validationErrors.cardNumber) {
                     setValidationErrors({ ...validationErrors, cardNumber: null });
                   }
                 }}
                 maxLength="19"
+                inputMode="numeric"
               />
               {validationErrors.cardNumber && (
                 <p className="text-xs text-red-500 mt-1">{validationErrors.cardNumber}</p>
@@ -349,19 +329,16 @@ const PaymentNotificationModal = ({
                   Valid Through *
                 </label>
                 <input
-                  type="text"
-                  placeholder="MM/YY"
+                  type="month"
                   className={`w-full p-2 border rounded-md focus:ring-2 focus:outline-none ${validationErrors.validThrough ? 'border-red-500' : ''}`}
                   style={{ borderColor: validationErrors.validThrough ? '#ef4444' : '#27AE60' }}
                   value={cardDetails.validThrough}
                   onChange={(e) => {
-                    const formatted = formatExpiry(e.target.value);
-                    setCardDetails({ ...cardDetails, validThrough: formatted });
+                    setCardDetails({ ...cardDetails, validThrough: e.target.value });
                     if (validationErrors.validThrough) {
                       setValidationErrors({ ...validationErrors, validThrough: null });
                     }
                   }}
-                  maxLength="5"
                 />
                 {validationErrors.validThrough && (
                   <p className="text-xs text-red-500 mt-1">{validationErrors.validThrough}</p>

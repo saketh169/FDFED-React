@@ -443,6 +443,9 @@ exports.getBookedSlots = async (req, res) => {
   try {
     const { dietitianId } = req.params;
     const { date, userId } = req.query; // Add userId to query params
+    
+    // Handle null or "null" string userId
+    const validUserId = userId && userId !== 'null' && userId !== 'undefined' ? userId : null;
 
     if (!dietitianId || !date) {
       return res.status(400).json({
@@ -472,11 +475,15 @@ exports.getBookedSlots = async (req, res) => {
     }).select("time");
 
     // Find all confirmed/completed bookings for this user on this date (with any dietitian)
-    const userBookings = await Booking.find({
-      userId,
-      date: { $gte: queryDate, $lt: nextDay },
-      status: { $in: ["confirmed", "completed"] },
-    }).select("time dietitianName");
+    // Only query if we have a valid userId
+    let userBookings = [];
+    if (validUserId) {
+      userBookings = await Booking.find({
+        userId: validUserId,
+        date: { $gte: queryDate, $lt: nextDay },
+        status: { $in: ["confirmed", "completed"] },
+      }).select("time dietitianName");
+    }
 
     // Separate user's bookings from others' bookings for this dietitian
     const bookedSlots = [];
@@ -491,7 +498,7 @@ exports.getBookedSlots = async (req, res) => {
         userName: booking.username,
         bookingId: booking._id
       });
-      if (userId && booking.userId.toString() === userId) {
+      if (validUserId && booking.userId.toString() === validUserId) {
         userBookingsWithThisDietitian.push(booking.time);
       } else {
         bookedSlots.push(booking.time);
@@ -504,7 +511,7 @@ exports.getBookedSlots = async (req, res) => {
     // Return all booked slots for this dietitian (including user's own)
     const allBookedSlots = [...bookedSlots, ...userBookingsWithThisDietitian];
 
-    console.log("Fetched dietitian booked slots for user", userId, "and dietitian", dietitianId, "on date", queryDate.toISOString().split('T')[0], ":", allBookedSlots);
+    console.log("Fetched dietitian booked slots for user", validUserId, "and dietitian", dietitianId, "on date", queryDate.toISOString().split('T')[0], ":", allBookedSlots);
 
     res.status(200).json({
       success: true,

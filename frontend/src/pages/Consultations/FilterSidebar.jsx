@@ -161,7 +161,7 @@ const FilterSidebar = ({
           <i className="fas fa-money-bill-wave text-emerald-600"></i> Budget Range
         </label>
         <div className="space-y-3">
-          {[1000, 1500, 2000].map((fee) => (
+          {[500, 1000, 1500, 2000].map((fee) => (
             <label
               key={fee}
               className="flex items-center gap-3 cursor-pointer hover:bg-emerald-50 p-3 rounded-xl transition-all border border-transparent hover:border-emerald-200"
