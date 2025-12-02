@@ -85,9 +85,6 @@ const DietitianSchedule = () => {
     const initialDay = sortedDays.find(([, dayInfo]) => dayInfo.dateObj.toDateString() === new Date().toDateString())?.[0] || sortedDays[0]?.[0];
 
     const [activeDayKey, setActiveDayKey] = useState(initialDay);
-    // Filter State is now for clients
-    const [searchClient, setSearchClient] = useState('');
-    const [filterDate, setFilterDate] = useState('');
 
     // Console log the current dietitian name and ID once on mount
     useEffect(() => {
@@ -260,25 +257,11 @@ const DietitianSchedule = () => {
 
     const activeDayInfo = weekDates[activeDayKey];
 
-    // Sort and Filter appointments
+    // Sort appointments for active day
     const sortedAppointments = useMemo(() => {
         const dayAppointments = bookingsByDay[activeDayInfo?.fullDateKey] || [];
-        let filtered = [...dayAppointments];
-
-        // Filter by client name
-        if (searchClient.trim()) {
-            filtered = filtered.filter(apt => 
-                apt.clientName.toLowerCase().includes(searchClient.toLowerCase())
-            );
-        }
-
-        // Filter by date (only show if date matches current selected day)
-        if (filterDate && activeDayInfo?.fullDateKey !== filterDate) {
-            filtered = [];
-        }
-
-        return filtered.sort((a, b) => convertTimeTo24Hour(a.time) - convertTimeTo24Hour(b.time));
-    }, [activeDayInfo, bookingsByDay, searchClient, filterDate]); // Dependency on searchClient
+        return dayAppointments.sort((a, b) => convertTimeTo24Hour(a.time) - convertTimeTo24Hour(b.time));
+    }, [activeDayInfo, bookingsByDay]);
 
     // When active day changes update drawer date default
     useEffect(() => {
@@ -472,43 +455,6 @@ const DietitianSchedule = () => {
                     </div>
                 </div>
             )}
-            
-            {/* Filter Section - Adjusted for Client Search */}
-            <section className="bg-white border border-emerald-200 px-6 py-3 shadow-lg sticky top-0 z-40 mx-4 mt-0 rounded-2xl" style={{ width: 'calc(100% - 2rem)', marginLeft: '1rem' }}>
-                <div className="flex flex-col md:flex-row gap-3 items-end">
-                    <div className="flex-1 min-w-0">
-                        {/* LABEL CHANGE: Dietitian -> Client */}
-                        <label className="block text-sm font-bold text-teal-900 mb-2 uppercase tracking-wide">Search Client</label>
-                        <input
-                            type="text"
-                            placeholder="Client name..."
-                            value={searchClient}
-                            onChange={(e) => setSearchClient(e.target.value)}
-                            className="w-full px-4 py-2.5 text-sm rounded-xl border-2 border-emerald-200 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-300 bg-emerald-50/50"
-                        />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <label className="block text-sm font-bold text-teal-900 mb-2 uppercase tracking-wide">Date</label>
-                        <input
-                            type="date"
-                            value={filterDate}
-                            onChange={(e) => setFilterDate(e.target.value)}
-                            className="w-full px-4 py-2.5 text-sm rounded-xl border-2 border-emerald-200 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-300 bg-emerald-50/50"
-                        />
-                    </div>
-                    {(searchClient || filterDate) && (
-                        <button
-                            onClick={() => {
-                                setSearchClient('');
-                                setFilterDate('');
-                            }}
-                            className="px-4 py-2.5 text-sm bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-300 font-semibold shadow-md hover:shadow-lg"
-                        >
-                            ✕ Clear
-                        </button>
-                    )}
-                </div>
-            </section>
             
             <div className="flex flex-1 w-full p-4">
                 {/* Sidebar - Day List (No Change) */}

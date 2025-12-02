@@ -156,8 +156,10 @@ export const fetchBookedSlots = createAsyncThunk(
   'booking/fetchBookedSlots',
   async ({ dietitianId, date, userId }, { rejectWithValue }) => {
     try {
+      // Only include userId in query if it's a valid value
+      const userIdParam = userId && userId !== 'null' && userId !== 'undefined' ? userId : '';
       const response = await axios.get(
-        `${API_BASE_URL}/dietitian/${dietitianId}/booked-slots?date=${date}&userId=${userId}`
+        `${API_BASE_URL}/dietitian/${dietitianId}/booked-slots?date=${date}&userId=${userIdParam}`
       );
       
       if (response.data.success) {

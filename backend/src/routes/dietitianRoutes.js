@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { Dietitian, UserAuth } = require('../models/userModel');
 const Booking = require('../models/bookingModel');
 const { BlockedSlot } = require('../models/bookingModel');
@@ -448,25 +449,12 @@ router.post('/dietitians/:id/testimonials', authenticateJWT, async (req, res) =>
       });
     }
 
-    // Check if user has already submitted a review
-    const existingReview = dietitian.testimonials?.find(
-      t => t.authorId && t.authorId.toString() === userId.toString()
-    );
-
-    if (existingReview) {
-      return res.status(400).json({
-        success: false,
-        message: 'You have already submitted a review for this dietitian'
-      });
-    }
-
     // Get user info for author name
     const { User } = require('../models/userModel');
-    const mongoose = require('mongoose');
     const user = await User.findById(userId);
     const authorName = user?.name || 'Anonymous User';
 
-    // Create new testimonial with proper ObjectId
+    // Create new testimonial - store authorId as string for easier comparison
     const newTestimonial = {
       text: text.trim(),
       author: authorName,
@@ -485,6 +473,9 @@ router.post('/dietitians/:id/testimonials', authenticateJWT, async (req, res) =>
     const totalRatings = dietitian.testimonials.reduce((sum, t) => sum + (t.rating || 0), 0);
     dietitian.rating = Number((totalRatings / dietitian.testimonials.length).toFixed(1));
 
+    // Mark the testimonials array as modified to ensure Mongoose saves it
+    dietitian.markModified('testimonials');
+    
     await dietitian.save();
 
     res.status(201).json({
@@ -617,20 +608,6 @@ router.get('/dietitians/:id/can-review', authenticateJWT, async (req, res) => {
         success: true,
         canReview: false,
         reason: 'You need to consult this dietitian before adding a review'
-      });
-    }
-
-    // Check if user has already submitted a review
-    const dietitian = await Dietitian.findById(id).select('testimonials');
-    const hasReviewed = dietitian?.testimonials?.some(
-      t => t.authorId && t.authorId.toString() === userId.toString()
-    );
-
-    if (hasReviewed) {
-      return res.json({
-        success: true,
-        canReview: false,
-        reason: 'You have already submitted a review for this dietitian'
       });
     }
 
