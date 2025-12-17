@@ -107,6 +107,5 @@ app.get('/', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  console.log('Backend ready to accept signups at /api/signup/[role]');
-  console.log('Chatbot API available at /api/chatbot/*');
+ 
 });
