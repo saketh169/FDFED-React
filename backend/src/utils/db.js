@@ -1,20 +1,19 @@
-const mongoose = require("mongoose");
 
-// It's crucial to load environment variables for security
-require("dotenv").config();
-
-const MONGO_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/NutriConnectDatabase";
+const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(MONGO_URI);
-    console.log("MongoDB connected successfully to NutriConnectDatabase.");
+    const MONGODB_URI = process.env.MONGODB_URL|| "mongodb://localhost:27017/NutriConnectDatabase" ;
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI is not defined');
+    }
+    await mongoose.connect(MONGODB_URI);
+    console.log('✅ MongoDB Connected Successfully!');
   } catch (err) {
-    console.error("MongoDB connection failed:", err.message);
-    // Exit process with failure
+    console.error('❌ MongoDB Connection Failed:', err.message);
     process.exit(1);
   }
 };
 
 module.exports = connectDB;
+
