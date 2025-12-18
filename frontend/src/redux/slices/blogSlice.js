@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api/blogs';
+const API_BASE_URL = '/api/blogs';
 
 // Helper function to get auth token based on role
 const getAuthToken = (role) => {

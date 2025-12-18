@@ -16,7 +16,7 @@ const PrivacyPolicy = () => {
     const fetchPrivacyPolicy = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/settings');
+        const response = await axios.get('/api/settings');
         setContent(response.data.privacyPolicy || 'Privacy policy content not available.');
       } catch (err) {
         console.error('Error fetching privacy policy:', err);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 // NOTE: Assumes Bootstrap and Font Awesome CSS/JS are included in the main application.
 
@@ -106,15 +107,11 @@ const OrgVerify = () => {
 
     const fetchOrganizations = useCallback(async () => {
         try {
-            const response = await fetch('/api/verify/organizations', {
-                credentials: 'include'
+            const response = await axios.get('/api/verify/organizations', {
+                withCredentials: true
             });
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            
-            const data = await response.json();
+            const data = response.data;
             setOrganizations(data.map((o, index) => ({ ...o, rowId: index + 1 })));
         } catch (error) {
             console.error('Error fetching organizations:', error);
@@ -132,17 +129,12 @@ const OrgVerify = () => {
 
     const verifyDocument = async (orgId, field) => {
         try {
-            const response = await fetch(`/api/verify/org/${orgId}/approve`, {
-                method: 'POST',
+            await axios.post(`/api/verify/org/${orgId}/approve`, { field }, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include',
-                body: JSON.stringify({ field }),
+                withCredentials: true,
             });
-            if (!response.ok) {
-                throw new Error('Failed to approve document');
-            }
             handleNotify(`Document ${FIELD_MAP[field].name} verified.`, 'success');
             fetchOrganizations(); // Refresh data
         } catch (error) {
@@ -153,17 +145,12 @@ const OrgVerify = () => {
 
     const rejectDocument = async (orgId, field) => {
         try {
-            const response = await fetch(`/api/verify/org/${orgId}/disapprove`, {
-                method: 'POST',
+            await axios.post(`/api/verify/org/${orgId}/disapprove`, { field }, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include',
-                body: JSON.stringify({ field }),
+                withCredentials: true,
             });
-            if (!response.ok) {
-                throw new Error('Failed to reject document');
-            }
             handleNotify(`Document ${FIELD_MAP[field].name} rejected.`, 'error');
             fetchOrganizations(); // Refresh data
         } catch (error) {
@@ -174,16 +161,12 @@ const OrgVerify = () => {
 
     const finalVerify = async (orgId) => {
         try {
-            const response = await fetch(`/api/verify/org/${orgId}/final-approve`, {
-                method: 'POST',
+            await axios.post(`/api/verify/org/${orgId}/final-approve`, {}, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include',
+                withCredentials: true,
             });
-            if (!response.ok) {
-                throw new Error('Failed to finalize approval');
-            }
             handleNotify('Organization has been finally approved!', 'success');
             fetchOrganizations(); // Refresh data
             setExpandedRow(null); // Close the expanded row
@@ -199,16 +182,12 @@ const OrgVerify = () => {
 
     const finalReject = async (orgId) => {
         try {
-            const response = await fetch(`/api/verify/org/${orgId}/final-disapprove`, {
-                method: 'POST',
+            await axios.post(`/api/verify/org/${orgId}/final-disapprove`, {}, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include',
+                withCredentials: true,
             });
-            if (!response.ok) {
-                throw new Error('Failed to finalize rejection');
-            }
             handleNotify('Organization has been finally rejected.', 'error', 5000, true);
             fetchOrganizations(); // Refresh data
             setExpandedRow(null); // Close the expanded row
@@ -229,14 +208,9 @@ const OrgVerify = () => {
         formData.append('finalReport', file);
 
         try {
-            const response = await fetch(`/api/verify/org/${orgId}/upload-report`, {
-                method: 'POST',
-                credentials: 'include',
-                body: formData,
+            await axios.post(`/api/verify/org/${orgId}/upload-report`, formData, {
+                withCredentials: true,
             });
-            if (!response.ok) {
-                throw new Error('Failed to upload report');
-            }
             handleNotify('Verification report uploaded successfully.', 'success');
             fetchOrganizations(); // Refresh data
         } catch (error) {
@@ -247,17 +221,13 @@ const OrgVerify = () => {
 
     const viewFile = async (orgId, field) => {
         try {
-            const response = await fetch(`/api/verify/org/files/${orgId}/${field}`, {
-                method: 'GET',
+            const response = await axios.get(`/api/verify/org/files/${orgId}/${field}`, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include',
+                withCredentials: true,
             });
-            if (!response.ok) {
-                throw new Error('Failed to fetch file');
-            }
-            const data = await response.json();
+            const data = response.data;
             const dataUrl = `data:${data.file.mime};base64,${data.file.base64}`;
             setFileViewer({ active: true, file: { dataUrl, mime: data.file.mime } });
         } catch (error) {
@@ -268,17 +238,13 @@ const OrgVerify = () => {
     
     const downloadFile = async (orgId, field, fileName, fileExt) => {
         try {
-            const response = await fetch(`/api/verify/org/files/${orgId}/${field}`, {
-                method: 'GET',
+            const response = await axios.get(`/api/verify/org/files/${orgId}/${field}`, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include',
+                withCredentials: true,
             });
-            if (!response.ok) {
-                throw new Error('Failed to fetch file');
-            }
-            const data = await response.json();
+            const data = response.data;
             const dataUrl = `data:${data.file.mime};base64,${data.file.base64}`;
             const link = document.createElement('a');
             link.href = dataUrl;

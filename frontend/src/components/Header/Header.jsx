@@ -15,23 +15,21 @@ const getBasePath = (currentPath) => {
     return ''; // Base path for non-logged-in users
 };
 
-// Font Awesome: inject into document.head to avoid rendering <link> in body (SSR note below)
-const FontAwesomeLink = () => {
-  React.useEffect(() => {
-    if (typeof document === 'undefined') return; // SSR-safe
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
-    link.integrity = 'sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==';
-    link.crossOrigin = 'anonymous';
-    link.referrerPolicy = 'no-referrer';
+// Font Awesome: inject once on script start (moved outside component)
+if (typeof document !== 'undefined' && !document.getElementById('font-awesome-link')) {
+  const link = document.createElement('link');
+  link.id = 'font-awesome-link';
+  link.rel = 'stylesheet';
+  link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+  link.integrity = 'sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==';
+  link.crossOrigin = 'anonymous';
+  link.referrerPolicy = 'no-referrer';
+  link.async = true; // Load asynchronously to not block page render
+  document.head.appendChild(link);
+}
 
-    document.head.appendChild(link);
-    return () => {
-      if (link && link.parentNode) link.parentNode.removeChild(link);
-    };
-  }, []);
-  return null;
+const FontAwesomeLink = () => {
+  return null; // Font Awesome already loaded globally
 };
 
 // Floating Contact Button component (positioned top-right just below header)

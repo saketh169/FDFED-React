@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 // --- Configuration and Data (Replicated from HTML) ---
 const FIELD_MAP = {
@@ -167,15 +168,11 @@ const DietitianVerify = () => {
 
   const fetchDietitians = useCallback(async () => {
     try {
-      const response = await fetch('/api/verify/dietitians', {
-        credentials: 'include'
+      const response = await axios.get('/api/verify/dietitians', {
+        withCredentials: true
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = response.data;
       setDietitians(data.map((d, index) => ({ ...d, rowId: index + 1 })));
     } catch (error) {
       console.error('Error fetching dietitians:', error);
@@ -193,17 +190,12 @@ const DietitianVerify = () => {
 
   const verifyDocument = async (dietitianId, field) => {
     try {
-      const response = await fetch(`/api/verify/${dietitianId}/approve`, {
-        method: 'POST',
+      await axios.post(`/api/verify/${dietitianId}/approve`, { field }, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({ field }),
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to approve document');
-      }
       handleNotify(`Document ${FIELD_MAP[field].name} verified.`, 'success');
       fetchDietitians(); // Refresh data
     } catch (error) {
@@ -214,17 +206,12 @@ const DietitianVerify = () => {
 
   const rejectDocument = async (dietitianId, field) => {
     try {
-      const response = await fetch(`/api/verify/${dietitianId}/disapprove`, {
-        method: 'POST',
+      await axios.post(`/api/verify/${dietitianId}/disapprove`, { field }, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({ field }),
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to reject document');
-      }
       handleNotify(`Document ${FIELD_MAP[field].name} rejected.`, 'error');
       fetchDietitians(); // Refresh data
     } catch (error) {
@@ -235,16 +222,12 @@ const DietitianVerify = () => {
 
   const finalVerify = async (dietitianId) => {
     try {
-      const response = await fetch(`/api/verify/${dietitianId}/final-approve`, {
-        method: 'POST',
+      await axios.post(`/api/verify/${dietitianId}/final-approve`, {}, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to finalize approval');
-      }
       handleNotify('Dietitian has been finally approved!', 'success');
       fetchDietitians(); // Refresh data
       setExpandedRow(null); // Close the expanded row
@@ -260,16 +243,12 @@ const DietitianVerify = () => {
 
   const finalReject = async (dietitianId) => {
     try {
-      const response = await fetch(`/api/verify/${dietitianId}/final-disapprove`, {
-        method: 'POST',
+      await axios.post(`/api/verify/${dietitianId}/final-disapprove`, {}, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to finalize rejection');
-      }
       handleNotify('Dietitian has been finally rejected.', 'error', 5000, true);
       fetchDietitians(); // Refresh data
       setExpandedRow(null); // Close the expanded row
@@ -290,14 +269,9 @@ const DietitianVerify = () => {
     formData.append('finalReport', file);
 
     try {
-      const response = await fetch(`/api/verify/${dietitianId}/upload-report`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
+      await axios.post(`/api/verify/${dietitianId}/upload-report`, formData, {
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to upload report');
-      }
       handleNotify('Verification report uploaded successfully.', 'success');
       fetchDietitians(); // Refresh data
     } catch (error) {
@@ -308,17 +282,13 @@ const DietitianVerify = () => {
 
   const viewFile = async (dietitianId, field) => {
     try {
-      const response = await fetch(`/api/verify/files/${dietitianId}/${field}`, {
-        method: 'GET',
+      const response = await axios.get(`/api/verify/files/${dietitianId}/${field}`, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to fetch file');
-      }
-      const data = await response.json();
+      const data = response.data;
       const dataUrl = `data:${data.file.mime};base64,${data.file.base64}`;
       setFileViewer({ active: true, file: { dataUrl, mime: data.file.mime } });
     } catch (error) {
@@ -329,17 +299,13 @@ const DietitianVerify = () => {
 
   const downloadFile = async (dietitianId, field, fileName, fileExt) => {
     try {
-      const response = await fetch(`/api/verify/files/${dietitianId}/${field}`, {
-        method: 'GET',
+      const response = await axios.get(`/api/verify/files/${dietitianId}/${field}`, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to fetch file');
-      }
-      const data = await response.json();
+      const data = response.data;
       const dataUrl = `data:${data.file.mime};base64,${data.file.base64}`;
       const link = document.createElement('a');
       link.href = dataUrl;

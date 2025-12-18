@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
+import axios from 'axios';
 import Sidebar from "../../components/Sidebar/Sidebar";
 import Status from "../../middleware/StatusBadge"; // Import Status component 
 import { useAuthContext } from "../../hooks/useAuthContext"; 
@@ -147,15 +148,13 @@ const CorporateDashboard = () => {
         return;
       }
 
-      const response = await fetch('/api/uploadcorporatepartner', {
-        method: 'POST',
-        body: formData,
+      const response = await axios.post('/api/uploadcorporatepartner', formData, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         alert('Partner logo uploaded successfully!');

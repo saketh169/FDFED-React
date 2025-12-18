@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, LineChart as LineChartAlt } from 'recharts';
 
 const UserProgress = () => {
@@ -96,17 +97,11 @@ const UserProgress = () => {
     const fetchData = async () => {
       try {
         // Fetch progress data
-        const response = await fetch('/api/user-progress', {
+        const response = await axios.get('/api/user-progress', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (response.status === 401) {
-          localStorage.removeItem(`authToken_${role}`);
-          navigate(`/signin?role=${role}`);
-          return;
-        }
-
-        const data = await response.json();
+        const data = response.data;
         setProgressData(data.data || []);
         
         // Set the last chosen plan by default if data exists
@@ -121,14 +116,16 @@ const UserProgress = () => {
         }
 
         // Fetch subscription info
-        const subResponse = await fetch('/api/user-progress/subscription-info', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (subResponse.ok) {
-          const subData = await subResponse.json();
+        try {
+          const subResponse = await axios.get('/api/user-progress/subscription-info', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const subData = subResponse.data;
           if (subData.success) {
             setSubscriptionInfo(subData.data);
           }
+        } catch (subError) {
+          console.error('Error fetching subscription info:', subError);
         }
       } catch (error) {
         console.error('Error loading progress:', error);
@@ -223,39 +220,14 @@ const UserProgress = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem(`authToken_${role}`);
-      const response = await fetch('/api/user-progress', {
-        method: 'POST',
+      const response = await axios.post('/api/user-progress', submitData, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(submitData)
+        }
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem(`authToken_${role}`);
-        navigate(`/signin?role=${role}`);
-        return;
-      }
-
-      if (response.status === 403) {
-        const errorData = await response.json();
-        // Plan access restricted
-        if (errorData.planRestricted) {
-          showAlert(errorData.message || 'This plan requires a higher subscription tier.', 'error');
-        } else {
-          showAlert(errorData.message || 'Access denied. Please check your subscription.', 'error');
-        }
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        showAlert(errorData.message || 'Error saving progress', 'error');
-        return;
-      }
-
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         showAlert('Progress saved successfully!', 'success');
         // Add new entry to the list and keep the plan selected
@@ -279,24 +251,11 @@ const UserProgress = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem(`authToken_${role}`);
-      const response = await fetch(`/api/user-progress/${deleteId}`, {
-        method: 'DELETE',
+      const response = await axios.delete(`/api/user-progress/${deleteId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem(`authToken_${role}`);
-        navigate(`/signin?role=${role}`);
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        showAlert(errorData.message || 'Error deleting entry', 'error');
-        return;
-      }
-
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         setProgressData(progressData.filter(p => p._id !== deleteId));
         showAlert('Entry deleted successfully!', 'success');

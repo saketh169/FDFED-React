@@ -1,4 +1,5 @@
 import React, { createContext, useEffect, useState } from 'react';
+import axios from 'axios';
 
 // Create Verify Context
 const VerifyContext = createContext();
@@ -46,21 +47,17 @@ export const VerifyProvider = ({
 
       // Check verification status
       try {
-        const response = await fetch(`/api/status/${requiredRole}-status`, {
+        const response = await axios.get(`/api/status/${requiredRole}-status`, {
           headers: {
             'Authorization': `Bearer ${storedToken}`,
             'Content-Type': 'application/json'
           }
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          const finalStatus = data.verificationStatus?.finalReport || 'pending';
-          setVerificationStatus(finalStatus);
-          setIsVerified(finalStatus === 'verified');
-        } else {
-          setError('Failed to check verification status');
-        }
+        const data = response.data;
+        const finalStatus = data.verificationStatus?.finalReport || 'pending';
+        setVerificationStatus(finalStatus);
+        setIsVerified(finalStatus === 'verified');
       } catch (err) {
         setError('Network error while checking verification');
         console.error('Verification check error:', err);
@@ -102,19 +99,17 @@ export const VerifyProvider = ({
         setIsAuthenticated(true);
 
         // Re-fetch verification status
-        fetch(`/api/status/${requiredRole}-status`, {
+        axios.get(`/api/status/${requiredRole}-status`, {
           headers: {
             'Authorization': `Bearer ${storedToken}`,
             'Content-Type': 'application/json'
           }
         })
-          .then(response => response.ok ? response.json() : null)
-          .then(data => {
-            if (data) {
-              const finalStatus = data.verificationStatus?.finalReport || 'pending';
-              setVerificationStatus(finalStatus);
-              setIsVerified(finalStatus === 'verified');
-            }
+          .then(response => {
+            const data = response.data;
+            const finalStatus = data.verificationStatus?.finalReport || 'pending';
+            setVerificationStatus(finalStatus);
+            setIsVerified(finalStatus === 'verified');
           })
           .catch(err => {
             console.error('Verification recheck error:', err);

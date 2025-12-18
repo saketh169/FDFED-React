@@ -50,7 +50,7 @@ const AdminSettings = () => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/settings');
+        const response = await axios.get('/api/settings');
         setSettings(prev => ({ ...prev, ...response.data }));
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -112,7 +112,7 @@ const AdminSettings = () => {
         updateData.privacyPolicy = settings.privacyPolicy;
       }
 
-      await axios.put('http://localhost:5000/api/settings', updateData);
+      await axios.put('/api/settings', updateData);
 
       setSaveStatus('✅ Settings saved successfully! Changes are now live.');
       setTimeout(() => setSaveStatus(''), 5000);
@@ -166,7 +166,7 @@ const AdminSettings = () => {
       if (settings.policyChangeEmail.sendToOrganizations) recipients.push('organizations');
       if (settings.policyChangeEmail.sendToCorporatePartners) recipients.push('corporate_partners');
 
-      const response = await axios.post('http://localhost:5000/api/settings/send-email', {
+      const response = await axios.post('/api/settings/send-email', {
         recipients,
         subject: settings.policyChangeEmail.subject,
         message: settings.policyChangeEmail.message

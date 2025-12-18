@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api/payments';
-const SETTINGS_API_URL = 'http://localhost:5000/api/settings';
+const API_BASE_URL = '/api/payments';
+const SETTINGS_API_URL = '/api/settings';
 
 // Helper function to get auth token
 const getAuthToken = (role = 'user') => {

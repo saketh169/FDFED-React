@@ -340,7 +340,7 @@ const LabReportUploader = () => {
       const role = user?.role || 'user'; // Default to 'user' if role not available
       const token = localStorage.getItem(`authToken_${role}`);
       
-      const response = await axios.post('http://localhost:5000/api/lab-reports/lab/submit', formData, {
+      const response = await axios.post('/api/lab-reports/lab/submit', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': token ? `Bearer ${token}` : undefined

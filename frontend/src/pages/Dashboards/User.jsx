@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
+import axios from 'axios';
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { useAuthContext } from "../../hooks/useAuthContext";
 
@@ -115,13 +116,13 @@ const UserDashboard = () => {
     
     try {
       if (showLoading) setIsLoadingDashboard(true);
-      const response = await fetch(`/api/analytics/user/${user.id}`, {
+      const response = await axios.get(`/api/analytics/user/${user.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         setNotifications(data.data.notifications || []);
@@ -185,9 +186,7 @@ const UserDashboard = () => {
         return;
       }
 
-      const response = await fetch('/api/uploaduser', {
-        method: 'POST',
-        body: formData,
+      const response = await axios.post('/api/uploaduser', formData, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }

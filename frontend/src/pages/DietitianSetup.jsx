@@ -31,7 +31,7 @@ const DietitianSetup = () => {
           return;
         }
 
-        const response = await axios.get(`http://localhost:5000/api/dietitians/profile/${userId}`, {
+        const response = await axios.get(`/api/dietitians/profile/${userId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -205,7 +205,7 @@ const DietitianSetup = () => {
         console.log('Submitting dietitian profile data:', processedData);
 
         // Send POST request to setup profile
-        const response = await axios.post(`http://localhost:5000/api/dietitian-profile-setup/${userId}`, processedData, {
+        const response = await axios.post(`/api/dietitian-profile-setup/${userId}`, processedData, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

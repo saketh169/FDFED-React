@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export const useVerification = (role) => {
   const [isVerified, setIsVerified] = useState(false);
@@ -30,20 +31,16 @@ export const useVerification = (role) => {
       }
 
       try {
-        const response = await fetch(`/api/status/${role}-status`, {
+        const response = await axios.get(`/api/status/${role}-status`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          const finalStatus = data.verificationStatus?.finalReport || 'Not Received';
-          setIsVerified(finalStatus === 'Verified');
-        } else {
-          setError('Failed to check verification status');
-        }
+        const data = response.data;
+        const finalStatus = data.verificationStatus?.finalReport || 'Not Received';
+        setIsVerified(finalStatus === 'Verified');
       } catch (err) {
         setError('Network error while checking verification');
         console.error('Verification check error:', err);
