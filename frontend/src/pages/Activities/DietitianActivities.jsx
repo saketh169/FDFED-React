@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from 'axios';
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { useAuthContext } from "../../hooks/useAuthContext";
 
@@ -32,13 +33,13 @@ const DietitianActivities = () => {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/analytics/dietitian/${user.id}/activities?page=${page}&limit=20`, {
+        const response = await axios.get(`/api/analytics/dietitian/${user.id}/activities?page=${page}&limit=20`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-        const data = await response.json();
+        const data = response.data;
         
         if (data.success) {
           if (page === 1) {

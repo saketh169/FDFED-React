@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const RoleModal = ({ isModal = false, onClose }) => {
   const navigate = useNavigate();
@@ -57,21 +58,20 @@ const RoleModal = ({ isModal = false, onClose }) => {
 
   const verifyToken = async (token, role) => {
     try {
-      const res = await fetch('/api/verify-token', {
+      await axios.get('/api/verify-token', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      if (res.status === 401) {
+      return true;
+    } catch (error) {
+      if (error.response?.status === 401) {
         localStorage.removeItem(`authToken_${role.slug}`);
         alert(`Session expired for ${role.name}`);
         navigate(`/signin?role=${role.slug}`);
-        return false;
+      } else {
+        localStorage.removeItem(`authToken_${role.slug}`);
+        alert('Verification failed');
+        navigate(`/signin?role=${role.slug}`);
       }
-      return true;
-    } catch {
-      localStorage.removeItem(`authToken_${role.slug}`);
-      alert('Verification failed');
-      navigate(`/signin?role=${role.slug}`);
       return false;
     }
   };

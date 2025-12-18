@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 // Inject Font Awesome for icons used in the application
 function loadFontAwesome() {
@@ -169,15 +170,11 @@ const App = () => {
 
   const fetchPartners = useCallback(async () => {
     try {
-      const response = await fetch('/api/verify/corporate', {
-        credentials: 'include'
+      const response = await axios.get('/api/verify/corporate', {
+        withCredentials: true
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = response.data;
       setPartners(data.map((p, index) => ({ ...p, rowId: index + 1 })));
     } catch (error) {
       console.error('Error fetching corporate partners:', error);
@@ -195,17 +192,12 @@ const App = () => {
 
   const verifyDocument = async (partnerId, field) => {
     try {
-      const response = await fetch(`/api/verify/corporate/${partnerId}/approve`, {
-        method: 'POST',
+      await axios.post(`/api/verify/corporate/${partnerId}/approve`, { field }, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({ field }),
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to approve document');
-      }
       handleNotify(`Document ${FIELD_MAP[field].name} verified.`, 'success');
       fetchPartners(); // Refresh data
     } catch (error) {
@@ -216,17 +208,12 @@ const App = () => {
 
   const rejectDocument = async (partnerId, field) => {
     try {
-      const response = await fetch(`/api/verify/corporate/${partnerId}/disapprove`, {
-        method: 'POST',
+      await axios.post(`/api/verify/corporate/${partnerId}/disapprove`, { field }, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({ field }),
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to reject document');
-      }
       handleNotify(`Document ${FIELD_MAP[field].name} rejected.`, 'error');
       fetchPartners(); // Refresh data
     } catch (error) {
@@ -237,16 +224,12 @@ const App = () => {
 
   const finalVerify = async (partnerId) => {
     try {
-      const response = await fetch(`/api/verify/corporate/${partnerId}/final-approve`, {
-        method: 'POST',
+      await axios.post(`/api/verify/corporate/${partnerId}/final-approve`, {}, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to finalize approval');
-      }
       handleNotify('Corporate Partner has been finally approved!', 'success');
       fetchPartners(); // Refresh data
       setExpandedRow(null); // Close the expanded row
@@ -262,16 +245,12 @@ const App = () => {
 
   const finalReject = async (partnerId) => {
     try {
-      const response = await fetch(`/api/verify/corporate/${partnerId}/final-disapprove`, {
-        method: 'POST',
+      await axios.post(`/api/verify/corporate/${partnerId}/final-disapprove`, {}, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to finalize rejection');
-      }
       handleNotify('Corporate Partner has been finally rejected.', 'error');
       fetchPartners(); // Refresh data
       setExpandedRow(null); // Close the expanded row
@@ -292,14 +271,9 @@ const App = () => {
     formData.append('finalReport', file);
 
     try {
-      const response = await fetch(`/api/verify/corporate/${partnerId}/upload-report`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
+      await axios.post(`/api/verify/corporate/${partnerId}/upload-report`, formData, {
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to upload report');
-      }
       handleNotify('Verification report uploaded successfully.', 'success');
       fetchPartners(); // Refresh data
     } catch (error) {
@@ -310,17 +284,13 @@ const App = () => {
 
   const viewFile = async (partnerId, field) => {
     try {
-      const response = await fetch(`/api/verify/corporate/files/${partnerId}/${field}`, {
-        method: 'GET',
+      const response = await axios.get(`/api/verify/corporate/files/${partnerId}/${field}`, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to fetch file');
-      }
-      const data = await response.json();
+      const data = response.data;
       const dataUrl = `data:${data.file.mime};base64,${data.file.base64}`;
       setFileViewer({ active: true, file: { dataUrl, mime: data.file.mime } });
     } catch (error) {
@@ -331,17 +301,13 @@ const App = () => {
 
   const downloadFile = async (partnerId, field, fileName, fileExt) => {
     try {
-      const response = await fetch(`/api/verify/corporate/files/${partnerId}/${field}`, {
-        method: 'GET',
+      const response = await axios.get(`/api/verify/corporate/files/${partnerId}/${field}`, {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (!response.ok) {
-        throw new Error('Failed to fetch file');
-      }
-      const data = await response.json();
+      const data = response.data;
       const dataUrl = `data:${data.file.mime};base64,${data.file.base64}`;
       const link = document.createElement('a');
       link.href = dataUrl;

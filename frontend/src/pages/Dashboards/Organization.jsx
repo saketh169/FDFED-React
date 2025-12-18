@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios';
 import Sidebar from "../../components/Sidebar/Sidebar";
 import Status from "../../middleware/StatusBadge";
 import { useAuthContext } from "../../hooks/useAuthContext";
@@ -173,7 +174,7 @@ const OrganizationDashboard = () => {
         return;
       }
 
-      const res = await fetch('/api/uploadorganization', { 
+      const res = await axios.post('/api/uploadorganization', formData, { 
         method: 'POST', 
         body: formData,
         headers: {

@@ -65,7 +65,7 @@ const DietitianLabReportViewer = () => {
         const token = localStorage.getItem(`authToken_${role}`);
         
         const response = await axios.get(
-          `http://localhost:5000/api/lab-reports/client/${clientId}/dietitian/${dietitianId}`,
+          `/api/lab-reports/client/${clientId}/dietitian/${dietitianId}`,
           {
             headers: {
               'Authorization': token ? `Bearer ${token}` : undefined

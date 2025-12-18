@@ -21,8 +21,8 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 
 
-// Load environment variables from .env file
-require('dotenv').config();
+// Load environment variables from .env file in utils folder
+require('dotenv').config({ path: require('path').join(__dirname, 'utils', '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5000;

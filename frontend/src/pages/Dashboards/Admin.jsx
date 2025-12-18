@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Chart from "chart.js/auto";
+import axios from 'axios';
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import {
@@ -339,7 +340,7 @@ const AdminDashboard = () => {
         return;
       }
 
-      const response = await fetch('/api/uploadadmin', {
+      const response = await axios.post('/api/uploadadmin', formData, {
         method: 'POST',
         body: formData,
         headers: {

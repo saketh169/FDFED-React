@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const StatusBadge = ({ role }) => {
   const [status, setStatus] = useState('loading');
@@ -11,10 +12,10 @@ const StatusBadge = ({ role }) => {
       if (!token) return setStatus('unauthorized');
 
       try {
-        const res = await fetch(`/api/status/${role}-status`, {
+        const res = await axios.get(`/api/status/${role}-status`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = res.data;
         setStatus(data.verificationStatus?.finalReport || 'Not Received');
       } catch {
         setStatus('error');

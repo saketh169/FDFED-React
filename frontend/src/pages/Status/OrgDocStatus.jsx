@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 // NOTE: Assumes Font Awesome CSS is imported globally.
 
@@ -103,24 +104,19 @@ const OrgDocStatus = () => {
             if (!token) {
                 organizationName = 'No token found';
             } else {
-                const statusResponse = await fetch('/api/status/organization-status', {
+                const statusResponse = await axios.get('/api/status/organization-status', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
-                if (statusResponse.ok) {
-                    const statusData = await statusResponse.json();
-                    organizationName = statusData.name;
-                    documentData = {
-                        verificationStatus: statusData.verificationStatus,
-                        finalReport: statusData.finalReport
-                    };
-                } else {
-                    organizationName = 'Failed to load data';
-                    console.error('Failed to fetch status');
-                }
+                const statusData = statusResponse.data;
+                organizationName = statusData.name;
+                documentData = {
+                    verificationStatus: statusData.verificationStatus,
+                    finalReport: statusData.finalReport
+                };
             }
         } catch (error) {
             console.error('Error fetching organization data:', error);

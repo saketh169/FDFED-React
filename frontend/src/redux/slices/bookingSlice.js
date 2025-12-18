@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api/bookings';
-const DIETITIAN_API_URL = 'http://localhost:5000/api/dietitians';
+const API_BASE_URL = '/api/bookings';
+const DIETITIAN_API_URL = '/api/dietitians';
 
 // Helper function to get auth token
 const getAuthToken = (role = 'user') => {

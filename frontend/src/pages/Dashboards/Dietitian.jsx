@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios';
 import Sidebar from "../../components/Sidebar/Sidebar";
 import Status from "../../middleware/StatusBadge";
 import { useAuthContext } from "../../hooks/useAuthContext";
@@ -45,13 +46,13 @@ const DietitianDashboard = () => {
 
     try {
       if (showLoading) setIsLoadingDashboard(true);
-      const response = await fetch(`/api/analytics/dietitian/${user.id}`, {
+      const response = await axios.get(`/api/analytics/dietitian/${user.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         setNotifications(data.data.notifications || []);
@@ -121,14 +122,12 @@ const DietitianDashboard = () => {
         return;
       }
 
-      const res = await fetch('/api/uploaddietitian', { 
-        method: 'POST', 
-        body: formData,
+      const res = await axios.post('/api/uploaddietitian', formData, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
-      const data = await res.json();
+      const data = res.data;
 
       if (data.success) {
         alert("Profile photo updated successfully!");

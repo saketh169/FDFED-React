@@ -16,7 +16,7 @@ const TermsOfUse = () => {
     const fetchTermsOfUse = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/settings');
+        const response = await axios.get('/api/settings');
         setContent(response.data.termsOfService || 'Terms of service content not available.');
       } catch (err) {
         console.error('Error fetching terms of use:', err);
