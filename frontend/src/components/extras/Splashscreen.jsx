@@ -4,7 +4,6 @@ import styles from '../../styles/Splashscreen.module.css'
 const SplashScreen = () => {
   const [loadingText, setLoadingText] = useState('Loading...')
 
-  
   useEffect(() => {
     const loadingMessages = [
       'Loading...',
