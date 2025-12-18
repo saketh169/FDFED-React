@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import styles from '../../styles/SplashScreen.module.css'
+import styles from '../../styles/Splashscreen.module.css'
 
 const SplashScreen = () => {
   const [loadingText, setLoadingText] = useState('Loading...')
 
+  
   useEffect(() => {
     const loadingMessages = [
       'Loading...',
