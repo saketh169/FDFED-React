@@ -117,6 +117,12 @@ const Signin = () => {
     const [role, setRole] = useState('');
     const [corporateType, setCorporateType] = useState('');
     const [message, setMessage] = useState('');
+    const [show2FA, setShow2FA] = useState(false);
+    const [userEmail, setUserEmail] = useState('');
+    const [userCredentials, setUserCredentials] = useState(null);
+    const [pin, setPin] = useState('');
+    const [pinError, setPinError] = useState('');
+    const [isVerifyingPin, setIsVerifyingPin] = useState(false);
 
     // Get role and corporateType from URL on mount
     useEffect(() => {
@@ -149,7 +155,7 @@ const Signin = () => {
         if (role === 'corporatepartner') formData.licenseNumber = values.licenseNumber;
         if (role === 'admin') formData.adminKey = values.adminKey;
 
-        const apiRoute = `/api/signin/${role}`; // e.g., /api/signin/user
+        const apiRoute = `/api/2fa/send/${role}`; // Send 2FA PIN route
 
         setSubmitting(true);
         setMessage('Verifying credentials...');
@@ -159,23 +165,17 @@ const Signin = () => {
             const response = await axios.post(apiRoute, formData);
             const data = response.data;
 
-            // Handle token storage
-            if (data.token) {
-                // Store token with role-specific key so multiple roles can be logged in simultaneously
-                localStorage.setItem(`authToken_${data.role}`, data.token);
-                // Store userId for profile operations
-                if (data.roleId) {
-                    localStorage.setItem('userId', data.roleId);
-                }
+            if (data.requires2FA) {
+                // Store credentials and show 2FA input
+                setUserEmail(values.email);
+                setUserCredentials({
+                    email: values.email,
+                    rememberMe: values.rememberMe,
+                    role: role
+                });
+                setShow2FA(true);
+                setMessage('A verification PIN has been sent to your email. Please check your inbox.');
             }
-
-            setMessage(`Sign-in successful! Redirecting to ${role} home page ...`);
-
-            // Redirect after a short delay
-            setTimeout(() => {
-                setMessage('');
-                navigate(roleRoutes[role]);
-            }, 1000);
 
         } catch (error) {
             console.error('Sign-in Error:', error.response ? error.response.data : error.message);
@@ -192,6 +192,70 @@ const Signin = () => {
             setSubmitting(false);
         }
     };
+
+    // Handle 2FA PIN Verification
+    const handlePinVerification = async () => {
+        if (!pin || pin.length !== 6) {
+            setPinError('Please enter a valid 6-digit PIN');
+            return;
+        }
+
+        setIsVerifyingPin(true);
+        setPinError('');
+        setMessage('Verifying PIN...');
+
+        try {
+            const response = await axios.post(`/api/2fa/verify/${userCredentials.role}`, {
+                email: userCredentials.email,
+                pin: pin,
+                rememberMe: userCredentials.rememberMe
+            });
+
+            const data = response.data;
+
+            // Handle token storage
+            if (data.token) {
+                // Store token with role-specific key
+                localStorage.setItem(`authToken_${data.role}`, data.token);
+                // Store userId for profile operations
+                if (data.roleId) {
+                    localStorage.setItem('userId', data.roleId);
+                }
+            }
+
+            setMessage(`Sign-in successful! Redirecting to ${role} home page ...`);
+
+            // Redirect after a short delay
+            setTimeout(() => {
+                setMessage('');
+                navigate(roleRoutes[role]);
+            }, 1000);
+
+        } catch (error) {
+            console.error('PIN Verification Error:', error.response ? error.response.data : error.message);
+            const errorMessage = error.response?.data?.message || 'Invalid PIN. Please try again.';
+            setPinError(errorMessage);
+            setMessage(`Error: ${errorMessage}`);
+        } finally {
+            setIsVerifyingPin(false);
+        }
+    };
+
+    // Handle resending PIN
+    // const handleResendPin = async () => {
+    //     setMessage('Resending PIN...');
+    //     setPinError('');
+    //     setPin('');
+
+    //     try {
+    //         // Note: This would require the password to be stored temporarily
+    //         // For security, you might want to have a separate resend endpoint
+    //         setMessage('Please use the Forgot Password link if you need to reset your PIN.');
+            
+    //     } catch (error) {
+    //         setMessage('Failed to resend PIN. Please try again.');
+    //     }
+    // };
 
     // Render Form Content (Role-agnostic components)
     const renderFormFields = () => {
@@ -265,7 +329,7 @@ const Signin = () => {
     // Fallback for unselected role
     if (!role || role === 'default') {
         return (
-            <section className="flex items-center justify-center bg-gray-100 p-4 min-h-[600px]">
+            <section className="flex items-center justify-center bg-gray-100 p-4 min-h-150">
                 <div className="w-full max-w-lg p-8 mx-auto rounded-3xl shadow-2xl bg-white animate-fade-in">
                     <div className="text-center p-8">
                         <h3 className="text-xl text-gray-700 font-semibold mb-4">Please select a role to sign in.</h3>
@@ -284,7 +348,7 @@ const Signin = () => {
 
     // Main Render with Formik Wrapper
     return (
-        <section className="flex items-center justify-center bg-gray-100 p-4 min-h-[600px]">
+        <section className="flex items-center justify-center bg-gray-100 p-4 min-h-150">
             <div className="w-full max-w-lg p-8 mx-auto rounded-3xl shadow-2xl bg-white animate-fade-in relative">
                 <button
                     onClick={() => navigate('/role')}
@@ -304,7 +368,7 @@ const Signin = () => {
                         className={`p-3 mb-5 text-center text-base font-medium rounded-lg shadow-sm animate-slide-in w-full ${
                             message.includes('successful') || message.includes('Redirecting')
                                 ? 'text-green-800 bg-green-100 border border-green-300'
-                                : message.includes('Verifying')
+                                : message.includes('Verifying') || message.includes('PIN has been sent')
                                     ? 'text-blue-800 bg-blue-100 border border-blue-300'
                                     : 'text-red-800 bg-red-100 border border-red-300'
                         }`}
@@ -314,39 +378,101 @@ const Signin = () => {
                     </div>
                 )}
 
-                <Formik
-                    initialValues={getInitialValues(role)}
-                    validationSchema={buildValidationSchema(role)}
-                    onSubmit={handleFormikSubmit}
-                    enableReinitialize={true}
-                >
-                    {({ isSubmitting }) => (
-                        <Form className="space-y-4" noValidate>
+                {/* Show 2FA PIN Input if required */}
+                {show2FA ? (
+                    <div className="space-y-4">
+                        <div className="text-center mb-4">
+                            <i className="fas fa-shield-alt text-5xl text-[#1E6F5C] mb-3"></i>
+                            <h3 className="text-xl font-semibold text-gray-700">Two-Factor Authentication</h3>
+                            <p className="text-sm text-gray-600 mt-2">Enter the 6-digit PIN sent to {userEmail}</p>
+                        </div>
 
-                            {renderFormFields()}
+                        <div>
+                            <label htmlFor="pin" className="block text-sm font-medium text-gray-700 mb-1">
+                                Verification PIN
+                            </label>
+                            <input
+                                id="pin"
+                                type="text"
+                                maxLength="6"
+                                value={pin}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, '');
+                                    setPin(value);
+                                    setPinError('');
+                                }}
+                                className="w-full px-4 py-2 text-center text-2xl font-mono tracking-widest rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6a994e] transition-all duration-300"
+                                placeholder="000000"
+                                autoFocus
+                            />
+                            {pinError && (
+                                <div className="text-red-500 text-xs mt-1 text-center">{pinError}</div>
+                            )}
+                        </div>
 
-                            {/* Submit Button with Loading State */}
+                        <button
+                            onClick={handlePinVerification}
+                            disabled={isVerifyingPin || pin.length !== 6}
+                            className={`w-full bg-[${primaryGreen}] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-colors duration-300 shadow-md hover:shadow-lg disabled:opacity-50`}
+                        >
+                            {isVerifyingPin ? (
+                                <>
+                                    <i className="fas fa-spinner fa-spin mr-2"></i> Verifying...
+                                </>
+                            ) : (
+                                'Verify PIN'
+                            )}
+                        </button>
+
+                        <div className="text-center">
                             <button
-                                type="submit"
-                                className={`w-full bg-[${primaryGreen}] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-colors duration-300 shadow-md hover:shadow-lg disabled:opacity-50`}
-                                disabled={isSubmitting}
+                                onClick={() => {
+                                    setShow2FA(false);
+                                    setPin('');
+                                    setPinError('');
+                                    setMessage('');
+                                }}
+                                className="text-sm text-gray-600 hover:text-gray-800 underline"
                             >
-                                {isSubmitting ? (
-                                    <>
-                                        <i className="fas fa-spinner fa-spin mr-2"></i> Logging In...
-                                    </>
-                                ) : (
-                                    'Log In'
-                                )}
+                                Back to Login
                             </button>
+                        </div>
+                    </div>
+                ) : (
+                    <Formik
+                        initialValues={getInitialValues(role)}
+                        validationSchema={buildValidationSchema(role)}
+                        onSubmit={handleFormikSubmit}
+                        enableReinitialize={true}
+                    >
+                        {({ isSubmitting }) => (
+                            <Form className="space-y-4" noValidate>
 
-                            <p className="text-center text-sm mt-4">
-                                Don't have an account?{' '}
-                                <Link to={`/signup?role=${role}${corporateType === 'corporate_employee' ? '&corporateType=corporate_employee' : ''}`} className={commonLinkClasses}>Sign Up</Link>
-                            </p>
-                        </Form>
-                    )}
-                </Formik>
+                                {renderFormFields()}
+
+                                {/* Submit Button with Loading State */}
+                                <button
+                                    type="submit"
+                                    className={`w-full bg-[${primaryGreen}] text-white font-semibold py-3 rounded-lg hover:bg-[#155345] transition-colors duration-300 shadow-md hover:shadow-lg disabled:opacity-50`}
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin mr-2"></i> Logging In...
+                                        </>
+                                    ) : (
+                                        'Log In'
+                                    )}
+                                </button>
+
+                                <p className="text-center text-sm mt-4">
+                                    Don't have an account?{' '}
+                                    <Link to={`/signup?role=${role}${corporateType === 'corporate_employee' ? '&corporateType=corporate_employee' : ''}`} className={commonLinkClasses}>Sign Up</Link>
+                                </p>
+                            </Form>
+                        )}
+                    </Formik>
+                )}
             </div>
         </section>
     );
