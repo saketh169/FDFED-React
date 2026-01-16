@@ -109,10 +109,4 @@ router.post('/forgot-password/:role', forgotPasswordController.forgotPasswordCon
 // 17. Reset Password: POST /api/reset-password/:role (Reset password with OTP for specific role)
 router.post('/reset-password/:role', forgotPasswordController.resetPasswordController);
 
-// 18. Send 2FA PIN: POST /api/2fa/send/:role (COMMENTED OUT - 2FA DISABLED)
-// router.post('/2fa/send/:role', twoFAController.send2FAPINController);
-
-// 19. Verify 2FA PIN: POST /api/2fa/verify/:role (COMMENTED OUT - 2FA DISABLED)
-// router.post('/2fa/verify/:role', twoFAController.verify2FAPINController);
-
 module.exports = router;
