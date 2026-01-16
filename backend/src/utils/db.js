@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const MONGODB_URI = process.env.MONGODB_URL|| "mongodb://localhost:27017/NutriConnectDatabase" ;
+    const MONGODB_URI = process.env.MONGODB_URL|| "mongodb://localhost:27017/NutriConnectDatabase";
     if (!MONGODB_URI) {
       throw new Error('MONGODB_URI is not defined');
     }
@@ -13,7 +13,7 @@ const connectDB = async () => {
     console.error('❌ MongoDB Connection Failed:', err.message);
     process.exit(1);
   }
-};
+}; 
 
 module.exports = connectDB;
 
