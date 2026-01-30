@@ -84,8 +84,6 @@ app.use('/api/chat', chatRoutes);
 // Payment routes mounted at '/api/payments'
 app.use('/api/payments', paymentRoutes);
 
-
-
 // Lab report routes mounted at '/api/lab-reports'
 app.use('/api/lab-reports', labReportRoutes);
 
@@ -101,7 +99,7 @@ app.use('/api/analytics', notificationRoutes);
 
 // Simple test route (kept from your original code)
 app.get('/', (req, res) => {
-  res.json({ message: 'Server is running!' });
+  res.json({ message: 'Nutri Connect Server is Currently Live!' });
 });
 
 // Start server
