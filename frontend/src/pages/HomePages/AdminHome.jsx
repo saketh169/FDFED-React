@@ -42,7 +42,7 @@ const AdminHome = () => {
       {/* ======================================================= */}
       {/* 1. INTRO / WELCOME SECTION (ENHANCED) */}
       {/* ======================================================= */}
-      <section id="welcome-intro" className="bg-green-50 py-25 px-4 -mt-5 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-25 px-4 -mt-5 sm:px-6 md:px-8  min-h-150 animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block (md:w-1/2) */}
@@ -79,7 +79,7 @@ const AdminHome = () => {
             <img
               src="https://img.freepik.com/free-vector/couple-professionals-analyzing-graphs_74855-4393.jpg?t=st=1741698166~exp=1741701766~hmac=7b63d82c02a0361ce7dfd83a0b0b2e4f36a0091dafa3b549232d82b8470142c0&w=1480"
               alt="Admin Team"
-              className="img-fluid rounded-xl w-[550px] h-[380px] transition-transform duration-300 hover:scale-[1.02]"
+              className="img-fluid rounded-xl w-[137.5] h-95 transition-transform duration-300 hover:scale-[1.02]"
             />
           </div>
         </div>
@@ -88,7 +88,7 @@ const AdminHome = () => {
       {/* ======================================================= */}
       {/* 2. LIVE PLATFORM METRICS */}
       {/* ======================================================= */}
-      <section id="metrics" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[400px] animate-fade-in-up animate-delay-[350ms]">
+      <section id="metrics" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[100] animate-fade-in-up animate-delay-[350ms]">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Live Platform Snapshot 📊</h2>
           <p className="text-gray-600 mb-10 text-lg">Key performance indicators across all user segments.</p>
@@ -121,7 +121,7 @@ const AdminHome = () => {
       {/* ======================================================= */}
       {/* 3. CORE GOVERNANCE DUTIES */}
       {/* ======================================================= */}
-      <section id="duties" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[500px] animate-fade-in-up animate-delay-[500ms]">
+      <section id="duties" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[125] animate-fade-in-up animate-delay-[500ms]">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Core Administrative Duties</h2>
           <p className="text-gray-600 mb-10 text-lg">Central responsibilities for maintaining system health and user integrity.</p>
@@ -147,7 +147,7 @@ const AdminHome = () => {
       {/* ======================================================= */}
       {/* 4. ADMIN FAQs (Support Focus) */}
       {/* ======================================================= */}
-      <section id="faqs" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[500px] animate-fade-in-up animate-delay-[700ms]">
+      <section id="faqs" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[125] animate-fade-in-up animate-delay-[700ms]">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] text-center mb-12">
             Admin Team Support FAQs

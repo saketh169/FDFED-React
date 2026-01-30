@@ -51,7 +51,7 @@ const CorporateHome = () => {
       {/* ======================================================= */}
       {/* 1. INTRO / WELCOME SECTION (ENHANCED) */}
       {/* ======================================================= */}
-      <section id="welcome-intro" className="bg-green-50 py-25 px-4 -mt-5  sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-25 px-4 -mt-5  sm:px-6 md:px-8  min-h-150 animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block (md:w-1/2) */}
@@ -88,7 +88,7 @@ const CorporateHome = () => {
             <img 
               src="https://media.istockphoto.com/id/2199019700/vector/onboarding-new-employee-vector-illustration.jpg?s=612x612&w=0&k=20&c=nPaCxm4t2Fkw6sTR_I00L_7iT2gj6ldpSoZHeGhY7SQ="
               alt="Corporate Partnership"
-              className="img-fluid rounded-xl w-[550px] h-[380px] transition-transform duration-300 hover:scale-[1.02]"
+              className="img-fluid rounded-xl w-37.5 h-95 transition-transform duration-300 hover:scale-[1.02]"
             />
           </div>
         </div>
@@ -97,7 +97,7 @@ const CorporateHome = () => {
       {/* ======================================================= */}
       {/* 2. AD CONTAINER / PROMOTIONS (Corporate Focus) */}
       {/* ======================================================= */}
-      <section id="ad-slider" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[350px] overflow-hidden animate-fade-in-up animate-delay-[300ms]">
+      <section id="ad-slider" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-87.5 overflow-hidden animate-fade-in-up animate-delay-[300ms]">
         <div className="max-w-7xl mx-auto">
           <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden shadow-2xl">
             {ads.map((ad, index) => (
@@ -133,7 +133,7 @@ const CorporateHome = () => {
       {/* ======================================================= */}
       {/* 3. KEY PARTNERSHIP FEATURES (Scale & Commission) */}
       {/* ======================================================= */}
-      <section id="features" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[500px] animate-fade-in-up animate-delay-[400ms]">
+      <section id="features" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-125 animate-fade-in-up animate-delay-[400ms]">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Core Partnership Benefits</h2>
           <p className="text-gray-600 mb-10 text-lg">Tools designed for scaled deployment and maximized return on investment.</p>
@@ -165,7 +165,7 @@ const CorporateHome = () => {
       {/* ======================================================= */}
       {/* 4. USER GROUP MANAGEMENT (Client Focus) */}
       {/* ======================================================= */}
-      <section id="user-management" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-50 min-h-[400px] animate-fade-in-up animate-delay-[500ms]">
+      <section id="user-management" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-50 min-h-100 animate-fade-in-up animate-delay-[500ms]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="md:w-full flex justify-center">
             {/* Image representing user management / groups */}
@@ -193,7 +193,7 @@ const CorporateHome = () => {
       {/* ======================================================= */}
       {/* 5. ANALYTICS & COMMISSION (ROI Focus) */}
       {/* ======================================================= */}
-      <section id="analytics" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[400px] animate-fade-in-up animate-delay-[600ms]">
+      <section id="analytics" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-100 animate-fade-in-up animate-delay-[600ms]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className='text-center md:text-left'>
             <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Real-time Performance & Commissions 📈</h2>
@@ -217,7 +217,7 @@ const CorporateHome = () => {
       {/* ======================================================= */}
       {/* 6. PARTNER FAQs (Support Focus) */}
       {/* ======================================================= */}
-      <section id="faqs" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[500px] animate-fade-in-up animate-delay-[700ms]">
+      <section id="faqs" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-125 animate-fade-in-up animate-delay-[700ms]">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] text-center mb-12">
             Corporate Partner FAQs

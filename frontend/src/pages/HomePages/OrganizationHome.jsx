@@ -42,7 +42,7 @@ const OrganizationHome = () => {
       {/* 1. INTRO / WELCOME SECTION (ENHANCED) */}
       {/* ======================================================= */}
       {/* Added bg-green-50 for a subtle background color */}
-      <section id="welcome-intro" className="bg-green-50 py-25 -mt-5  px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-25 -mt-5  px-4 sm:px-6 md:px-8  min-h-150 animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block (md:w-1/2) */}
@@ -73,7 +73,7 @@ const OrganizationHome = () => {
             <img
               src="https://img.freepik.com/free-vector/online-job-interview_23-2148613123.jpg?t=st=1741697893~exp=1741701493~hmac=abbb653dca5846944d59ee4da6a8d379bc1a2aa997daf62026c4e050037ec3a4&w=1380"
               alt="Organization Team"
-              className="img-fluid rounded-xl w-[550px] h-[380px] transition-transform duration-300 hover:scale-[1.02]"
+              className="img-fluid rounded-xl w-[137.5] h-95 transition-transform duration-300 hover:scale-[1.02]"
             />
           </div>
         </div>
@@ -82,7 +82,7 @@ const OrganizationHome = () => {
       {/* ======================================================= */}
       {/* 2. LIVE ACTION QUEUES / DASHBOARD PREVIEW */}
       {/* ======================================================= */}
-      <section id="queues" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[400px] animate-fade-in-up animate-delay-[300ms]">
+      <section id="queues" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[100] animate-fade-in-up animate-delay-[300ms]">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Live Action Queues 🚨</h2>
           <p className="text-gray-600 mb-10 text-lg">Quickly address pending tasks to ensure platform compliance and efficiency.</p>
@@ -115,7 +115,7 @@ const OrganizationHome = () => {
       {/* ======================================================= */}
       {/* 3. CORE GOVERNANCE DUTIES */}
       {/* ======================================================= */}
-      <section id="duties" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[500px] animate-fade-in-up animate-delay-[500ms]">
+      <section id="duties" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[125] animate-fade-in-up animate-delay-[500ms]">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Core Governance Duties</h2>
           <p className="text-gray-600 mb-10 text-lg">Key areas of responsibility for team members.</p>
@@ -141,7 +141,7 @@ const OrganizationHome = () => {
       {/* ======================================================= */}
       {/* 4. ADMIN FAQs (Functional Accordion) */}
       {/* ======================================================= */}
-      <section id="faqs" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[500px] animate-fade-in-up animate-delay-[700ms]">
+      <section id="faqs" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[125] animate-fade-in-up animate-delay-[700ms]">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] text-center mb-12">
             Organization Team FAQs
