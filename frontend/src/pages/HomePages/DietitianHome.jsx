@@ -72,7 +72,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 1. WELCOME SECTION (ENHANCED) */}
       {/* ======================================================= */}
-      <section id="welcome-intro" className="bg-green-50 py-25 -mt-5 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-25 -mt-5 px-4 sm:px-6 md:px-8  min-h-150 animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block */}
@@ -109,7 +109,7 @@ const DietitianHome = () => {
             <img 
               src="/images/dietitian_welcome.jpg" 
               alt="Dietitian Consultation" 
-              className="img-fluid rounded-xl w-[550px]  transition-transform duration-300 hover:scale-[1.02]" 
+              className="img-fluid rounded-xl w-[137.5] transition-transform duration-300 hover:scale-[1.02]" 
             />
           </div>
         </div>
@@ -118,7 +118,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 2. AD CONTAINER / PROMOTIONS (NEW) */}
       {/* ======================================================= */}
-      <section id="ad-slider" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[350px] overflow-hidden animate-fade-in-up animate-delay-[300ms]">
+      <section id="ad-slider" className="py-12 px-4 sm:px-6 md:px-8 bg-white min-h-[87.5] overflow-hidden animate-fade-in-up animate-delay-[300ms]">
         <div className="max-w-7xl mx-auto">
           <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden shadow-2xl">
             {ads.map((ad, index) => (
@@ -155,7 +155,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 3. APPOINTMENTS SCHEDULE (Today's Schedule) */}
       {/* ======================================================= */}
-      <section id="schedule" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[400ms]">
+      <section id="schedule" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[137.5] animate-fade-in-up animate-delay-[400ms]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 items-center justify-center min-h-full">
           
           <div className="md:w-1/2 appointment-list-container">
@@ -205,7 +205,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 4. MANAGE CLIENTS (MY CLIENTS) */}
       {/* ======================================================= */}
-      <section id="clients" className="py-32 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[500ms]">
+      <section id="clients" className="py-32 px-4 sm:px-6 md:px-8 bg-white min-h-[137.5] animate-fade-in-up animate-delay-[500ms]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 items-center justify-center min-h-full">
           <div className="md:w-1/2 flex justify-center">
             <img 
@@ -235,7 +235,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 5. DIETITIAN INSIGHTS (BLOG - Compact User Style) */}
       {/* ======================================================= */}
-      <section id="insights" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-50 min-h-[550px] animate-fade-in-up animate-delay-[600ms]">
+      <section id="insights" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-50 min-h-[137.5] animate-fade-in-up animate-delay-[600ms]">
         <div className="max-w-6xl mx-auto text-center flex flex-col justify-center min-h-full">
           <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] mb-12">
             Share Your Insights with the Community 📝
@@ -286,7 +286,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 6. DIETITIAN GUIDE (How it Works) */}
       {/* ======================================================= */}
-      <section id="guide" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[700ms]">
+      <section id="guide" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[137.5] animate-fade-in-up animate-delay-[700ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center justify-center min-h-full">
           
           <div className="md:w-1/2 image-container">
@@ -322,7 +322,7 @@ const DietitianHome = () => {
       {/* ======================================================= */}
       {/* 7. FAQs (Functional Accordion) */}
       {/* ======================================================= */}
-      <section id="faqs" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[800ms]">
+      <section id="faqs" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[137.5] animate-fade-in-up animate-delay-[800ms]">
         <div className="max-w-4xl mx-auto flex flex-col justify-center min-h-full">
           <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] text-center mb-12">
             Dietitians Frequently Asked Questions

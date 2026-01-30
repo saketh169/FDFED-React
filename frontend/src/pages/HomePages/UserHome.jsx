@@ -61,7 +61,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 1. INTRO / WELCOME SECTION (MODIFIED BUTTON COLORS) */}
       {/* ======================================================= */}
-      <section id="welcome-intro" className="bg-green-50 py-23 -mt-5 px-4 sm:px-6 md:px-8  min-h-[600px] animate-fade-in-up animate-delay-[200ms]">
+      <section id="welcome-intro" className="bg-green-50 py-23 -mt-5 px-4 sm:px-6 md:px-8  min-h-[150] animate-fade-in-up animate-delay-[200ms]">
         <div className="max-w-6xl mx-auto flex flex-col-reverse md:flex-row gap-12 items-center">
           
           {/* Content Block */}
@@ -98,7 +98,7 @@ const UserHome = () => {
             <img 
               src="/images/user_welcome.jpg" 
               alt="User Health Journey" 
-              className="img-fluid rounded-xl w-[550px]   transition-transform duration-300 hover:scale-[1.02]" 
+              className="img-fluid rounded-xl w-[137.5]   transition-transform duration-300 hover:scale-[1.02]" 
             />
           </div>
         </div>
@@ -107,7 +107,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 2. AD CONTAINER / PROMOTIONS */}
       {/* ======================================================= */}
-      <section id="ad-slider" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[350px] overflow-hidden animate-fade-in-up animate-delay-[300ms]">
+      <section id="ad-slider" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[87.5] overflow-hidden animate-fade-in-up animate-delay-[300ms]">
         <div className="max-w-7xl mx-auto">
           <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden shadow-2xl">
             {ads.map((ad, index) => (
@@ -144,7 +144,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 3. BOOK CONSULTATION (Diet Services) - 2 ROWS */}
       {/* ======================================================= */}
-      <section id="booking" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[400ms]">
+      <section id="booking" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[137.5] animate-fade-in-up animate-delay-[400ms]">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-4">Book Your Next Consultation </h2>
           <p className="text-gray-600 mb-10 text-lg">Select a specialization to connect with the right dietitian and start your plan.</p>
@@ -193,7 +193,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* USER GUIDE / HOW IT WORKS */}
       {/* ======================================================= */}
-      <section id="user-guide" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[500ms]">
+      <section id="user-guide" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[137.5] animate-fade-in-up animate-delay-[500ms]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1">
                 <h2 className="text-4xl sm:text-5xl font-bold text-[#27AE60] mb-6">User Guide & Support</h2>
@@ -223,7 +223,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 4. APPOINTMENTS MANAGEMENT */}
       {/* ======================================================= */}
-      <section id="appointments" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[600ms]">
+      <section id="appointments" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[137.5] animate-fade-in-up animate-delay-[600ms]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className='order-2 md:order-1'>
             <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] mb-4">My Appointments & Records</h2>
@@ -248,7 +248,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 5. BLOG POSTS (Updated for height/width/heading) */}
       {/* ======================================================= */}
-      <section id="blog" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 text-center min-h-[550px] overflow-auto animate-fade-in-up animate-delay-[700ms]">
+      <section id="blog" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 text-center min-h-[137.5] overflow-auto animate-fade-in-up animate-delay-[700ms]">
         <div className="max-w-6xl mx-auto flex flex-col justify-center">
           <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] mb-12">
             View Latest Blog Posts from Other Users 💡
@@ -292,7 +292,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 6. PRICING PLANS */}
       {/* ======================================================= */}
-      <section id="pricing" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[550px] animate-fade-in-up animate-delay-[800ms]">
+      <section id="pricing" className="py-16 px-4 sm:px-6 md:px-8 bg-white min-h-[137.5] animate-fade-in-up animate-delay-[800ms]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="flex justify-center">
             <img src="https://videoigniter.com/wp-content/uploads/2024/02/How-Much-Does-Animation-Cost.jpg" alt="Pricing Plans" className="rounded-xl shadow-lg w-72 md:w-full max-w-sm" />
@@ -315,7 +315,7 @@ const UserHome = () => {
       {/* ======================================================= */}
       {/* 7. FAQs (FUNCTIONAL ACCORDION) */}
       {/* ======================================================= */}
-      <section id="faqs" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[550px] animate-fade-in-up animate-delay-[900ms]">
+      <section id="faqs" className="py-16 px-4 sm:px-6 md:px-8 bg-gray-100 min-h-[137.5] animate-fade-in-up animate-delay-[900ms]">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl sm:text-5xl font-bold text-[#1A4A40] text-center mb-12">
             Users Frequently Asked Questions
