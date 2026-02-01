@@ -1,12 +1,12 @@
 const { FAQ, ChatHistory, NutritionCache, HardcodedResponse } = require('../models/chatbotModels');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 
 // Initialize Google Gemini AI
 require('dotenv').config({ 
   path: require('path').join(__dirname, '..', 'utils', '.env') 
 });
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // USDA API Configuration
 const USDA_API_KEY = process.env.USDA_API_KEY;
@@ -371,41 +371,16 @@ function formatNutritionResponse(nutritionData) {
  */
 async function getGeminiResponse(message, sessionId, userId) {
     try {
-        // Get recent chat history for context
-        const history = await ChatHistory.findOne({ sessionId })
-            .sort({ createdAt: -1 })
-            .select('messages')
-            .limit(1);
-
-        // Build contents array from recent history + current message
-        let contents = [];
-        if (history && history.messages.length > 0) {
-            const recentMessages = history.messages.slice(-4);
-            for (const msg of recentMessages) {
-                const role = msg.type === 'user' ? 'user' : 'model';
-                contents.push({
-                    role,
-                    parts: [{ text: msg.content }]
-                });
-            }
-        }
-        contents.push({
-            role: 'user',
-            parts: [{ text: message }]
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-2.5-flash',
+            systemInstruction: SYSTEM_INSTRUCTION
         });
-
-        // Use gemini-2.5-pro - current stable model
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
-            contents,
-            config: {
-                systemInstruction: SYSTEM_INSTRUCTION
-            }
-        });
-
-        return response.text;
+        const result = await model.generateContent(message);
+        const response = await result.response;
+        const text = response.text();
+        return text;
     } catch (error) {
-        console.error('Gemini AI error:', error.message);
+        console.error('Gemini AI error:', error);
         return 'I can help you with nutrition questions! Feel free to ask about healthy eating, food nutrition, or our platform features.';
     }
 }
