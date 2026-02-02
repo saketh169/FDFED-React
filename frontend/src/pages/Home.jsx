@@ -34,7 +34,7 @@ const Home = () => {
       { icon: 'fas fa-calendar-alt', title: 'Appointment Scheduling', text: 'Easily book and manage consultations with dietitians.' },
     ];
     return (
-      <section id="services" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-50 text-center min-h-[550px] overflow-auto animate-fade-in-up animate-delay-[400ms]">
+      <section id="services" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-50 text-center min-h-137.5 overflow-auto animate-fade-in-up animate-delay-[400ms]">
         <div className="max-w-6xl mx-auto flex flex-col justify-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-12">Our Services</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -58,7 +58,7 @@ const Home = () => {
 
   const SuccessStories = () => {
     return (
-      <section id="stories" className="py-12 px-4 sm:px-6 md:px-8 bg-white text-center min-h-[600px] overflow-auto animate-fade-in-up animate-delay-[500ms]">
+      <section id="stories" className="py-12 px-4 sm:px-6 md:px-8 bg-white text-center min-h-150 overflow-auto animate-fade-in-up animate-delay-[500ms]">
         <div className="max-w-6xl mx-auto flex flex-col justify-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-12">Success Stories</h2>
           <div className="mx-auto rounded-xl overflow-hidden shadow-lg" style={{ height: '400px', width: '700px', maxWidth: '100%', aspectRatio: '16/9' }}>
@@ -95,7 +95,7 @@ const Home = () => {
       },
     ];
     return (
-      <section id="blog" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 text-center min-h-[550px] overflow-auto animate-fade-in-up animate-delay-[600ms]">
+      <section id="blog" className="py-12 px-4 sm:px-6 md:px-8 bg-gray-100 text-center min-h-137.5 overflow-auto animate-fade-in-up animate-delay-[600ms]">
         <div className="max-w-6xl mx-auto flex flex-col justify-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-12">Latest Blog Posts</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -197,7 +197,7 @@ const Home = () => {
       )}
 
       <main className="flex-1 animate-fade-in">
-      <section id="home-intro" className="min-h-[650px] flex items-center justify-center text-center py-12 px-4 sm:px-6 md:px-8 relative bg-[url('/images/intro-image.jpg')] bg-cover bg-center bg-opacity-50 before:content-[''] before:absolute before:inset-0 before:bg-black before:opacity-50 animate-slide-up">
+      <section id="home-intro" className="min-h-162.5 flex items-center justify-center text-center py-12 px-4 sm:px-6 md:px-8 relative bg-[url('/images/intro-image.jpg')] bg-cover bg-center bg-opacity-50 before:content-[''] before:absolute before:inset-0 before:bg-black before:opacity-50 animate-slide-up">
         <div className="max-w-7xl mx-auto relative z-10">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
             Welcome to NutriConnect
@@ -219,7 +219,7 @@ const Home = () => {
           </a>
         </div>
       </section>
-      <section id="roles" className="py-12 px-4 mt-[100px] sm:px-6 md:px-8 bg-white min-h-[600px] overflow-auto animate-fade-in-up animate-delay-[300ms]">
+      <section id="roles" className="py-12 px-4 mt-25 sm:px-6 md:px-8 bg-white min-h-150 overflow-auto animate-fade-in-up animate-delay-[300ms]">
         <div className="max-w-6xl mx-auto flex flex-col justify-center text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A4A40] mb-12">
             {isDeveloperMode ? 'Admin Access' : 'Choose Your Role'}
