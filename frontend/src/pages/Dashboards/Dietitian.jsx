@@ -36,6 +36,7 @@ const DietitianDashboard = () => {
   const { user, token, logout } = useAuthContext();
   const [profileImage, setProfileImage] = useState(mockDietitian.profileImage);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef(null);
   const [notifications, setNotifications] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -96,54 +97,49 @@ const DietitianDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // 1. Local Preview
-    const reader = new FileReader();
-    reader.onload = () => {
-      setProfileImage(reader.result);
-      // Don't store in localStorage to avoid quota issues
-    };
-    reader.readAsDataURL(file);
-
-    // 2. Upload to backend
-    const formData = new FormData();
-    formData.append("profileImage", file);
-
+    setIsUploading(true);
     try {
-      // Get token from context or localStorage
+      const formData = new FormData();
+      formData.append("profileImage", file);
+
       let authToken = token;
       if (!authToken) {
-        // Fallback to localStorage if context doesn't have token
         authToken = localStorage.getItem('authToken_dietitian');
       }
-      
+
       if (!authToken) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=dietitian');
         return;
       }
 
-      const res = await axios.post('/api/uploaddietitian', formData, {
+      const response = await axios.post('/api/uploaddietitian', formData, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
-      const data = res.data;
+
+      const data = response.data;
 
       if (data.success) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setProfileImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+
         alert("Profile photo updated successfully!");
-        // Refresh user data from AuthContext to get the updated profileImage
         if (user?.id) {
           window.location.reload();
         }
       } else {
         alert(`Upload failed: ${data.message || 'Unknown error'}`);
-        // Revert to old image on failure if needed
-        setProfileImage(mockDietitian.profileImage); 
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Upload error occurred.");
-      setProfileImage(mockDietitian.profileImage);
+      alert(`Upload error: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -186,6 +182,7 @@ const DietitianDashboard = () => {
                 ref={fileInputRef}
                 accept="image/*"
                 className="hidden"
+                disabled={isUploading}
                 onChange={handleImageUpload}
               />
             </div>

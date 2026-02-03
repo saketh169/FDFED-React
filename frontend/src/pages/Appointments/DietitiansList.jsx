@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAuthContext } from '../../hooks/useAuthContext';
+import AuthContext from '../../contexts/AuthContext';
 import axios from 'axios';
 import {
   fetchUserBookings,
@@ -14,7 +14,7 @@ import {
 const DietitiansList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user, token } = useAuthContext();
+  const { user, token } = useContext(AuthContext);
   
   // Redux state
   const bookings = useSelector(selectUserBookings);
@@ -59,13 +59,27 @@ const DietitiansList = () => {
 
   const handleMessageDietitian = async (dietitian) => {
     try {
-      // Get user ID from localStorage or context
-      const userId = localStorage.getItem('userId') || user?.id;
+      // Get auth token from context or localStorage
+      let authToken = token;
+      if (!authToken) {
+        authToken = localStorage.getItem('authToken_user');
+      }
+      
+      if (!user?.id || !authToken) {
+        alert('Session expired. Please login again.');
+        navigate('/signin?role=user');
+        return;
+      }
       
       // Create or get conversation
       const response = await axios.post('/api/chat/conversation', {
-        clientId: userId,
+        clientId: user.id,
         dietitianId: dietitian.id
+      }, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -86,7 +100,8 @@ const DietitiansList = () => {
       }
     } catch (error) {
       console.error('Error creating conversation:', error);
-      alert('Failed to start chat');
+      console.error('Error response:', error.response?.data);
+      alert(`Failed to start chat: ${error.response?.data?.message || error.message}`);
     }
   };
 

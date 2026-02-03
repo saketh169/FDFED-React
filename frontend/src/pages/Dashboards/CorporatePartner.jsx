@@ -121,24 +121,13 @@ const CorporateDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Preview image immediately
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPartnerLogo(reader.result);
-      // Don't store in localStorage to avoid quota issues
-    };
-    reader.readAsDataURL(file);
-
-    // Upload to backend
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append('profileImage', file);
 
-      // Get token from context or localStorage
       let authToken = token;
       if (!authToken) {
-        // Fallback to localStorage if context doesn't have token
         authToken = localStorage.getItem('authToken_corporatepartner');
       }
 
@@ -155,10 +144,15 @@ const CorporateDashboard = () => {
       });
 
       const data = response.data;
-      
+
       if (data.success) {
-        alert('Partner logo uploaded successfully!');
-        // Refresh user data from AuthContext to get the updated profileImage
+        const reader = new FileReader();
+        reader.onload = () => {
+          setPartnerLogo(reader.result);
+        };
+        reader.readAsDataURL(file);
+
+        alert('Profile photo uploaded successfully!');
         if (user?.id) {
           window.location.reload();
         }
@@ -167,7 +161,7 @@ const CorporateDashboard = () => {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload error occurred. Please try again.');
+      alert(`Upload error: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsUploading(false);
     }

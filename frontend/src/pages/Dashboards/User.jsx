@@ -164,19 +164,13 @@ const UserDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setProfileImage(reader.result);
-    };
-    reader.readAsDataURL(file);
-
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append('profileImage', file);
+
       let authToken = token;
       if (!authToken) {
-        // Fallback to localStorage if context doesn't have token
         authToken = localStorage.getItem('authToken_user');
       }
 
@@ -192,9 +186,15 @@ const UserDashboard = () => {
         }
       });
 
-      const data = await response.json();
-      
+      const data = response.data;
+
       if (data.success) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setProfileImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+
         alert('Profile photo uploaded successfully!');
         if (user?.id) {
           window.location.reload();
@@ -204,7 +204,7 @@ const UserDashboard = () => {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload error occurred. Please try again.');
+      alert(`Upload error: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsUploading(false);
     }
