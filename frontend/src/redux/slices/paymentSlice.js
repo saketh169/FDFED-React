@@ -218,11 +218,15 @@ export const processPayment = createAsyncThunk(
 // Verify payment
 export const verifyPayment = createAsyncThunk(
   'payment/verifyPayment',
-  async ({ transactionId }, { rejectWithValue }) => {
+  async (transactionId, { rejectWithValue }) => {
     try {
       const config = getAuthConfig('user');
       if (!config.headers?.Authorization) {
         return rejectWithValue('Not authenticated');
+      }
+      
+      if (!transactionId) {
+        return rejectWithValue('Transaction ID is required');
       }
       
       const response = await axios.get(

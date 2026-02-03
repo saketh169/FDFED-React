@@ -127,6 +127,7 @@ const OrganizationDashboard = () => {
   const { user, token, logout } = useAuthContext();
   const [profileImage, setProfileImage] = useState(mockOrganization.profileImage);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -141,28 +142,11 @@ const OrganizationDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Client-side validation
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      alert('Only JPEG or PNG images are allowed.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB.');
-      return;
-    }
-
-    // 1. Local Preview
-    const reader = new FileReader();
-    reader.onload = () => {
-      setProfileImage(reader.result);
-      // Don't store in localStorage to avoid quota issues
-    };
-    reader.readAsDataURL(file);
-
-    const formData = new FormData();
-    formData.append("profileImage", file);
-
+    setIsUploading(true);
     try {
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
       let authToken = token;
       if (!authToken) {
         authToken = localStorage.getItem('authToken_organization');
@@ -174,29 +158,33 @@ const OrganizationDashboard = () => {
         return;
       }
 
-      const res = await axios.post('/api/uploadorganization', formData, { 
-        method: 'POST', 
-        body: formData,
+      const response = await axios.post('/api/uploadorganization', formData, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
-      const data = await res.json();
+
+      const data = response.data;
 
       if (data.success) {
-        alert("Profile photo updated successfully!");
-        // Refresh user data from AuthContext to get the updated profileImage
+        const reader = new FileReader();
+        reader.onload = () => {
+          setProfileImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+
+        alert('Profile photo uploaded successfully!');
         if (user?.id) {
           window.location.reload();
         }
       } else {
         alert(`Upload failed: ${data.message || 'Unknown error'}`);
-        setProfileImage(mockOrganization.profileImage);
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("Upload error occurred.");
-      setProfileImage(mockOrganization.profileImage);
+      console.error('Upload error:', error);
+      alert(`Upload error: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -240,6 +228,7 @@ const OrganizationDashboard = () => {
                 ref={fileInputRef}
                 accept="image/jpeg, image/png"
                 className="hidden"
+                disabled={isUploading}
                 onChange={handleImageUpload}
               />
             </div>

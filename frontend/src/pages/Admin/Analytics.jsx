@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchUserStats,
@@ -26,7 +25,6 @@ const THEME = {
 };// --- Dashboard Component ---
 
 const Analytics = () => {
-    const navigate = useNavigate();
     const dispatch = useDispatch();
 
     // Get data from Redux state

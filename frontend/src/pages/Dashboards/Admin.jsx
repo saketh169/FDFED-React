@@ -315,25 +315,16 @@ const AdminDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setProfileImage(reader.result);
-    };
-    reader.readAsDataURL(file);
-
-    const formData = new FormData();
-    formData.append('profileImage', file);
-
+    setIsUploading(true);
     try {
-      setIsUploading(true);
-      
-      // Get token from context or localStorage
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
       let authToken = token;
       if (!authToken) {
-        // Fallback to localStorage if context doesn't have token
         authToken = localStorage.getItem('authToken_admin');
       }
-      
+
       if (!authToken) {
         alert('Session expired. Please login again.');
         navigate('/signin?role=admin');
@@ -341,15 +332,20 @@ const AdminDashboard = () => {
       }
 
       const response = await axios.post('/api/uploadadmin', formData, {
-        method: 'POST',
-        body: formData,
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const data = await response.json();
+      const data = response.data;
+
       if (data.success) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setProfileImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+
         alert('Profile photo updated successfully!');
         if (user?.id) {
           window.location.reload();
@@ -359,7 +355,7 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload error occurred.');
+      alert(`Upload error: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsUploading(false);
     }

@@ -38,12 +38,27 @@ const ClientsList = () => {
 
   const handleMessageClient = async (client) => {
     try {
+      // Get auth token from context or localStorage
+      let authToken = token;
+      if (!authToken) {
+        authToken = localStorage.getItem('authToken_dietitian');
+      }
+      
+      if (!user?.id || !authToken) {
+        alert('Session expired. Please login again.');
+        navigate('/signin?role=dietitian');
+        return;
+      }
+      
       // Create or get conversation
       const response = await axios.post('/api/chat/conversation', {
         clientId: client.id,
         dietitianId: user.id
       }, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -64,7 +79,8 @@ const ClientsList = () => {
       }
     } catch (error) {
       console.error('Error creating conversation:', error);
-      alert('Failed to start chat');
+      console.error('Error response:', error.response?.data);
+      alert(`Failed to start chat: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -156,6 +172,13 @@ const ClientsList = () => {
                 <p className="text-emerald-50 mt-1">Manage your client consultations and appointments</p>
               </div>
             </div>
+            <button
+              onClick={() => navigate('/dietitian/dashboard')}
+              className="px-6 py-3 bg-white text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
+            >
+              <i className="fas fa-arrow-left"></i>
+              <span>Back to Dashboard</span>
+            </button>
           </div>
         </div>
       </div>

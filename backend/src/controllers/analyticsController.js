@@ -14,6 +14,49 @@ exports.getUsersList = async (req, res) => {
     }
 };
 
+// Get user growth analytics
+exports.getUserGrowth = async (req, res) => {
+    try {
+        // Get all users with their creation dates
+        const users = await User.find({}, 'createdAt').sort({ createdAt: 1 });
+
+        const now = new Date();
+        const monthlyGrowth = [];
+
+        // Calculate user growth for the last 12 months
+        for (let i = 11; i >= 0; i--) {
+            const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+
+            // Count users registered in this month
+            const usersInMonth = users.filter(user => {
+                const userDate = new Date(user.createdAt);
+                return userDate >= monthStart && userDate <= monthEnd;
+            }).length;
+
+            monthlyGrowth.push({
+                month: monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                users: usersInMonth,
+                cumulative: 0 // Will be calculated below
+            });
+        }
+
+        // Calculate cumulative users
+        let cumulativeTotal = 0;
+        monthlyGrowth.forEach(month => {
+            cumulativeTotal += month.users;
+            month.cumulative = cumulativeTotal;
+        });
+
+        res.json({
+            monthlyGrowth,
+            totalUsers: users.length
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching user growth data', error: error.message });
+    }
+};
+
 // Get all dietitians
 exports.getDietitiansList = async (req, res) => {
     try {
@@ -93,11 +136,172 @@ exports.getSubscriptions = async (req, res) => {
     }
 };
 
+// Get membership/subscription revenue
+exports.getMembershipRevenue = async (req, res) => {
+    try {
+        const subscriptions = await Payment.find({ paymentStatus: 'completed' })
+            .select('amount planType billingCycle createdAt subscriptionStartDate subscriptionEndDate')
+            .sort({ createdAt: -1 });
+
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+
+        // Calculate daily revenue
+        const dailySubscriptions = subscriptions.filter(sub => {
+            const subDate = new Date(sub.subscriptionStartDate || sub.createdAt);
+            return subDate >= today;
+        });
+        const dailyRevenue = dailySubscriptions.reduce((sum, sub) => sum + (sub.amount || 0), 0);
+
+        // Calculate monthly revenue
+        const monthlySubscriptions = subscriptions.filter(sub => {
+            const subDate = new Date(sub.subscriptionStartDate || sub.createdAt);
+            return subDate >= monthStart;
+        });
+        const monthlyRevenue = monthlySubscriptions.reduce((sum, sub) => sum + (sub.amount || 0), 0);
+
+        // Calculate yearly revenue
+        const yearlySubscriptions = subscriptions.filter(sub => {
+            const subDate = new Date(sub.subscriptionStartDate || sub.createdAt);
+            return subDate >= yearStart;
+        });
+        const yearlyRevenue = yearlySubscriptions.reduce((sum, sub) => sum + (sub.amount || 0), 0);
+
+        res.json({
+            dailyPeriods: dailySubscriptions.map(sub => ({
+                date: sub.subscriptionStartDate || sub.createdAt,
+                amount: sub.amount,
+                planType: sub.planType,
+                billingCycle: sub.billingCycle
+            })),
+            monthlyPeriods: monthlySubscriptions.map(sub => ({
+                date: sub.subscriptionStartDate || sub.createdAt,
+                amount: sub.amount,
+                planType: sub.planType,
+                billingCycle: sub.billingCycle
+            })),
+            yearlyPeriods: yearlySubscriptions.map(sub => ({
+                date: sub.subscriptionStartDate || sub.createdAt,
+                amount: sub.amount,
+                planType: sub.planType,
+                billingCycle: sub.billingCycle
+            })),
+            daily: dailyRevenue,
+            monthly: monthlyRevenue,
+            yearly: yearlyRevenue
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching membership revenue', error: error.message });
+    }
+};
+
 // Get consultation revenue
 exports.getConsultationRevenue = async (req, res) => {
     try {
-        const consultations = await Booking.find({ paymentStatus: 'completed' }, 'date amount createdAt');
-        res.json({ data: consultations });
+        const consultations = await Booking.find({ paymentStatus: 'completed' })
+            .select('date amount createdAt time consultationType')
+            .sort({ createdAt: -1 });
+
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        
+        // Calculate revenue for last 7 days
+        const dailyPeriods = [];
+        for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(now);
+            dayDate.setDate(now.getDate() - i);
+            const nextDay = new Date(dayDate);
+            nextDay.setDate(dayDate.getDate() + 1);
+
+            const dayConsultations = consultations.filter(con => {
+                const conDate = new Date(con.createdAt);
+                return conDate >= dayDate && conDate < nextDay;
+            });
+
+            dailyPeriods.push({
+                date: dayDate.toISOString(),
+                displayDate: dayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                revenue: dayConsultations.reduce((sum, con) => sum + (con.amount || 0), 0),
+                consultations: dayConsultations.map(con => ({
+                    amount: con.amount,
+                    time: con.time,
+                    consultationType: con.consultationType
+                }))
+            });
+        }
+
+        // Calculate monthly revenue for last 6 months
+        const monthlyPeriods = [];
+        for (let i = 0; i < 6; i++) {
+            const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+
+            const monthConsultations = consultations.filter(con => {
+                const conDate = new Date(con.createdAt);
+                return conDate >= monthDate && conDate < nextMonth;
+            });
+
+            monthlyPeriods.push({
+                month: monthDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
+                revenue: monthConsultations.reduce((sum, con) => sum + (con.amount || 0), 0)
+            });
+        }
+
+        // Calculate yearly revenue for last 3 years
+        const yearlyPeriods = [];
+        for (let i = 0; i < 3; i++) {
+            const year = now.getFullYear() - i;
+            const yearStart = new Date(year, 0, 1);
+            const yearEnd = new Date(year + 1, 0, 1);
+
+            const yearConsultations = consultations.filter(con => {
+                const conDate = new Date(con.createdAt);
+                return conDate >= yearStart && conDate < yearEnd;
+            });
+
+            yearlyPeriods.push({
+                year: year,
+                revenue: yearConsultations.reduce((sum, con) => sum + (con.amount || 0), 0)
+            });
+        }
+
+        // Total for today
+        const today = new Date(now);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const todayConsultations = consultations.filter(con => {
+            const conDate = new Date(con.createdAt);
+            return conDate >= today && conDate < tomorrow;
+        });
+        const dailyRevenue = todayConsultations.reduce((sum, con) => sum + (con.amount || 0), 0);
+
+        // Monthly total
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthlyConsultations = consultations.filter(con => {
+            const conDate = new Date(con.createdAt);
+            return conDate >= monthStart;
+        });
+        const monthlyRevenue = monthlyConsultations.reduce((sum, con) => sum + (con.amount || 0), 0);
+
+        // Yearly total
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearlyConsultations = consultations.filter(con => {
+            const conDate = new Date(con.createdAt);
+            return conDate >= yearStart;
+        });
+        const yearlyRevenue = yearlyConsultations.reduce((sum, con) => sum + (con.amount || 0), 0);
+
+        res.json({
+            data: consultations,
+            dailyPeriods: dailyPeriods,
+            monthlyPeriods: monthlyPeriods,
+            yearlyPeriods: yearlyPeriods,
+            daily: dailyRevenue,
+            monthly: monthlyRevenue,
+            yearly: yearlyRevenue
+        });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching consultation revenue', error: error.message });
     }

@@ -1,0 +1,74 @@
+================================================================================
+                        INDIVIDUAL CONTRIBUTIONS
+                        FDFED PROJECT - SEMESTER 5
+================================================================================
+
+1. PABBU SAKETH (Roll No: S20230010169)
+   -----------------------------------------------------------------------
+   • Developed role-specific dashboards for users, admins, organizations,
+     and dietitians with activities tracking
+   
+   • Implemented verification processes for organizations by admins and
+     dietitians by organizations
+   
+   • Created daily progress tracking and monthly calendar meal plan
+     assignment with CRUD operations
+   
+   Schemas Used: User, Organization, Admin, DietPlans, Progress
+
+
+2. NERELLA VENKATA SRI RAM (Roll No: S20230010164)
+   -----------------------------------------------------------------------
+   • Created chat interface with real-time updates and video
+     conferencing links
+   
+   • Built blog system with uploads, categorization, and moderation
+     features
+   
+   • Implemented chatbot using Gemini integration and notification
+     section for client and Dietitian
+   
+   Schemas Used: Chat, Chatbot, Blogs
+
+
+3. NULAKAJODU MAANAS ANAND (Roll No: S20230010166)
+   -----------------------------------------------------------------------
+   • Developed medical report upload/viewing pages for multiple files
+   
+   • Built queries and contact us system with Gmail Nodemailer
+     responses
+   
+   • Managed admin-user query handling and support workflows
+   
+   Schemas Used: Queries, LabReports
+
+
+4. INALA SYAMA SRI SAI (Roll No: S20230010104)
+   -----------------------------------------------------------------------
+   • Implemented booking system with slot management and
+     conflict prevention
+   
+   • Created dietitian search and filtering by language, fees, and
+     location
+   
+   • Added testimonial functionality and slots
+     rescheduling/blocking for dietitians
+   
+   Schemas Used: Dietitian, DietitianInfo, BookedSlots
+
+
+5. NITTA PRADEEP (Roll No: S20230010165)
+   -----------------------------------------------------------------------
+   • Created pricing plans with website-wide adjustments and
+     fee management
+   
+   • Built payment portal for bookings system with transaction
+     processing
+   
+   • Developed revenue generating interface with financial
+     tracking
+   
+   Schemas Used: Subscription, Payment
+
+
+================================================================================

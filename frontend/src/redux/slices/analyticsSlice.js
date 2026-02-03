@@ -175,6 +175,22 @@ export const fetchConsultationRevenue = createAsyncThunk(
         withCredentials: true,
       });
 
+      // Check if backend already calculated the periods with revenue
+      if (response.data.dailyPeriods && Array.isArray(response.data.dailyPeriods) && 
+          response.data.dailyPeriods.length > 0 && 
+          response.data.dailyPeriods[0].hasOwnProperty('revenue')) {
+        // Backend already calculated everything with revenue, use it directly
+        return {
+          dailyPeriods: response.data.dailyPeriods,
+          monthlyPeriods: response.data.monthlyPeriods,
+          yearlyPeriods: response.data.yearlyPeriods,
+          daily: response.data.daily || 0,
+          monthly: response.data.monthly || 0,
+          yearly: response.data.yearly || 0
+        };
+      }
+
+      // Fallback to old logic if backend doesn't provide calculated data
       const consultationData = response.data.data || response.data || [];
       const { dailyDates, monthlyPeriods, yearlyPeriods } = getDateRanges();
 
