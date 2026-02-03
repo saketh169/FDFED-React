@@ -6,7 +6,7 @@ This project consists of a backend and frontend setup. The backend is a Node.js-
 
 ### Prerequisites
 - Node.js (v14 or higher)
-- npm or yarn
+- npm or yarn 
 - MongoDB (running locally or MongoDB Atlas connection)
 
 ### Backend Setup
